@@ -13,6 +13,20 @@
             "options": {
                 // "cwd": "/usr/bin"
             }
+        },
+        {
+            "type": "shell",
+            "label": "win build current file",
+            "command": "gcc",
+            "args": [
+                "-g",
+                "\"${file}\"",
+                "-o",
+                "\"${fileDirname}/${fileBasenameNoExtension}.exe\""
+            ],
+            "options": {
+                // "cwd": "/usr/bin"
+            }
         }
     ],
     "version": "2.0.0"

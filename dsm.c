@@ -13,13 +13,13 @@
 #include <stdint.h>
 #include <zlib.h>
 
-#include "engine.h"
-#include "mrporting.h"
-#include "fileLib.h"
-#include "dsm.h"
-#include "mr_helper.h"
+#include "./header/engine.h"
+#include "./header/mrporting.h"
+#include "./header/fileLib.h"
+#include "./header/dsm.h"
+#include "./header/mr_helper.h"
 
-#include "tsf_font.h"
+#include "./header/tsf_font.h"
 
 extern int gbToUCS2BE(unsigned char *gbCode, unsigned char *unicode, int bufSize);
 static int32 dsmSwitchPath(uint8 *input, int32 input_len, uint8 **output, int32 *output_len);

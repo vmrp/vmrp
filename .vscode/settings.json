@@ -15,6 +15,10 @@
         "mman.h": "c",
         "string.h": "c",
         "stdio.h": "c",
-        "arm.h": "c"
+        "arm.h": "c",
+        "limits": "c",
+        "*.tcc": "c",
+        "debug.h": "c",
+        "engine.h": "c"
     }
 }

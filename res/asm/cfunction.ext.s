@@ -1,10 +1,3 @@
-
-cfunction.ext：     文件格式 binary
-
-
-Disassembly of section .data:
-
-00000008 <.data+0x8>:
        8:	e92d4038 	push	{r3, r4, r5, lr}
        c:	e59f410c 	ldr	r4, [pc, #268]	; 0x120
       10:	e08f4004 	add	r4, pc, r4
