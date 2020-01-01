@@ -1,0 +1,22 @@
+[('--with_c_map', '')]
+init config done.
+start build.
+information->config=mtkt240
+dealing mtkt240(mtkt240) config...
+start compile ext.
+['file1']
+	main.c
+-c -I. -c -O2 -Otime -DGET_C_FUNCTION_P()=(*(((mr_c_function_st**)mr_c_function_load)-1)) -DGET_HELPER()=(*(((mr_table**)mr_c_function_load)-2)) -I${MRPBUILDER_HOME}\..\include -cpu ARM7EJ-S -littleend -apcs /ropi/rwpi/interwork -fa -zo -o C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\mr_main.o main.c
+tcc
+Compile C:  tcc -c -I. -c -O2 -Otime -DGET_C_FUNCTION_P()=(*(((mr_c_function_st**)mr_c_function_load)-1)) -DGET_HELPER()=(*(((mr_table**)mr_c_function_load)-2)) -I${MRPBUILDER_HOME}\..\include -cpu ARM7EJ-S -littleend -apcs /ropi/rwpi/interwork -fa -zo -o C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\mr_main.o main.c
+.............................................
+linking c module...
+
+Compile:  armlink 
+ -bin -o C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\mr_cfunction.ext
+fromelf  -bin -o C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\mr_cfunction.ext
+end build.
+
+
+
+b0d40a4497c66011084e4a639d61ac76da4b4c5cabd62ab63adadb7293b0e506  gila

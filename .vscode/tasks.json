@@ -1,0 +1,19 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "make",
+            "command": "make",
+            "args": [
+                // "-g",
+                // "${file}",
+                // "-o",
+                // "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                // "cwd": "/usr/bin"
+            }
+        }
+    ],
+    "version": "2.0.0"
+}

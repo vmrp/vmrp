@@ -1,0 +1,2 @@
+- mr.mrp  mythroad语言编译的mrp，时面不含cfunction.ext
+- start.mr.txt   mr.mrp的源文件，应该是lua语言

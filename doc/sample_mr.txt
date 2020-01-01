@@ -1,0 +1,75 @@
+
+编译：mrptool mr2mrp samplemronly.mr
+
+def dealevent(code, p0, p1, p2)
+  print("dealevent is called")
+
+  str = string.format("code = %d, p0 = %d, p1 = %d", code, p0, p1)
+  print(str)
+
+  if p0 == 18 then 
+    Exit()
+  end
+	
+  return 1
+end
+
+
+def suspend()
+  print("suspend is called") 
+  return 1
+end
+
+def resume()
+  print("resume is called")
+  return 1
+end
+
+def init()
+  print("init is called")
+  return 1
+end
+
+def sampleapp()
+  print("App is called")
+  local sysinfo = GetSysInfo()
+
+  ClearScreen(50,100,100)
+
+  local w = sysinfo.scrw
+  local h = sysinfo.scrh
+
+  local hpos = 5
+  local hdelta = 18
+  DrawText("MR code test.", 5, hpos, 255, 255, 0)
+  hpos = hpos + hdelta
+  _drawLine(0, hpos - 1, w, hpos - 1, 255, 255, 0)
+
+  local st = "Screen " .. w .. " x " .. h 
+  DrawText(st, 5, hpos, 255, 255, 0)
+  hpos = hpos + hdelta
+
+  local st = "Platform " .. sysinfo.hsman
+  DrawText(st, 5, hpos, 255, 255, 0)
+  hpos = hpos + hdelta
+
+  local st = "IMEI " .. sysinfo.IMEI
+  DrawText(st, 5, hpos, 255, 255, 0)
+  hpos = hpos + hdelta * 2
+
+  DrawText("Hello, world", 5, hpos, 255, 255, 255)
+  hpos = hpos + hdelta
+  DrawText(" sample for mrp-docs-ru :)", 5, hpos, 255, 255, 255)
+
+  local st = "Exit"
+  DrawText(st, w - 5 - _textWidth(st), h - 20, 255, 255, 0)
+
+
+  _dispUp(0, 0, w, h)
+
+end
+
+sampleapp()
+
+
+

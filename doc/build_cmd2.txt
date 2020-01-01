@@ -1,0 +1,123 @@
+ARMCC 
+-I. 
+–c 
+-O2 
+–Otime 
+-DGET_C_FUNCTION_P()=(*(((mr_c_function_st**)mr_c_function_load)-1))
+-DGET_HELPER()=(*(((mr_table**)mr_c_function_load)-2)) -I..\..\modules\ 
+-cpu ARM7EJ-S
+-littleend –apcs /ropi/rwpi/interwork 
+–fa –zo –o C:\DOCUME~1\danilin\LOCALS~1\Temp\mr_src_main.o
+src\main.c
+
+
+
+
+
+ARMCC 
+-I. 
+–c 
+-O2 
+–Otime 
+-DGET_C_FUNCTION_P()=(*(((mr_c_function_st**)mr_c_function_load)-1))
+-DGET_HELPER()=(*(((mr_table**)mr_c_function_load)-2)) -I..\..\modules\
+-cpu ARM7EJ-S 
+–littleend 
+–apcs /ropi/rwpi/interwork 
+–fa –zo -o C:\DOCUME~1\danilin\LOCALS~1\Temp\mr_src_filelog.o
+src\filelog.c
+
+
+
+
+ARMLINK -rwpi
+-ro-base
+0x80000
+-remove
+-first
+mr_c_function_load
+-entry
+mr_c_function_load
+-map
+-info
+sizes,totals,veneers
+-xref
+-symbols
+-list
+cfunction.txt
+-o
+C:\DOCUME~1\danilin\LOCALS~1\Temp\mr_cfunction.fmt
+C:\DOCUME~1\danilin\LOCALS~1\Temp\mr_src_main.o
+C:\DOCUME~1\danilin\LOCALS~1\Temp\mr_src_filelog.o
+..\..\compiler\mr_helper.lib(mr_helper.o)
+..\..\compiler\mr_helper.lib
+..\..\compiler\mr_helperexb.lib
+
+
+
+E:\UNISDK_CP_v1.0.9.26_v1.0u7\samples\Thumb>..\..\compiler\mrpbuilder_c.exe Helloworld.mpr --mythroadtestmode 
+information->config=mtk240
+dealing mtk240(mtk240) config...
+include:
+..\..\modules\
+	   start.mr 
+compiling c\c++ file src\main.c...
+compile resource file src\test.gif...
+before zip len = 0x903
+compiling c\c++ file src\filelog.c...
+linking c module...
+before zip len = 0x88dc
+filehead_len:240
+  File Name                                 Size           Origin Size
+test.gif                                  2.1 KB            2.3 KB
+Main Module                              18.7 KB           34.2 KB
+adjustfilehead:filehead_len:240
+
+
+
+def buildfilehead(project_path):
+    global filehead
+    if (project['visible'] == 0):
+        flag = 0
+    else:
+        flag = 1
+    if (project['filehead'] == 1):
+        return 
+    flag = (flag + (project['cpu'] * 2))
+    flag = (flag + (project['shell'] * 8))
+    filehead = 'MRPG'
+    filehead = (filehead + ('\x00' * 4))
+    filehead = (filehead + ('\x00' * 4))
+    filehead = (filehead + ('\x00' * 4))
+    filehead = (filehead + getstr(project['filename'], 12))
+    filehead = (filehead + getstr(project['appname'], 24))
+    filehead = ((((((((((filehead + g_host_auth_str[2]) + g_host_auth_str[4]) + g_host_auth_str[8]) + g_host_auth_str[9]) + g_host_auth_str[11]) + g_host_auth_str[12]) + g_host_auth_str[1]) + g_host_auth_str[7]) + g_host_auth_str[6]) + ('\x00' * 7))
+    filehead = (filehead + struct.pack('<i', project['appid']))
+    filehead = (filehead + struct.pack('<i', project['version']))
+    filehead = (filehead + struct.pack('<i', flag))
+    filehead = (filehead + struct.pack('<i', 10002))
+    filehead = (filehead + ('\x00' * 4))
+    filehead = (filehead + getstr(project['vendor'], 40))
+    filehead = (filehead + getstr(project['description'], 64))
+    filehead = (filehead + struct.pack('>i', project['appid']))
+    filehead = (filehead + struct.pack('>i', project['version']))
+    filehead = (filehead + ('\x00' * 4))
+    filehead = (filehead + struct.pack('<H', project['scr_w']))
+    filehead = (filehead + struct.pack('<H', project['scr_h']))
+    if ((project['plat'] == 'mtk') or (project['plat'] == 'mstar')):
+        filehead = (filehead + struct.pack('<B', 1))
+    elif (project['plat'] == 'spreadtrum'):
+        filehead = (filehead + struct.pack('<B', 2))
+    else:
+        filehead = (filehead + struct.pack('<B', 0))
+    filehead = (filehead + ('\x00' * 31))
+    if (project['head_append'] != None):
+        filehead = (filehead + get_file((project_path + project['head_append']), 'rb'))
+
+
+
+
+
+
+
+

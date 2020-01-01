@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "dsm.h": "c",
+        "filelib.h": "c",
+        "stdint.h": "c",
+        "stat.h": "c",
+        "stdint-gcc.h": "c",
+        "unicorn.h": "c",
+        "mr_helper.h": "c",
+        "mrporting.h": "c",
+        "mr_types.h": "c",
+        "fcntl.h": "c",
+        "tsf_font.h": "c",
+        "malloc.h": "c",
+        "mman.h": "c",
+        "string.h": "c",
+        "stdio.h": "c",
+        "arm.h": "c"
+    }
+}

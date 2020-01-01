@@ -1,0 +1,4 @@
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+BasedOnStyle: Google
+UseTab: Never
+IndentWidth: 4

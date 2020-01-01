@@ -1,0 +1,151 @@
+EXT结构详解：
+前8字节：
+0~3：mr_table 函数表 指针
+4~7：mr_c_function_st 指针
+8~11：mr_c_function_load 函数指针
+
+	
+typedef struct  _mrc_extChunk_st
+{
+	int32 check;
+	
+	MR_LOAD_C_FUNCTION	init_func;  //mr_c_function_load 函数指针
+
+	/**
+	 * (void* P, int32 code, uint8* input, int32 input_len, uint8** output, int32* output_len);
+	 * 参数详解：
+	 * p：global_p_buf 指针
+	 * code定义如下：
+	 *		0：mrc_init 1：mrc_event 2：
+	 */
+	MR_C_FUNCTION		event;		//mr_helper 函数指针
+	
+	uint8*	code_buf; //ext内存地址
+	int32   code_len; //ext长度
+	uint8*	var_buf;  //RW段地址
+	int32   var_len;  //RW段长度
+	mr_c_function_st* global_p_buf; //mr_c_function_st 表地址
+	int32   global_p_len; //mr_c_function_st 表长度
+	int32   timer;
+	mrc_extMainSendAppMsg_t sendAppEvent;
+	mr_table *extMrTable;
+
+#ifdef MRC_PLUGIN
+	MR_C_FUNCTION_EX eventEx;
+#endif
+
+	int32 isPause;/*1: pause 状态0:正常状态*/
+} mrc_extChunk_st;
+	
+typedef struct  _mr_c_function_st                       
+{
+	uint8* start_of_ER_RW;
+	uint32 ER_RW_Length;
+	//uint8* old_start_of_ER_RW;
+	int32 ext_type;
+	mrc_extChunk_st * mrc_extChunk;
+
+	//stack shell 2008-2-28
+	int32 stack;
+	//
+} mr_c_function_st;
+
+
+启动流程：
+	先调用：int32 mr_c_function_load (int32 code)，完成 mr_table 函数表设置
+
+
+时空：
+[基址]-4位置是 mr_c_function_st指针。
+[基址]-8位置是函数表指针。
+mr_c_function_load调用了函数表里偏移为0x64的mr_c_function_new函数，这个mr_c_function_new函数就在这里面。
+EXT的RW段，即EXT全局变量空间，EXT内部自己会管理
+
+
+BinSys：
+# /* ---- SKY_PLATFORM start ---- */
+ifeq ($(strip $(DSM_SUPPORT)),TRUE)
+# sky add ,compile switch macro
+COM_DEFS += __MMI_DSM_NEW__
+
+
+ifeq ($(strip $(PLATFORM)),MT6235B)
+	COMPOBJS += plutommi\mmi\mythroad\mythroadlib\dsm35.lib
+endif
+ifneq ($(strip $(PLATFORM)),MT6235B)
+	COMPOBJS += plutommi\mmi\mythroad\mythroadlib\dsm.lib
+endif
+
+
+COMPOBJS += plutommi\mmi\mythroad\mythroadlib\mmidsm111.lib
+主要是 dsm.lib 和 mmidsm111.lib
+
+你可以看看目前能拿到的移植层的代码，看dsm.lib里的mythroad.obj
+
+天使：
+因为所有的API接口 都在函数表
+我们写好接口 填到函数表
+我看来 目前最主要的工作就是 函数表里所有函数 
+这个我们可以一起来写
+封装NDK底层函数
+
+然后 难点在于 加载EXT之前要做什么，调用mrc_init前做了什么，怎么调mrc_init
+
+mr_c_function_load 函数地址为ext内存地址 + 8，所以其在ext内部位置固定
+
+
+eleqian：
+嗯，一般的像图像字符绘制比较容易实现
+
+
+
+对话：
+我现在最大的疑惑就是 mrc_init mrc_event mrc_pause 等函数 是不是在 ext文件中位置固定的额，
+无尽时空<timespace_2011@qq.com>  23:35:01
+不是
+eleqian(1003082820)  23:35:20
+ext入口不是它们
+天使之翼<edroid@foxmail.com>  23:35:44
+那怎么找到 mrc_init 调用它
+无尽时空<timespace_2011@qq.com>  23:35:48
+它们都被mr_helper调用，mr_helper 才是最重要的消息分发器。
+eleqian(1003082820)  23:35:51
+它们只是普通函数
+
+天使之翼<edroid@foxmail.com>  1:22:58
+mr_table 函数表内部函数地址设置是在MTK开机时完成的，你改变了这个表里的某个函数地址后，下次开机才会恢复
+BinSys(123077083)  1:23:03
+mr_c_function_load 确实是固定的，因为一个elf文件经过fromelf后，貌似只剩下代码段，并且entry在0字节处。至于为什么偏移了8，就不知道了
+天使之翼<edroid@foxmail.com>  1:24:09
+因为 前面 8个字节 分别用来存储 mr_table 和 mr_c_function_st 函数表地址
+
+
+first和entry都指定为 mr_c_function_load，另外不是armcc指定的，是armlink的参数
+armlink
+	输入
+		-rwpi
+		-ro
+		-base0x80000
+		-remove
+		-first mr_c_function_load
+		-entry mr_c_function_load
+		-o
+			C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\mr_cfunction.fmt
+		C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\mr_sfw_mrc_mrc_win.o
+		C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\mr_src_helloworld.o
+		C:\SKYMOBI\SDS4CPv1.0\Compiler\mr_helper.lib(mr_helper.o)
+		C:\SKYMOBI\SDS4CPv1.0\Compiler\mr_helper.lib(mr_helper_s.o)
+		C:\SKYMOBI\SDS4CPv1.0\Compiler\mr_helperexf.lib
+		C:\SKYMOBI\SDS4CPv1.0\Compiler\mr_helperexb.lib 
+
+不同点：
+ext启动：
+在mr_table里设置ext定时器启动和停止的函数，设置ext启动标志。
+普通启动：
+在mr_internal_table设置字符串"dealtimer"
+其他都相同。
+普通启动调用的定时器函数在start.mr里设置dealtimer
+dealtimer 本身是个函数，在start.mr里定义
+
+*(mr_c_function_load - 0x4) + 0xC 处是ext模块句柄
+不分析不知道，一分析吓一跳。
