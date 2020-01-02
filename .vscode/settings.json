@@ -19,6 +19,9 @@
         "limits": "c",
         "*.tcc": "c",
         "debug.h": "c",
-        "engine.h": "c"
+        "engine.h": "c",
+        "utils.h": "c",
+        "stddef.h": "c",
+        "rbtree.h": "c"
     }
 }

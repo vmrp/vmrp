@@ -12,6 +12,7 @@
 #include "./header/debug.h"
 #include "./header/fileLib.h"
 #include "./header/mr_helper.h"
+#include "./header/mr_table_bridge.h"
 #include "./header/utils.h"
 
 // #define MRPFILE "mr.mrp"
@@ -53,10 +54,12 @@ static void hook_block(uc_engine *uc, uint64_t address, uint32_t size,
            address, size);
 }
 
-// static void hook_code(uc_engine *uc, uint64_t address, uint32_t size,
-//                       void *user_data) {
-//     printf(">>> PC:0x%" PRIX64 ", size:0x%x\n", address, size);
-// }
+static void hook_code(uc_engine *uc, uint64_t address, uint32_t size,
+                      void *user_data) {
+    // printf(">>> PC:0x%" PRIX64 ", size:0x%x\n", address, size);
+    mr_table_bridge_exec(uc, MR_TABLE_ADDRESS + 0x10, size, user_data);
+    hook_code_debug(uc, address, size, user_data);
+}
 
 static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address,
                            int size, int64_t value, void *user_data) {
@@ -92,39 +95,42 @@ static void emu(BOOL isThumb) {
     uc_mem_map(uc, STACK_ADDRESS, STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE);
     {
         char *filename = "cfunction.ext";
-        uint32 offset, length;
+        uint32 value, length;
         uint8 *code;
-        int32 ret = readMrpFileEx(MRPFILE, filename, (int32 *)&offset,
+        int32 ret = readMrpFileEx(MRPFILE, filename, (int32 *)&value,
                                   (int32 *)&length, &code);
         if (ret == MR_FAILED) {
             LOG("load %s failed", filename);
             goto end;
         }
-        LOG("load %s suc: offset:%d, length:%d", filename, offset, length);
+        LOG("load %s suc: offset:%d, length:%d", filename, value, length);
         uc_mem_write(uc, CODE_ADDRESS, code, length);
         free(code);
 
         uc_hook trace1, trace2, traceMemInvalid, traceMemValid;
 
         uc_hook_add(uc, &trace1, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
-        // uc_hook_add(uc, &trace2, UC_HOOK_CODE, hook_code, NULL, 1, 0);
-        uc_hook_add(uc, &trace2, UC_HOOK_CODE, hook_code_debug, NULL, 1, 0);
+        uc_hook_add(uc, &trace2, UC_HOOK_CODE, hook_code, NULL, 1, 0);
+        // uc_hook_add(uc, &trace2, UC_HOOK_CODE, hook_code_debug, NULL, 1, 0);
         uc_hook_add(uc, &traceMemInvalid, UC_HOOK_MEM_INVALID, hook_mem_invalid,
                     NULL, 1, 0);
         uc_hook_add(uc, &traceMemValid, UC_HOOK_MEM_VALID, hook_mem_valid, NULL,
                     1, 0);
 
-        uint32 sp = STACK_ADDRESS + STACK_SIZE;
-        uc_reg_write(uc, UC_ARM_REG_SP, &sp);
+        value = STACK_ADDRESS + STACK_SIZE;  // 满递减
+        uc_reg_write(uc, UC_ARM_REG_SP, &value);
 
-        uint32 lr = CODE_ADDRESS;
-        uc_reg_write(uc, UC_ARM_REG_LR, &lr);  // 当程序执行到这里时停止运行
+        value = CODE_ADDRESS;
+        uc_reg_write(uc, UC_ARM_REG_LR, &value);  // 当程序执行到这里时停止运行
+
+        value = 1;
+        uc_reg_write(uc, UC_ARM_REG_R0, &value);  // 传参数值1
 
         dumpREG(uc);
         // Note we start at ADDRESS | 1 to indicate THUMB mode.
-        offset = CODE_ADDRESS + 8;
-        offset = isThumb ? offset | 1 : offset;
-        err = uc_emu_start(uc, offset, CODE_ADDRESS, 0, 0);
+        value = CODE_ADDRESS + 8;
+        value = isThumb ? value | 1 : value;
+        err = uc_emu_start(uc, value, CODE_ADDRESS, 0, 0);
         if (err) {
             printf("Failed on uc_emu_start() with error returned: %u (%s)\n",
                    err, uc_strerror(err));
@@ -142,9 +148,9 @@ int main() {
     // extractFile();
     // mr_start_dsm(MRPFILE);
 
+    mr_table_bridge_init();
     // printf("thumb:\n");
     // emu(TRUE);
-
     printf("arm:\n");
     emu(FALSE);
     return 0;

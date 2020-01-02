@@ -13,7 +13,20 @@
 #include <unicorn/unicorn.h>
 #endif
 
+#ifndef NULL
+#include <stddef.h>
+#endif
+
+#ifndef offsetof
+#define offsetof(type, field) ((size_t) &((type *)0)->field)
+#endif
+#ifndef countof
+#define countof(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
+
 char *memTypeStr(uc_mem_type type);
 void dumpREG(uc_engine *uc);
+void dumpMemStr(void *ptr, size_t len);
 
 #endif

@@ -46,3 +46,15 @@ void dumpREG(uc_engine *uc) {
     printf("===========================\n");
     // clang-format on
 }
+
+void dumpMemStr(void *ptr, size_t len) {
+    char *p = ptr;
+    for (int i = 0; i < len; i++) {
+        if (isgraph(*p)) {
+            putchar(*p);
+        } else {
+            putchar('.');
+        }
+        p++;
+    }
+}

@@ -48,6 +48,7 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size,
     char str[30];
     char *ptr;
     int eqPos;
+    uc_err err;
 
     do {
         printf("debug[PC:0x%" PRIX64 ", size:0x%x] > ", address, size);
@@ -70,26 +71,40 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size,
         // printf("%s,%d, %d\n", str, str[0], '\n');
         if (str[0] == '\0') {
             break;
-        } else if (strcmp("regs", str) == 0) {
+        } else if (strcmp("reg", str) == 0) {  // 打印所有寄存器内容
             dumpREG(uc);
 
-        } else if (str[0] == '0' && str[1] == 'x') {
+        } else if (str[0] == '0' && str[1] == 'x') {  // 读写内存
             if (eqPos > 0) {
                 char buf[11];  // "0x4750524D".length + 1
                 getEqLeftStr(str, eqPos, (char *)buf, 10);
                 uint32_t addr = toUint32(buf);
                 uint32_t value = toUint32(str);
 
-                printf("==> set memory addr: 0x%x=0x%x\n", addr, value);
-                uc_mem_write(uc, addr, &value, 4);
+                err = uc_mem_write(uc, addr, &value, 4);
+                if (err) {
+                    printf(
+                        "==> Failed set memory addr: 0x%x=0x%x err:%u (%s)\n",
+                        addr, value, err, uc_strerror(err));
+                } else {
+                    printf("==> set memory addr: 0x%x=0x%x\n", addr, value);
+                }
+
             } else {
                 uint32_t addr = toUint32(str);
                 uint32_t value;
-                uc_mem_read(uc, addr, &value, 4);
-                printf("==> memory addr: 0x%x=0x%x\n", addr, value);
+                err = uc_mem_read(uc, addr, &value, 4);
+                if (err) {
+                    printf("==> Failed read memory addr: 0x%x err:%u (%s)\n",
+                           addr, err, uc_strerror(err));
+                } else {
+                    printf("==> read memory addr: 0x%x=0x%x  ", addr, value);
+                    dumpMemStr(&value, 4);
+                    putchar('\n');
+                }
             }
 
-        } else if (strchr(str, '=') != NULL) {
+        } else if (strchr(str, '=') != NULL) {  // 修改寄存器值
             char buf[4] = {0};
             getEqLeftStr(str, eqPos, (char *)buf, 3);
             uint32_t value = toUint32(str);
@@ -121,13 +136,21 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size,
                 reg = UC_ARM_REG_PC;
             }
             if (reg != UC_ARM_REG_INVALID) {
-                printf("==> register assign %s=0x%x\n", buf, value);
-                uc_reg_write(uc, reg, &value);
+                err = uc_reg_write(uc, reg, &value);
+                if (err) {
+                    printf("==> Failed register assign %s=0x%x err:%u (%s)\n",
+                           buf, value, err, uc_strerror(err));
+                } else {
+                    printf("==> register assign %s=0x%x\n", buf, value);
+                }
+            } else {
+                printf("==> register '%s' invalid\n", buf);
             }
+
         } else {
             // clang-format off
             printf(
-                "    regs                   - print all regs\n"
+                "    reg                   - print all regs\n"
                 "    SP=0x0027FFF0          - set SP register to 0x0027FFF0\n"
                 "    0x00080008             - print 0x00080008 memory content\n"
                 "    0x00080008=0xFFFFFFFF  - set 0x00080008 memory content to 0xFFFFFFFF\n"
