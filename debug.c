@@ -80,20 +80,50 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size,
                 uint32_t addr = toUint32(buf);
                 uint32_t value = toUint32(str);
 
-                printf("==> set mem addr: %s  %x = %x\n", buf, addr, value);
+                printf("==> set memory addr: 0x%x=0x%x\n", addr, value);
+                uc_mem_write(uc, addr, &value, 4);
             } else {
                 uint32_t addr = toUint32(str);
                 uint32_t value;
-                uc_mem_read(uc, addr, &value, sizeof(value));
-                printf("memory addr:%x=%x\n", addr, value);
+                uc_mem_read(uc, addr, &value, 4);
+                printf("==> memory addr: 0x%x=0x%x\n", addr, value);
             }
 
         } else if (strchr(str, '=') != NULL) {
             char buf[4] = {0};
             getEqLeftStr(str, eqPos, (char *)buf, 3);
             uint32_t value = toUint32(str);
-            printf(">>>> register assign %s=%x\n", buf, value);
 
+            uc_arm_reg reg = UC_ARM_REG_INVALID;
+            if (buf[0] == 'r') {
+                if (buf[1] == '1' && buf[2] != '\0') {  // r10-r12
+                    if (buf[2] == '0') {
+                        reg = UC_ARM_REG_R10;
+                    } else if (buf[2] == '1') {
+                        reg = UC_ARM_REG_R11;
+                    } else if (buf[2] == '2') {
+                        reg = UC_ARM_REG_R12;
+                    }
+                } else if (buf[1] >= '0' && buf[1] <= '9') {  // r0-r9
+                    uc_arm_reg arr[10] = {
+                        UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2,
+                        UC_ARM_REG_R3, UC_ARM_REG_R4, UC_ARM_REG_R5,
+                        UC_ARM_REG_R6, UC_ARM_REG_R7, UC_ARM_REG_R8,
+                        UC_ARM_REG_R9,
+                    };
+                    reg = arr[buf[1] - '0'];
+                }
+            } else if (buf[0] == 's' && buf[1] == 'p') {
+                reg = UC_ARM_REG_SP;
+            } else if (buf[0] == 'l' && buf[1] == 'r') {
+                reg = UC_ARM_REG_LR;
+            } else if (buf[0] == 'p' && buf[1] == 'c') {
+                reg = UC_ARM_REG_PC;
+            }
+            if (reg != UC_ARM_REG_INVALID) {
+                printf("==> register assign %s=0x%x\n", buf, value);
+                uc_reg_write(uc, reg, &value);
+            }
         } else {
             // clang-format off
             printf(
