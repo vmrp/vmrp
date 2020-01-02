@@ -48,6 +48,10 @@ int extractFile() {
 #define STACK_ADDRESS CODE_ADDRESS + CODE_SIZE  // 栈开始地址
 #define STACK_SIZE 1024 * 1024 * 1              // 栈大小
 
+// ext文件0地址处的值
+// #define MR_TABLE_ADDRESS 0x4750524d // 无法4k对齐导致内存映射出错
+#define MR_TABLE_ADDRESS STACK_ADDRESS + STACK_SIZE
+
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size,
                        void *user_data) {
     printf(">>> Tracing basic block at 0x%" PRIx64 ", block size = 0x%x\n",
@@ -81,6 +85,9 @@ static void emu(BOOL isThumb) {
     uc_engine *uc;
     uc_err err;
 
+    printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, MR_TABLE_ADDRESS:0x%X\n",
+           CODE_ADDRESS, STACK_ADDRESS, MR_TABLE_ADDRESS);
+
     if (isThumb) {
         err = uc_open(UC_ARCH_ARM, UC_MODE_THUMB, &uc);
     } else {
@@ -94,6 +101,7 @@ static void emu(BOOL isThumb) {
     }
     uc_mem_map(uc, CODE_ADDRESS, CODE_SIZE, UC_PROT_ALL);
     uc_mem_map(uc, STACK_ADDRESS, STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    mr_table_bridge_mapAddressTable(uc);
     {
         char *filename = "cfunction.ext";
         uint32 value, length;
@@ -127,6 +135,9 @@ static void emu(BOOL isThumb) {
         value = 1;
         uc_reg_write(uc, UC_ARM_REG_R0, &value);  // 传参数值1
 
+        value = MR_TABLE_ADDRESS;
+        uc_mem_write(uc, CODE_ADDRESS, &value, 4);  // mr_table指针
+
         dumpREG(uc);
         // Note we start at ADDRESS | 1 to indicate THUMB mode.
         value = CODE_ADDRESS + 8;
@@ -149,7 +160,7 @@ int main() {
     // extractFile();
     // mr_start_dsm(MRPFILE);
 
-    mr_table_bridge_init();
+    mr_table_bridge_init(MR_TABLE_ADDRESS);
     // printf("thumb:\n");
     // emu(TRUE);
     printf("arm:\n");

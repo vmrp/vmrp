@@ -132,17 +132,16 @@ void mr_table_bridge_testMain() {
 //////////////////////////////////////////////////////////////////////////////////////////
 // 因为mrp是在32位处理器上运行，所以指针是4字节，偏移量应该是以32位指针地址计算
 #define MR_TABLE_OFFSET(member) \
-    (offsetof(mr_table, member) / (sizeof(void *) / 4))
+    (offsetof(mr_table, member) / ((sizeof(void *) / 4)))
 
-// 最后一个字段的偏移
-#define MR_TABLE_MAP_LEN (MR_TABLE_OFFSET(mr_platDrawChar) + 1)
-
-#define MR_TABLE_START_ADDRESS MR_TABLE_ADDRESS
-#define MR_TABLE_END_ADDRESS MR_TABLE_ADDRESS + MR_TABLE_MAP_LEN - 1
+// 字段的索引位置
+#define MR_TABLE_INDEX(member) (MR_TABLE_OFFSET(member) / 4)
 
 typedef void (*mrTableBridgeCB)(char *name, uc_engine *uc, uint64_t address,
                                 uint32_t size, void *user_data);
 
+void defaultBridge(char *name, uc_engine *uc, uint64_t address, uint32_t size,
+                   void *user_data);
 typedef enum mrTableBridgeMapType {
     MAP_DATA,
     MAP_FUNC,
@@ -154,8 +153,181 @@ typedef struct mrTableBridgeMap {
     mrTableBridgeCB fn;
 } mrTableBridgeMap;
 
-// 函数映射表，虽然有些浪费内存，但是快！
-static mrTableBridgeMap mr_table_bridge_map[MR_TABLE_MAP_LEN];
+#define FUNC_MAP(field, mapType, func) \
+    { .name = #field, .type = mapType, .fn = func }
+
+// 根据最后一个字段的位置得到
+#define MR_TABLE_MAP_LEN (MR_TABLE_INDEX(mr_platDrawChar) + 1)
+
+static mrTableBridgeMap funcMap[MR_TABLE_MAP_LEN] = {
+    FUNC_MAP(mr_malloc, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_free, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_realloc, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(memcpy, MAP_FUNC, defaultBridge),
+    FUNC_MAP(memmove, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strcpy, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strncpy, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strcat, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strncat, MAP_FUNC, defaultBridge),
+    FUNC_MAP(memcmp, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strcmp, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strncmp, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strcoll, MAP_FUNC, defaultBridge),
+    FUNC_MAP(memchr, MAP_FUNC, defaultBridge),
+    FUNC_MAP(memset, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strlen, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strstr, MAP_FUNC, defaultBridge),
+    FUNC_MAP(sprintf, MAP_FUNC, defaultBridge),
+    FUNC_MAP(atoi, MAP_FUNC, defaultBridge),
+    FUNC_MAP(strtoul, MAP_FUNC, defaultBridge),
+    FUNC_MAP(rand, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(reserve0, MAP_DATA, defaultBridge),
+    FUNC_MAP(reserve1, MAP_DATA, defaultBridge),
+    FUNC_MAP(_mr_c_internal_table, MAP_DATA, defaultBridge),
+    FUNC_MAP(_mr_c_port_table, MAP_DATA, defaultBridge),
+    FUNC_MAP(_mr_c_function_new, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(mr_printf, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_mem_get, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_mem_free, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_drawBitmap, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_getCharBitmap, MAP_FUNC, defaultBridge),
+    FUNC_MAP(g_mr_timerStart, MAP_FUNC, defaultBridge),
+    FUNC_MAP(g_mr_timerStop, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_getTime, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_getDatetime, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_getUserInfo, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_sleep, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(mr_plat, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_platEx, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(mr_ferrno, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_open, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_close, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_info, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_write, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_read, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_seek, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_getLen, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_remove, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_rename, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_mkDir, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_rmDir, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_findStart, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_findGetNext, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_findStop, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(mr_exit, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_startShake, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_stopShake, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_playSound, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_stopSound, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(mr_sendSms, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_call, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_getNetworkID, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_connectWAP, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(mr_menuCreate, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_menuSetItem, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_menuShow, MAP_FUNC, defaultBridge),
+    FUNC_MAP(reserve, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_menuRelease, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_menuRefresh, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_dialogCreate, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_dialogRelease, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_dialogRefresh, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_textCreate, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_textRelease, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_textRefresh, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_editCreate, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_editRelease, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_editGetText, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_winCreate, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_winRelease, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(mr_getScreenInfo, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(mr_initNetwork, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_closeNetwork, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_getHostByName, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_socket, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_connect, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_closeSocket, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_recv, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_recvfrom, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_send, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_sendto, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(mr_screenBuf, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_screen_w, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_screen_h, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_screen_bit, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_bitmap, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_tile, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_map, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_sound, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_sprite, MAP_DATA, defaultBridge),
+
+    FUNC_MAP(pack_filename, MAP_DATA, defaultBridge),
+    FUNC_MAP(start_filename, MAP_DATA, defaultBridge),
+    FUNC_MAP(old_pack_filename, MAP_DATA, defaultBridge),
+    FUNC_MAP(old_start_filename, MAP_DATA, defaultBridge),
+
+    FUNC_MAP(mr_ram_file, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_ram_file_len, MAP_DATA, defaultBridge),
+
+    FUNC_MAP(mr_soundOn, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_shakeOn, MAP_DATA, defaultBridge),
+
+    FUNC_MAP(LG_mem_base, MAP_DATA, defaultBridge),
+    FUNC_MAP(LG_mem_len, MAP_DATA, defaultBridge),
+    FUNC_MAP(LG_mem_end, MAP_DATA, defaultBridge),
+    FUNC_MAP(LG_mem_left, MAP_DATA, defaultBridge),
+
+    FUNC_MAP(mr_sms_cfg_buf, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_md5_init, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_md5_append, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_md5_finish, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_mr_load_sms_cfg, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_mr_save_sms_cfg, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_DispUpEx, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(_DrawPoint, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_DrawBitmap, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_DrawBitmapEx, MAP_FUNC, defaultBridge),
+    FUNC_MAP(DrawRect, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_DrawText, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_BitmapCheck, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_mr_readFile, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_wstrlen, MAP_FUNC, defaultBridge),
+    FUNC_MAP(mr_registerAPP, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_DrawTextEx, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_mr_EffSetCon, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_mr_TestCom, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_mr_TestCom1, MAP_FUNC, defaultBridge),
+    FUNC_MAP(c2u, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(_mr_div, MAP_FUNC, defaultBridge),
+    FUNC_MAP(_mr_mod, MAP_FUNC, defaultBridge),
+
+    FUNC_MAP(LG_mem_min, MAP_DATA, defaultBridge),
+    FUNC_MAP(LG_mem_top, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_updcrc, MAP_DATA, defaultBridge),
+    FUNC_MAP(start_fileparameter, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_sms_return_flag, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_sms_return_val, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_unzip, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_exit_cb, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_exit_cb_data, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_entry, MAP_DATA, defaultBridge),
+    FUNC_MAP(mr_platDrawChar, MAP_FUNC, defaultBridge),
+};
+
+static uint32_t mrTableStartAddress, mrTableEndAddress;
 
 void defaultBridge(char *name, uc_engine *uc, uint64_t address, uint32_t size,
                    void *user_data) {
@@ -165,199 +337,54 @@ void defaultBridge(char *name, uc_engine *uc, uint64_t address, uint32_t size,
 
 void mr_table_bridge_exec(uc_engine *uc, uint64_t address, uint32_t size,
                           void *user_data) {
-    if (address < MR_TABLE_START_ADDRESS || address > MR_TABLE_END_ADDRESS) {
+    if (address < mrTableStartAddress || address > mrTableEndAddress) {
         return;
     }
-    mrTableBridgeMap *obj =
-        &mr_table_bridge_map[address - MR_TABLE_START_ADDRESS];
+    mrTableBridgeMap *obj = &funcMap[address - mrTableStartAddress];
     if (obj->type == MAP_FUNC && obj->fn) {
         obj->fn(obj->name, uc, address, size, user_data);
         return;
     }
-    printf("mr_table_bridge exec unregister function at 0x%" PRIX64 "\n",
+    printf("mr_table_bridge_exec(): unregister function at 0x%" PRIX64 "\n",
            address);
 }
 
-#define FUNC_MAP(field, mapType, func)                     \
-    {                                                      \
-        mrTableBridgeMap *obj;                             \
-        int offset = MR_TABLE_OFFSET(field);               \
-        obj = &mr_table_bridge_map[offset];                \
-        obj->name = #field;                                \
-        obj->type = mapType;                               \
-        obj->fn = func;                                    \
-        printf("register %s() at 0x%X\n", #field, offset); \
+// 字节对齐
+#define ALIGN(x, align) (((x) + ((align)-1)) & ~((align)-1))
+
+uc_err mr_table_bridge_mapAddressTable(uc_engine *uc) {
+    uint32_t addressTable[MR_TABLE_MAP_LEN];
+    for (int i = 0; i < MR_TABLE_MAP_LEN; i++) {
+        // 因为mr_table全部都是指针，所以可以计算出所有偏移量
+        addressTable[i] = mrTableStartAddress + i * 4;
     }
+    int size = ALIGN(sizeof(addressTable), 4096);
+    uc_err err = uc_mem_map(uc, mrTableStartAddress, size, UC_PROT_READ);
+    if (err) {
+        printf(
+            "Failed on mr_table_bridge_mapAddressTable() uc_mem_map() with "
+            "error returned: "
+            "%u (%s)\n",
+            err, uc_strerror(err));
+        return err;
+    }
+    err = uc_mem_write(uc, mrTableStartAddress, addressTable,
+                       sizeof(addressTable));
+    if (err) {
+        printf(
+            "Failed on mr_table_bridge_mapAddressTable() uc_mem_write() with "
+            "error returned: "
+            "%u (%s)\n",
+            err, uc_strerror(err));
+    }
+    return err;
+}
 
-void mr_table_bridge_init() {
-    printf("mr_table_bridge_maps size: %I64d\n", sizeof(mr_table_bridge_map));
-
-    memset(mr_table_bridge_map, 0, sizeof(mr_table_bridge_map));
-
-    FUNC_MAP(mr_malloc, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_free, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_realloc, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(memcpy, MAP_FUNC, defaultBridge);
-    FUNC_MAP(memmove, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strcpy, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strncpy, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strcat, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strncat, MAP_FUNC, defaultBridge);
-    FUNC_MAP(memcmp, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strcmp, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strncmp, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strcoll, MAP_FUNC, defaultBridge);
-    FUNC_MAP(memchr, MAP_FUNC, defaultBridge);
-    FUNC_MAP(memset, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strlen, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strstr, MAP_FUNC, defaultBridge);
-    FUNC_MAP(sprintf, MAP_FUNC, defaultBridge);
-    FUNC_MAP(atoi, MAP_FUNC, defaultBridge);
-    FUNC_MAP(strtoul, MAP_FUNC, defaultBridge);
-    FUNC_MAP(rand, MAP_FUNC, defaultBridge);
-
-    //    void*          reserve0;
-    //    void*          reserve1;
-    //    mr_internal_table*       _mr_c_internal_table;
-    //    mr_c_port_table*         _mr_c_port_table;
-
-    FUNC_MAP(_mr_c_function_new, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(mr_printf, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_mem_get, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_mem_free, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_drawBitmap, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_getCharBitmap, MAP_FUNC, defaultBridge);
-    FUNC_MAP(g_mr_timerStart, MAP_FUNC, defaultBridge);
-    FUNC_MAP(g_mr_timerStop, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_getTime, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_getDatetime, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_getUserInfo, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_sleep, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(mr_plat, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_platEx, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(mr_ferrno, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_open, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_close, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_info, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_write, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_read, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_seek, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_getLen, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_remove, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_rename, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_mkDir, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_rmDir, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_findStart, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_findGetNext, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_findStop, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(mr_exit, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_startShake, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_stopShake, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_playSound, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_stopSound, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(mr_sendSms, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_call, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_getNetworkID, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_connectWAP, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(mr_menuCreate, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_menuSetItem, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_menuShow, MAP_FUNC, defaultBridge);
-    //    void*                    reserve;
-    FUNC_MAP(mr_menuRelease, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_menuRefresh, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_dialogCreate, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_dialogRelease, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_dialogRefresh, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_textCreate, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_textRelease, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_textRefresh, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_editCreate, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_editRelease, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_editGetText, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_winCreate, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_winRelease, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(mr_getScreenInfo, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(mr_initNetwork, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_closeNetwork, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_getHostByName, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_socket, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_connect, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_closeSocket, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_recv, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_recvfrom, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_send, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_sendto, MAP_FUNC, defaultBridge);
-
-    //    uint16**               mr_screenBuf;
-    //    int32*                 mr_screen_w;
-    //    int32*                 mr_screen_h;
-    //    int32*                 mr_screen_bit;
-    //    mr_bitmapSt*           mr_bitmap;
-    //    mr_tileSt*             mr_tile;
-    //    int16**                mr_map;
-    //    mr_soundSt*            mr_sound;
-    //    mr_spriteSt*           mr_sprite;
-
-    //    char*                  pack_filename;
-    //    char*                  start_filename;
-    //    char*                  old_pack_filename;
-    //    char*                  old_start_filename;
-
-    //    char**                 mr_ram_file;
-    //    int32*                 mr_ram_file_len;
-
-    //    int8*                  mr_soundOn;
-    //    int8*                  mr_shakeOn;
-
-    //    char**                 LG_mem_base;	//VM 内存基址
-    //    int32*                 LG_mem_len;	//VM 内存大小
-    //    char**                 LG_mem_end;	//VM 内存终止
-    //    int32*                 LG_mem_left;	//VM 剩余内存
-
-    //    uint8*                 mr_sms_cfg_buf;
-    FUNC_MAP(mr_md5_init, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_md5_append, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_md5_finish, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_mr_load_sms_cfg, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_mr_save_sms_cfg, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_DispUpEx, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(_DrawPoint, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_DrawBitmap, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_DrawBitmapEx, MAP_FUNC, defaultBridge);
-    FUNC_MAP(DrawRect, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_DrawText, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_BitmapCheck, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_mr_readFile, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_wstrlen, MAP_FUNC, defaultBridge);
-    FUNC_MAP(mr_registerAPP, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_DrawTextEx, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_mr_EffSetCon, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_mr_TestCom, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_mr_TestCom1, MAP_FUNC, defaultBridge);
-    FUNC_MAP(c2u, MAP_FUNC, defaultBridge);
-
-    FUNC_MAP(_mr_div, MAP_FUNC, defaultBridge);
-    FUNC_MAP(_mr_mod, MAP_FUNC, defaultBridge);
-
-    //    uint32*   LG_mem_min;
-    //    uint32*    LG_mem_top;
-    //    void*      mr_updcrc;    //1943
-    //    char*       start_fileparameter;//1945
-    //    void*       mr_sms_return_flag;//1949
-    //    void*       mr_sms_return_val;
-    //    void*		mr_unzip;   //1950
-    //    mrc_timerCB*  mr_exit_cb;//1951
-    //    int32*        mr_exit_cb_data;//1951
-    //    char*         mr_entry;//1952,V2000-V2002不支持
-    FUNC_MAP(mr_platDrawChar, MAP_FUNC, defaultBridge);
+void mr_table_bridge_init(uint32_t mrTableAddress) {
+    mrTableStartAddress = mrTableAddress;
+    mrTableEndAddress = mrTableStartAddress + (MR_TABLE_MAP_LEN - 1) * 4;
+    printf(
+        "mr_table_bridge mrTableStartAddress: 0x%X, "
+        "mrTableEndAddress: 0x%X\n",
+        mrTableStartAddress, mrTableEndAddress);
 }

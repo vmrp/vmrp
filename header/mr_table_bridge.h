@@ -13,13 +13,10 @@
 #include <unicorn/unicorn.h>
 #endif
 
-// ext文件0地址处的值
-#define MR_TABLE_ADDRESS 0x4750524d
-
-
 void mr_table_bridge_exec(uc_engine *uc, uint64_t address, uint32_t size,
                           void *user_data);
 
-void mr_table_bridge_init();
+uc_err mr_table_bridge_mapAddressTable(uc_engine *uc);
+void mr_table_bridge_init(uint32_t mrTableAddress);
 
 #endif
