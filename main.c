@@ -57,7 +57,8 @@ static void hook_block(uc_engine *uc, uint64_t address, uint32_t size,
 static void hook_code(uc_engine *uc, uint64_t address, uint32_t size,
                       void *user_data) {
     // printf(">>> PC:0x%" PRIX64 ", size:0x%x\n", address, size);
-    mr_table_bridge_exec(uc, MR_TABLE_ADDRESS + 0x10, size, user_data);
+    // mr_table_bridge_exec(uc, MR_TABLE_ADDRESS + 0x10, size, user_data);
+    mr_table_bridge_exec(uc, address, size, user_data);
     hook_code_debug(uc, address, size, user_data);
 }
 

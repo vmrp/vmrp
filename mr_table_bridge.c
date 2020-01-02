@@ -130,7 +130,9 @@ void mr_table_bridge_testMain() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
-#define MR_TABLE_OFFSET(member) offsetof(mr_table, member)
+// 因为mrp是在32位处理器上运行，所以指针是4字节，偏移量应该是以32位指针地址计算
+#define MR_TABLE_OFFSET(member) \
+    (offsetof(mr_table, member) / (sizeof(void *) / 4))
 
 // 最后一个字段的偏移
 #define MR_TABLE_MAP_LEN (MR_TABLE_OFFSET(mr_platDrawChar) + 1)
@@ -141,8 +143,14 @@ void mr_table_bridge_testMain() {
 typedef void (*mrTableBridgeCB)(char *name, uc_engine *uc, uint64_t address,
                                 uint32_t size, void *user_data);
 
+typedef enum mrTableBridgeMapType {
+    MAP_DATA,
+    MAP_FUNC,
+} mrTableBridgeMapType;
+
 typedef struct mrTableBridgeMap {
-    char *funcName;
+    char *name;
+    mrTableBridgeMapType type;
     mrTableBridgeCB fn;
 } mrTableBridgeMap;
 
@@ -157,27 +165,28 @@ void defaultBridge(char *name, uc_engine *uc, uint64_t address, uint32_t size,
 
 void mr_table_bridge_exec(uc_engine *uc, uint64_t address, uint32_t size,
                           void *user_data) {
-    if (address < MR_TABLE_START_ADDRESS && address > MR_TABLE_END_ADDRESS) {
+    if (address < MR_TABLE_START_ADDRESS || address > MR_TABLE_END_ADDRESS) {
         return;
     }
     mrTableBridgeMap *obj =
         &mr_table_bridge_map[address - MR_TABLE_START_ADDRESS];
-    if (obj->fn) {
-        obj->fn(obj->funcName, uc, address, size, user_data);
+    if (obj->type == MAP_FUNC && obj->fn) {
+        obj->fn(obj->name, uc, address, size, user_data);
         return;
     }
     printf("mr_table_bridge exec unregister function at 0x%" PRIX64 "\n",
            address);
 }
 
-#define FUNC_MAP(name, func)                                       \
-    {                                                              \
-        mrTableBridgeMap *obj;                                     \
-        int offset = MR_TABLE_OFFSET(name);                        \
-        obj = &mr_table_bridge_map[offset];                        \
-        obj->funcName = #name;                                     \
-        obj->fn = func;                                            \
-        printf("register %s() at 0x%X\n", #name, offset); \
+#define FUNC_MAP(field, mapType, func)                     \
+    {                                                      \
+        mrTableBridgeMap *obj;                             \
+        int offset = MR_TABLE_OFFSET(field);               \
+        obj = &mr_table_bridge_map[offset];                \
+        obj->name = #field;                                \
+        obj->type = mapType;                               \
+        obj->fn = func;                                    \
+        printf("register %s() at 0x%X\n", #field, offset); \
     }
 
 void mr_table_bridge_init() {
@@ -185,107 +194,108 @@ void mr_table_bridge_init() {
 
     memset(mr_table_bridge_map, 0, sizeof(mr_table_bridge_map));
 
-    FUNC_MAP(mr_malloc, defaultBridge);
-    FUNC_MAP(mr_free, defaultBridge);
-    FUNC_MAP(mr_realloc, defaultBridge);
+    FUNC_MAP(mr_malloc, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_free, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_realloc, MAP_FUNC, defaultBridge);
 
-    //    T_memcpy       memcpy;
-    //    T_memmove      memmove;
-    //    T_strcpy       strcpy;
-    //    T_strncpy      strncpy;
-    //    T_strcat       strcat;
-    //    T_strncat      strncat;
-    //    T_memcmp       memcmp;
-    //    T_strcmp       strcmp;
-    //    T_strncmp      strncmp;
-    //    T_strcoll      strcoll;
-    //    T_memchr       memchr;
-    //    T_memset       memset;
-    //    T_strlen       strlen;
-    //    T_strstr       strstr;
-    //    T_sprintf      sprintf;
-    //    T_atoi         atoi;
-    //    T_strtoul      strtoul;
-    //    T_rand       rand;
+    FUNC_MAP(memcpy, MAP_FUNC, defaultBridge);
+    FUNC_MAP(memmove, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strcpy, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strncpy, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strcat, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strncat, MAP_FUNC, defaultBridge);
+    FUNC_MAP(memcmp, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strcmp, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strncmp, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strcoll, MAP_FUNC, defaultBridge);
+    FUNC_MAP(memchr, MAP_FUNC, defaultBridge);
+    FUNC_MAP(memset, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strlen, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strstr, MAP_FUNC, defaultBridge);
+    FUNC_MAP(sprintf, MAP_FUNC, defaultBridge);
+    FUNC_MAP(atoi, MAP_FUNC, defaultBridge);
+    FUNC_MAP(strtoul, MAP_FUNC, defaultBridge);
+    FUNC_MAP(rand, MAP_FUNC, defaultBridge);
 
     //    void*          reserve0;
     //    void*          reserve1;
     //    mr_internal_table*       _mr_c_internal_table;
     //    mr_c_port_table*         _mr_c_port_table;
-    //    T__mr_c_function_new		_mr_c_function_new;
 
-    //    T_mr_printf              mr_printf;
-    //    T_mr_mem_get             mr_mem_get ;
-    //    T_mr_mem_free            mr_mem_free ;
-    //    T_mr_drawBitmap          mr_drawBitmap;
-    //    T_mr_getCharBitmap       mr_getCharBitmap;
-    //    T_mr_timerStart          g_mr_timerStart;
-    //    T_mr_timerStop           g_mr_timerStop;
-    //    T_mr_getTime             mr_getTime;
-    //    T_mr_getDatetime         mr_getDatetime;
-    //    T_mr_getUserInfo         mr_getUserInfo;
-    //    T_mr_sleep               mr_sleep;
+    FUNC_MAP(_mr_c_function_new, MAP_FUNC, defaultBridge);
 
-    //    T_mr_plat                mr_plat;
-    //    T_mr_platEx              mr_platEx;
+    FUNC_MAP(mr_printf, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_mem_get, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_mem_free, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_drawBitmap, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_getCharBitmap, MAP_FUNC, defaultBridge);
+    FUNC_MAP(g_mr_timerStart, MAP_FUNC, defaultBridge);
+    FUNC_MAP(g_mr_timerStop, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_getTime, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_getDatetime, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_getUserInfo, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_sleep, MAP_FUNC, defaultBridge);
 
-    //    T_mr_ferrno              mr_ferrno;
-    //    T_mr_open                mr_open;
-    //    T_mr_close               mr_close;
-    //    T_mr_info                mr_info;
-    //    T_mr_write               mr_write;
-    //    T_mr_read                mr_read;
-    //    T_mr_seek                mr_seek;
-    //    T_mr_getLen              mr_getLen;
-    //    T_mr_remove              mr_remove;
-    //    T_mr_rename              mr_rename;
-    //    T_mr_mkDir               mr_mkDir;
-    //    T_mr_rmDir               mr_rmDir;
-    //    T_mr_findStart           mr_findStart;
-    //    T_mr_findGetNext         mr_findGetNext;
-    //    T_mr_findStop            mr_findStop;
+    FUNC_MAP(mr_plat, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_platEx, MAP_FUNC, defaultBridge);
 
-    //    T_mr_exit                mr_exit;
-    //    T_mr_startShake          mr_startShake;
-    //    T_mr_stopShake           mr_stopShake;
-    //    T_mr_playSound           mr_playSound;
-    //    T_mr_stopSound           mr_stopSound ;
+    FUNC_MAP(mr_ferrno, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_open, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_close, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_info, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_write, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_read, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_seek, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_getLen, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_remove, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_rename, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_mkDir, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_rmDir, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_findStart, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_findGetNext, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_findStop, MAP_FUNC, defaultBridge);
 
-    //    T_mr_sendSms             mr_sendSms;
-    //    T_mr_call                mr_call;
-    //    T_mr_getNetworkID        mr_getNetworkID;
-    //    T_mr_connectWAP          mr_connectWAP;
+    FUNC_MAP(mr_exit, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_startShake, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_stopShake, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_playSound, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_stopSound, MAP_FUNC, defaultBridge);
 
-    //    T_mr_menuCreate          mr_menuCreate;
-    //    T_mr_menuSetItem         mr_menuSetItem;
-    //    T_mr_menuShow            mr_menuShow;
+    FUNC_MAP(mr_sendSms, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_call, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_getNetworkID, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_connectWAP, MAP_FUNC, defaultBridge);
+
+    FUNC_MAP(mr_menuCreate, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_menuSetItem, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_menuShow, MAP_FUNC, defaultBridge);
     //    void*                    reserve;
-    //    T_mr_menuRelease         mr_menuRelease;
-    //    T_mr_menuRefresh         mr_menuRefresh;
-    //    T_mr_dialogCreate        mr_dialogCreate;
-    //    T_mr_dialogRelease       mr_dialogRelease;
-    //    T_mr_dialogRefresh       mr_dialogRefresh;
-    //    T_mr_textCreate          mr_textCreate;
-    //    T_mr_textRelease         mr_textRelease;
-    //    T_mr_textRefresh         mr_textRefresh;
-    //    T_mr_editCreate          mr_editCreate;
-    //    T_mr_editRelease         mr_editRelease;
-    //    T_mr_editGetText         mr_editGetText;
-    //    T_mr_winCreate           mr_winCreate;
-    //    T_mr_winRelease          mr_winRelease;
+    FUNC_MAP(mr_menuRelease, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_menuRefresh, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_dialogCreate, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_dialogRelease, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_dialogRefresh, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_textCreate, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_textRelease, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_textRefresh, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_editCreate, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_editRelease, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_editGetText, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_winCreate, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_winRelease, MAP_FUNC, defaultBridge);
 
-    //    T_mr_getScreenInfo       mr_getScreenInfo;
+    FUNC_MAP(mr_getScreenInfo, MAP_FUNC, defaultBridge);
 
-    //    T_mr_initNetwork         mr_initNetwork;
-    //    T_mr_closeNetwork        mr_closeNetwork;
-    //    T_mr_getHostByName       mr_getHostByName;
-    //    T_mr_socket              mr_socket;
-    //    T_mr_connect             mr_connect;
-    //    T_mr_closeSocket         mr_closeSocket;
-    //    T_mr_recv                mr_recv;
-    //    T_mr_recvfrom            mr_recvfrom;
-    //    T_mr_send                mr_send;
-    //    T_mr_sendto              mr_sendto;
+    FUNC_MAP(mr_initNetwork, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_closeNetwork, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_getHostByName, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_socket, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_connect, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_closeSocket, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_recv, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_recvfrom, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_send, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_sendto, MAP_FUNC, defaultBridge);
 
     //    uint16**               mr_screenBuf;
     //    int32*                 mr_screen_w;
@@ -314,30 +324,30 @@ void mr_table_bridge_init() {
     //    int32*                 LG_mem_left;	//VM 剩余内存
 
     //    uint8*                 mr_sms_cfg_buf;
-    //    T_mr_md5_init          mr_md5_init;
-    //    T_mr_md5_append        mr_md5_append;
-    //    T_mr_md5_finish        mr_md5_finish;
-    //    T__mr_load_sms_cfg     _mr_load_sms_cfg;
-    //    T__mr_save_sms_cfg     _mr_save_sms_cfg;
-    //    T__DispUpEx            _DispUpEx;
+    FUNC_MAP(mr_md5_init, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_md5_append, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_md5_finish, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_mr_load_sms_cfg, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_mr_save_sms_cfg, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_DispUpEx, MAP_FUNC, defaultBridge);
 
-    //    T__DrawPoint           _DrawPoint;
-    //    T__DrawBitmap          _DrawBitmap;
-    //    T__DrawBitmapEx        _DrawBitmapEx;
-    //    T_DrawRect             DrawRect;
-    //    T__DrawText            _DrawText;
-    //    T__BitmapCheck         _BitmapCheck;
-    //    T__mr_readFile         _mr_readFile;
-    //    T_mr_wstrlen           mr_wstrlen;
-    //    T_mr_registerAPP       mr_registerAPP;
-    //    T__DrawTextEx          _DrawTextEx;  //1936
-    //    T__mr_EffSetCon        _mr_EffSetCon;
-    //    T__mr_TestCom          _mr_TestCom;
-    //    T__mr_TestCom1         _mr_TestCom1;//1938
-    //    T_c2u                  c2u;  //1939
+    FUNC_MAP(_DrawPoint, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_DrawBitmap, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_DrawBitmapEx, MAP_FUNC, defaultBridge);
+    FUNC_MAP(DrawRect, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_DrawText, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_BitmapCheck, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_mr_readFile, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_wstrlen, MAP_FUNC, defaultBridge);
+    FUNC_MAP(mr_registerAPP, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_DrawTextEx, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_mr_EffSetCon, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_mr_TestCom, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_mr_TestCom1, MAP_FUNC, defaultBridge);
+    FUNC_MAP(c2u, MAP_FUNC, defaultBridge);
 
-    //    T__mr_div _mr_div;           //1941
-    //    T__mr_mod _mr_mod;
+    FUNC_MAP(_mr_div, MAP_FUNC, defaultBridge);
+    FUNC_MAP(_mr_mod, MAP_FUNC, defaultBridge);
 
     //    uint32*   LG_mem_min;
     //    uint32*    LG_mem_top;
@@ -349,5 +359,5 @@ void mr_table_bridge_init() {
     //    mrc_timerCB*  mr_exit_cb;//1951
     //    int32*        mr_exit_cb_data;//1951
     //    char*         mr_entry;//1952,V2000-V2002不支持
-    //    T_mr_platDrawChar   mr_platDrawChar; //1961
+    FUNC_MAP(mr_platDrawChar, MAP_FUNC, defaultBridge);
 }
