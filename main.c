@@ -9,10 +9,10 @@
 #include <unicorn/unicorn.h>
 #endif
 
+#include "./header/bridge.h"
 #include "./header/debug.h"
 #include "./header/fileLib.h"
 #include "./header/mr_helper.h"
-#include "./header/mr_table_bridge.h"
 #include "./header/utils.h"
 
 // #define MRPFILE "mr.mrp"
@@ -48,9 +48,13 @@ int extractFile() {
 #define STACK_ADDRESS CODE_ADDRESS + CODE_SIZE  // 栈开始地址
 #define STACK_SIZE 1024 * 1024 * 1              // 栈大小
 
-// ext文件0地址处的值
-// #define MR_TABLE_ADDRESS 0x4750524d // 无法4k对齐导致内存映射出错
+// ext文件0x0地址处的值(mr_table指针)
 #define MR_TABLE_ADDRESS STACK_ADDRESS + STACK_SIZE
+#define MR_TABLE_SIZE 4096  // 最小值，实际完全足够，为了4k对齐
+
+// ext文件0x4地址处的值(cfunction_table指针)
+#define CFUNCTION_TABLE_ADDRESS MR_TABLE_ADDRESS + MR_TABLE_SIZE
+#define CFUNCTION_TABLE_SIZE 4096  // 最小值，实际完全足够，为了4k对齐
 
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size,
                        void *user_data) {
@@ -88,6 +92,38 @@ static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address,
     return false;
 }
 
+static bool mem_init(uc_engine *uc) {
+    uc_err err;
+    err = uc_mem_map(uc, CODE_ADDRESS, CODE_SIZE, UC_PROT_ALL);
+    if (err) {
+        printf("Failed mem map CODE_ADDRESS: %u (%s)\n", err, uc_strerror(err));
+        return false;
+    }
+
+    err =
+        uc_mem_map(uc, STACK_ADDRESS, STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    if (err) {
+        printf("Failed mem map STACK_ADDRESS: %u (%s)\n", err,
+               uc_strerror(err));
+        return false;
+    }
+
+    err = mr_table_bridge_init(uc, MR_TABLE_ADDRESS);
+    if (err) {
+        printf("Failed mem map MR_TABLE_ADDRESS: %u (%s)\n", err,
+               uc_strerror(err));
+        return false;
+    }
+
+    err = cfunction_table_bridge_init(uc, CFUNCTION_TABLE_ADDRESS);
+    if (err) {
+        printf("Failed mem map CFUNCTION_TABLE_ADDRESS: %u (%s)\n", err,
+               uc_strerror(err));
+        return false;
+    }
+    return true;
+}
+
 static void emu(BOOL isThumb) {
     uc_engine *uc;
     uc_err err;
@@ -106,9 +142,10 @@ static void emu(BOOL isThumb) {
                uc_strerror(err));
         return;
     }
-    uc_mem_map(uc, CODE_ADDRESS, CODE_SIZE, UC_PROT_ALL);
-    uc_mem_map(uc, STACK_ADDRESS, STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE);
-    mr_table_bridge_init(uc, MR_TABLE_ADDRESS);
+    if (!mem_init(uc)) {
+        printf("mem_init() fail\n");
+        goto end;
+    }
     {
         char *filename = "cfunction.ext";
         uint32 value, length;

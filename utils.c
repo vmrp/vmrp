@@ -1,4 +1,5 @@
 #include "./header/utils.h"
+#include "./header/rbtree.h"
 
 char *memTypeStr(uc_mem_type type) {
     // clang-format off
@@ -57,4 +58,127 @@ void dumpMemStr(void *ptr, size_t len) {
         }
         p++;
     }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+typedef struct uIntMap {
+    struct rb_node node;
+    unsigned int key;
+    void *data;
+} uIntMap;
+
+static struct uIntMap *uIntMap_search(struct rb_root *root, unsigned int key) {
+    struct rb_node *n = root->rb_node;
+    uIntMap *obj;
+    int cmp;
+
+    while (n) {
+        obj = rb_entry(n, uIntMap, node);
+
+        cmp = key - obj->key;
+        if (cmp < 0) {
+            n = n->rb_left;
+        } else if (cmp > 0) {
+            n = n->rb_right;
+        } else {
+            return obj;
+        }
+    }
+    return NULL;
+}
+
+static int uIntMap_insert(struct rb_root *root, uIntMap *obj) {
+    struct rb_node **p = &(root->rb_node);
+    struct rb_node *parent = NULL;
+    uIntMap *cur;
+    int cmp;
+
+    while (*p) {
+        parent = *p;
+        cur = rb_entry(parent, uIntMap, node);
+        cmp = obj->key - cur->key;
+        if (cmp < 0) {
+            p = &(*p)->rb_left;
+        } else if (cmp > 0) {
+            p = &(*p)->rb_right;
+        } else {
+            return -1;
+        }
+    }
+    rb_link_node(&obj->node, parent, p);
+    rb_insert_color(&obj->node, root);
+    return 0;
+}
+
+static uIntMap *uIntMap_delete(struct rb_root *root, unsigned int key) {
+    uIntMap *obj = uIntMap_search(root, key);
+    if (!obj) {
+        return NULL;
+    }
+    rb_erase(&obj->node, root);
+    return obj;
+}
+
+static void testInsert(struct rb_root *root, unsigned int key, void *data) {
+    uIntMap *obj;
+    int ret;
+
+    obj = malloc(sizeof(uIntMap));
+    obj->key = key;
+    obj->data = data;
+    ret = uIntMap_insert(root, obj);
+    if (ret == -1) {
+        printf("insert failed %d exists.\n", key);
+        return;
+    }
+    printf("insert %d success.\n", key);
+}
+
+static void testSearch(struct rb_root *root, unsigned int key) {
+    uIntMap *obj = uIntMap_search(root, key);
+    if (obj == NULL) {
+        printf("search: not found %d\n", key);
+    } else {
+        printf("search: %d=%s\n", key, (char *)obj->data);
+    }
+}
+
+static void printAll(struct rb_root *root) {
+    for (struct rb_node *p = rb_first(root); p; p = rb_next(p)) {
+        uIntMap *obj = rb_entry(p, uIntMap, node);
+        printf("iterator: %d  \t  %s\n", obj->key, (char *)obj->data);
+    }
+}
+
+static void testDelete(struct rb_root *root, unsigned int key) {
+    uIntMap *obj = uIntMap_delete(root, key);
+    if (obj != NULL) {
+        printf("delete %d %s\n", obj->key, (char *)obj->data);
+        free(obj);
+    } else {
+        printf("delete %d not found\n", key);
+    }
+}
+
+void mr_table_bridge_testMain() {
+    struct rb_root root = RB_ROOT;
+
+    testInsert(&root, 100, "hell");
+    testInsert(&root, 0, "world");
+    testInsert(&root, 0, "world2");
+    testInsert(&root, 990, "test");
+
+    printAll(&root);
+
+    testSearch(&root, 990);
+    testSearch(&root, 22);
+
+    testDelete(&root, 990);
+    testDelete(&root, 990);
+    testSearch(&root, 990);
+
+    printAll(&root);
+    testInsert(&root, 990, "test2");
+    printAll(&root);
 }

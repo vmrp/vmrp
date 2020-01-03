@@ -3,20 +3,19 @@
 
 #include "mr_helper.h"
 
-
 #define SCNW 240
 #define SCNH 320
 #define SCNBIT 16
 
-#define SCNBUF_COUNT	2
+#define SCNBUF_COUNT 2
 
-#define BITMAPMAX  30
-#define SPRITEMAX  10
-#define TILEMAX    3
-#define SOUNDMAX   5
+#define BITMAPMAX 30
+#define SPRITEMAX 10
+#define TILEMAX 3
+#define SOUNDMAX 5
 
-#define DSM_MEM_SIZE   (2*1024*1024)	//DSM内存大小20M
-#define DSM_MEM_SIZE_MIN   (650*1024)	//DSM内存大小20M
+#define DSM_MEM_SIZE (2 * 1024 * 1024)  // DSM内存大小20M
+#define DSM_MEM_SIZE_MIN (650 * 1024)   // DSM内存大小20M
 
 #define START_FILE_NAME "cfunction.ext"
 
