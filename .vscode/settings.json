@@ -22,6 +22,7 @@
         "engine.h": "c",
         "utils.h": "c",
         "stddef.h": "c",
-        "rbtree.h": "c"
+        "rbtree.h": "c",
+        "mr_table_bridge.h": "c"
     }
 }
