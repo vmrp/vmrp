@@ -62,8 +62,7 @@ static void hook_code(uc_engine *uc, uint64_t address, uint32_t size,
                       void *user_data) {
     // printf(">>> PC:0x%" PRIX64 ", size:0x%x\n", address, size);
     // mr_table_bridge_exec(uc, MR_TABLE_ADDRESS + 0x10, size, user_data);
-    mr_table_bridge_exec(uc, address, size, user_data);
-    hook_code_debug(uc, address, size, user_data);
+    hook_code_debug(uc, address);
 }
 
 static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address,
@@ -78,6 +77,14 @@ static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address,
     printf(">>> Tracing mem_invalid mem_type:%s at 0x%" PRIx64
            ", size:0x%x, value:0x%" PRIx64 "\n",
            memTypeStr(type), address, size, value);
+
+    hook_code_debug(uc, address);
+
+    if (type == UC_MEM_FETCH_PROT) {
+        if (mr_table_bridge_exec(uc, type, address, size, value, user_data)) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -101,7 +108,7 @@ static void emu(BOOL isThumb) {
     }
     uc_mem_map(uc, CODE_ADDRESS, CODE_SIZE, UC_PROT_ALL);
     uc_mem_map(uc, STACK_ADDRESS, STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE);
-    mr_table_bridge_mapAddressTable(uc);
+    mr_table_bridge_init(uc, MR_TABLE_ADDRESS);
     {
         char *filename = "cfunction.ext";
         uint32 value, length;
@@ -160,7 +167,6 @@ int main() {
     // extractFile();
     // mr_start_dsm(MRPFILE);
 
-    mr_table_bridge_init(MR_TABLE_ADDRESS);
     // printf("thumb:\n");
     // emu(TRUE);
     printf("arm:\n");

@@ -137,11 +137,13 @@ void mr_table_bridge_testMain() {
 // 字段的索引位置
 #define MR_TABLE_INDEX(member) (MR_TABLE_OFFSET(member) / 4)
 
-typedef void (*mrTableBridgeCB)(char *name, uc_engine *uc, uint64_t address,
-                                uint32_t size, void *user_data);
+typedef bool (*mrTableBridgeCB)(char *name, uc_engine *uc, uc_mem_type type,
+                                uint64_t address, int size, int64_t value,
+                                void *user_data);
 
-void defaultBridge(char *name, uc_engine *uc, uint64_t address, uint32_t size,
-                   void *user_data);
+bool defaultBridge(char *name, uc_engine *uc, uc_mem_type type,
+                   uint64_t address, int size, int64_t value, void *user_data);
+
 typedef enum mrTableBridgeMapType {
     MAP_DATA,
     MAP_FUNC,
@@ -329,34 +331,46 @@ static mrTableBridgeMap funcMap[MR_TABLE_MAP_LEN] = {
 
 static uint32_t mrTableStartAddress, mrTableEndAddress;
 
-void defaultBridge(char *name, uc_engine *uc, uint64_t address, uint32_t size,
-                   void *user_data) {
-    printf("===========>> %s() Not yet implemented function !!! \n", name);
+bool defaultBridge(char *name, uc_engine *uc, uc_mem_type type,
+                   uint64_t address, int size, int64_t value, void *user_data) {
+    printf(">> mr_table_bridge: %s() Not yet implemented function !!! \n",
+           name);
     dumpREG(uc);
+    return false;
 }
 
-void mr_table_bridge_exec(uc_engine *uc, uint64_t address, uint32_t size,
-                          void *user_data) {
+void mr_table_bridge(uc_engine *uc, uint64_t address, uint32_t size,
+                     void *user_data) {}
+
+bool mr_table_bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address,
+                          int size, int64_t value, void *user_data) {
     if (address < mrTableStartAddress || address > mrTableEndAddress) {
-        return;
+        return false;
     }
-    mrTableBridgeMap *obj = &funcMap[address - mrTableStartAddress];
+    int i = (address - mrTableStartAddress) / 4;
+    mrTableBridgeMap *obj = &funcMap[i];
     if (obj->type == MAP_FUNC && obj->fn) {
-        obj->fn(obj->name, uc, address, size, user_data);
-        return;
+        return obj->fn(obj->name, uc, type, address, size, value, user_data);
     }
-    printf("mr_table_bridge_exec(): unregister function at 0x%" PRIX64 "\n",
+    printf(">> mr_table_bridge: unregister function at 0x%" PRIX64 "\n",
            address);
+    return false;
 }
 
-// 字节对齐
-#define ALIGN(x, align) (((x) + ((align)-1)) & ~((align)-1))
+uc_err mr_table_bridge_init(uc_engine *uc, uint32_t mrTableAddress) {
+    mrTableStartAddress = mrTableAddress;
+    mrTableEndAddress = mrTableStartAddress + (MR_TABLE_MAP_LEN - 1) * 4;
+    printf(
+        ">> mr_table_bridge: mrTableStartAddress: 0x%X, "
+        "mrTableEndAddress: 0x%X\n",
+        mrTableStartAddress, mrTableEndAddress);
 
-uc_err mr_table_bridge_mapAddressTable(uc_engine *uc) {
     uint32_t addressTable[MR_TABLE_MAP_LEN];
     for (int i = 0; i < MR_TABLE_MAP_LEN; i++) {
-        // 因为mr_table全部都是指针，所以可以计算出所有偏移量
+        // 原始偏移法，因为mr_table全部都是指针，所以可以计算出所有偏移量
         addressTable[i] = mrTableStartAddress + i * 4;
+        // 索引法
+        // addressTable[i] = mrTableStartAddress + i;
     }
     int size = ALIGN(sizeof(addressTable), 4096);
     uc_err err = uc_mem_map(uc, mrTableStartAddress, size, UC_PROT_READ);
@@ -378,13 +392,4 @@ uc_err mr_table_bridge_mapAddressTable(uc_engine *uc) {
             err, uc_strerror(err));
     }
     return err;
-}
-
-void mr_table_bridge_init(uint32_t mrTableAddress) {
-    mrTableStartAddress = mrTableAddress;
-    mrTableEndAddress = mrTableStartAddress + (MR_TABLE_MAP_LEN - 1) * 4;
-    printf(
-        "mr_table_bridge mrTableStartAddress: 0x%X, "
-        "mrTableEndAddress: 0x%X\n",
-        mrTableStartAddress, mrTableEndAddress);
 }

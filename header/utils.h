@@ -24,6 +24,8 @@
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
+// 字节对齐
+#define ALIGN(x, align) (((x) + ((align)-1)) & ~((align)-1))
 
 char *memTypeStr(uc_mem_type type);
 void dumpREG(uc_engine *uc);

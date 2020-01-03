@@ -43,15 +43,14 @@ static uint32_t toUint32(const char *str) {
     return v;
 }
 
-void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size,
-                     void *user_data) {
+void hook_code_debug(uc_engine *uc, uint64_t address) {
     char str[30];
     char *ptr;
     int eqPos;
     uc_err err;
 
     do {
-        printf("debug[PC:0x%" PRIX64 ", size:0x%x] > ", address, size);
+        printf("debug[PC:0x%" PRIX64 "] > ", address);
         fgets(str, sizeof(str), stdin);
 
         eqPos = 0;  // 等号的位置

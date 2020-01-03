@@ -13,10 +13,8 @@
 #include <unicorn/unicorn.h>
 #endif
 
-void mr_table_bridge_exec(uc_engine *uc, uint64_t address, uint32_t size,
-                          void *user_data);
-
-uc_err mr_table_bridge_mapAddressTable(uc_engine *uc);
-void mr_table_bridge_init(uint32_t mrTableAddress);
+bool mr_table_bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address,
+                          int size, int64_t value, void *user_data);
+uc_err mr_table_bridge_init(uc_engine *uc, uint32_t mrTableAddress);
 
 #endif
