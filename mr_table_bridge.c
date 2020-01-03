@@ -28,8 +28,6 @@ static bool _mr_c_function_new(char *name, uc_engine *uc, uc_mem_type type,
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
-// 根据最后一个字段的位置得到
-#define MR_TABLE_MAP_LEN (MR_STRUCT_INDEX_OF(mr_table, mr_platDrawChar) + 1)
 
 #define BRIDGE_FUNC_MAP(field, mapType, func)                        \
     {                                                                \
@@ -37,7 +35,7 @@ static bool _mr_c_function_new(char *name, uc_engine *uc, uc_mem_type type,
         .type = mapType, .fn = func                                  \
     }
 
-static BridgeMap funcMap[MR_TABLE_MAP_LEN] = {
+static BridgeMap funcMap[] = {
     BRIDGE_FUNC_MAP(mr_malloc, MAP_FUNC, NULL),
     BRIDGE_FUNC_MAP(mr_free, MAP_FUNC, NULL),
     BRIDGE_FUNC_MAP(mr_realloc, MAP_FUNC, NULL),
@@ -205,14 +203,14 @@ static BridgeMap funcMap[MR_TABLE_MAP_LEN] = {
     BRIDGE_FUNC_MAP(mr_platDrawChar, MAP_FUNC, NULL),
 };
 
-static uint32_t mrTableStartAddress, mrTableEndAddress;
+static uint32_t startAddress, endAddress;
 
 bool mr_table_bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address,
                           int size, int64_t value, void *user_data) {
-    if (address < mrTableStartAddress || address > mrTableEndAddress) {
+    if (address < startAddress || address > endAddress) {
         return false;
     }
-    int i = (address - mrTableStartAddress) / 4;
+    int i = (address - startAddress) / 4;
     BridgeMap *obj = &funcMap[i];
     if (obj->type == MAP_FUNC) {
         if (obj->fn == NULL) {
@@ -226,23 +224,23 @@ bool mr_table_bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address,
 }
 
 uc_err mr_table_bridge_init(uc_engine *uc, uint32_t address) {
-    mrTableStartAddress = address;
+    startAddress = address;
 
     // 地址表的作用是当ext尝试跳转到表中的地址执行时拦截下来
-    uint32_t addressTable[MR_TABLE_MAP_LEN];
-    for (int i = 0; i < MR_TABLE_MAP_LEN; i++) {
-        addressTable[i] = mrTableStartAddress + funcMap[i].pos;
+    uint32_t addressTable[countof(funcMap)];
+    for (int i = 0; i < countof(funcMap); i++) {
+        addressTable[i] = startAddress + funcMap[i].pos;
     }
-    mrTableEndAddress = addressTable[MR_TABLE_MAP_LEN - 1];
+    endAddress = addressTable[countof(funcMap) - 1];
 
-    printf(TAG "mrTableStartAddress: 0x%X, mrTableEndAddress: 0x%X\n",
-           mrTableStartAddress, mrTableEndAddress);
+    printf(TAG "startAddress: 0x%X, endAddress: 0x%X\n",
+           startAddress, endAddress);
 
     int size = ALIGN(sizeof(addressTable), 4096);
-    uc_err err = uc_mem_map(uc, mrTableStartAddress, size, UC_PROT_READ);
+    uc_err err = uc_mem_map(uc, startAddress, size, UC_PROT_READ);
     if (err) {
         return err;
     }
-    return uc_mem_write(uc, mrTableStartAddress, addressTable,
+    return uc_mem_write(uc, startAddress, addressTable,
                         sizeof(addressTable));
 }

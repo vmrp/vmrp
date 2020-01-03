@@ -14,22 +14,18 @@ extern mr_c_function_st cfunction_table;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-// 根据最后一个字段的位置得到
-#define CFUNCTION_TABLE_MAP_LEN \
-    (MR_STRUCT_INDEX_OF(mr_c_function_st, stack) + 1)
-
 #define BRIDGE_FUNC_MAP(field, mapType, func)                                \
     {                                                                        \
         .name = #field, .pos = MR_STRUCT_OFFSET_OF(mr_c_function_st, field), \
         .type = mapType, .fn = func                                          \
     }
 
-static BridgeMap funcMap[CFUNCTION_TABLE_MAP_LEN] = {
+static BridgeMap funcMap[] = {
     BRIDGE_FUNC_MAP(start_of_ER_RW, MAP_DATA, NULL),
     BRIDGE_FUNC_MAP(ER_RW_Length, MAP_DATA, NULL),
     BRIDGE_FUNC_MAP(ext_type, MAP_DATA, NULL),
     BRIDGE_FUNC_MAP(mrc_extChunk, MAP_DATA, NULL),
-    // BRIDGE_FUNC_MAP(stack, MAP_DATA, NULL),
+    BRIDGE_FUNC_MAP(stack, MAP_DATA, NULL),
 };
 
 static uint32_t startAddress, endAddress;
@@ -57,21 +53,11 @@ uc_err cfunction_table_bridge_init(uc_engine *uc, uint32_t address) {
     startAddress = address;
 
     // 地址表的作用是当ext尝试跳转到表中的地址执行时拦截下来
-    uint32_t addressTable[CFUNCTION_TABLE_MAP_LEN];
-    for (int i = 0; i < CFUNCTION_TABLE_MAP_LEN; i++) {
+    uint32_t addressTable[countof(funcMap)];
+    for (int i = 0; i < countof(funcMap); i++) {
         addressTable[i] = startAddress + funcMap[i].pos;
     }
-    endAddress = addressTable[CFUNCTION_TABLE_MAP_LEN - 1];
-
-    printf(TAG "CFUNCTION_TABLE_MAP_LEN:%I64d\n", CFUNCTION_TABLE_MAP_LEN);
-
-#undef MR_STRUCT_OFFSET_OF
-#define MR_STRUCT_OFFSET_OF offsetof
-    printf(TAG "CFUNCTION_TABLE:%I64d\n", MR_STRUCT_OFFSET_OF(mr_c_function_st, start_of_ER_RW));
-    printf(TAG "CFUNCTION_TABLE:%I64d\n", MR_STRUCT_OFFSET_OF(mr_c_function_st, ER_RW_Length));
-    printf(TAG "CFUNCTION_TABLE:%I64d\n", MR_STRUCT_OFFSET_OF(mr_c_function_st, ext_type));
-    printf(TAG "CFUNCTION_TABLE:%I64d\n", MR_STRUCT_OFFSET_OF(mr_c_function_st, mrc_extChunk));
-    printf(TAG "CFUNCTION_TABLE:%I64d\n", MR_STRUCT_OFFSET_OF(mr_c_function_st, stack));
+    endAddress = addressTable[countof(funcMap) - 1];
 
     printf(TAG "startAddress: 0x%X, endAddress: 0x%X\n", startAddress,
            endAddress);
