@@ -18,7 +18,7 @@ static void getEqLeftStr(char *str, int eqPos, char *outBuf, int maxLen) {
 }
 
 /*
-转换一个全小写的十六进制字符串到32位整数
+转换一个全小写的十六进制字符串到32位整数，原理是从字符串末尾开始转换
 0x4750524d1a  超过32位长度将只转换低32位
 */
 static uint32_t toUint32(const char *str) {
@@ -43,14 +43,20 @@ static uint32_t toUint32(const char *str) {
     return v;
 }
 
+static uint32_t brkAddress = 0;
+
 void hook_code_debug(uc_engine *uc, uint64_t address) {
     char str[30];
     char *ptr;
     int eqPos;
     uc_err err;
 
-    do {
-        printf("debug[PC:0x%" PRIX64 "] > ", address);
+    while (brkAddress == 0 || brkAddress == address) {
+        brkAddress = 0;
+
+        uint32_t pc;
+        uc_reg_read(uc, UC_ARM_REG_PC, &pc);
+        printf("debug[PC:0x%X, mem:0x%" PRIX64 "] > ", pc, address);
         fgets(str, sizeof(str), stdin);
 
         eqPos = 0;  // 等号的位置
@@ -72,6 +78,9 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
             break;
         } else if (strcmp("reg", str) == 0) {  // 打印所有寄存器内容
             dumpREG(uc);
+        } else if (strncmp("brk", str, 3) == 0) {  // 执行到断点地址
+            brkAddress = toUint32(str);
+            printf("-------------> brk 0x%X\n", brkAddress);
 
         } else if (str[0] == '0' && str[1] == 'x') {  // 读写内存
             if (eqPos > 0) {
@@ -149,12 +158,13 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
         } else {
             // clang-format off
             printf(
-                "    reg                   - print all regs\n"
+                "    reg                    - print all regs\n"
+                "    brk 0x80030            - run code to 0x80030\n"
                 "    SP=0x0027FFF0          - set SP register to 0x0027FFF0\n"
                 "    0x00080008             - print 0x00080008 memory content\n"
                 "    0x00080008=0xFFFFFFFF  - set 0x00080008 memory content to 0xFFFFFFFF\n"
             );
             // clang-format on
         }
-    } while (1);
+    }  // while
 }
