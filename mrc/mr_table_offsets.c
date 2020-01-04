@@ -196,7 +196,7 @@ typedef struct {
 
 typedef enum BridgeMapType {
     MAP_DATA,  // 数据字段
-    MAP_FUNC,  // 函数字段
+    MAP_FUNC  // 函数字段
 } BridgeMapType;
 
 typedef struct StructOffset {
@@ -206,186 +206,186 @@ typedef struct StructOffset {
     BridgeMapType type;
 } StructOffset;
 
-#define GET_POS(field, mapType, func) \
+#define GET_POS(field, mapType) \
     { #field, offsetof(mr_table, field), mapType }
 
+StructOffset offsets[] = {
+    GET_POS(mr_malloc, MAP_FUNC),
+    GET_POS(mr_free, MAP_FUNC),
+    GET_POS(mr_realloc, MAP_FUNC),
+
+    GET_POS(memcpy, MAP_FUNC),
+    GET_POS(memmove, MAP_FUNC),
+    GET_POS(strcpy, MAP_FUNC),
+    GET_POS(strncpy, MAP_FUNC),
+    GET_POS(strcat, MAP_FUNC),
+    GET_POS(strncat, MAP_FUNC),
+    GET_POS(memcmp, MAP_FUNC),
+    GET_POS(strcmp, MAP_FUNC),
+    GET_POS(strncmp, MAP_FUNC),
+    GET_POS(strcoll, MAP_FUNC),
+    GET_POS(memchr, MAP_FUNC),
+    GET_POS(memset, MAP_FUNC),
+    GET_POS(strlen, MAP_FUNC),
+    GET_POS(strstr, MAP_FUNC),
+    GET_POS(sprintf, MAP_FUNC),
+    GET_POS(atoi, MAP_FUNC),
+    GET_POS(strtoul, MAP_FUNC),
+    GET_POS(rand, MAP_FUNC),
+
+    GET_POS(reserve0, MAP_DATA),
+    GET_POS(reserve1, MAP_DATA),
+    GET_POS(_mr_c_internal_table, MAP_DATA),
+    GET_POS(_mr_c_port_table, MAP_DATA),
+    GET_POS(_mr_c_function_new, MAP_FUNC),
+
+    GET_POS(mr_printf, MAP_FUNC),
+    GET_POS(mr_mem_get, MAP_FUNC),
+    GET_POS(mr_mem_free, MAP_FUNC),
+    GET_POS(mr_drawBitmap, MAP_FUNC),
+    GET_POS(mr_getCharBitmap, MAP_FUNC),
+    GET_POS(g_mr_timerStart, MAP_FUNC),
+    GET_POS(g_mr_timerStop, MAP_FUNC),
+    GET_POS(mr_getTime, MAP_FUNC),
+    GET_POS(mr_getDatetime, MAP_FUNC),
+    GET_POS(mr_getUserInfo, MAP_FUNC),
+    GET_POS(mr_sleep, MAP_FUNC),
+
+    GET_POS(mr_plat, MAP_FUNC),
+    GET_POS(mr_platEx, MAP_FUNC),
+
+    GET_POS(mr_ferrno, MAP_FUNC),
+    GET_POS(mr_open, MAP_FUNC),
+    GET_POS(mr_close, MAP_FUNC),
+    GET_POS(mr_info, MAP_FUNC),
+    GET_POS(mr_write, MAP_FUNC),
+    GET_POS(mr_read, MAP_FUNC),
+    GET_POS(mr_seek, MAP_FUNC),
+    GET_POS(mr_getLen, MAP_FUNC),
+    GET_POS(mr_remove, MAP_FUNC),
+    GET_POS(mr_rename, MAP_FUNC),
+    GET_POS(mr_mkDir, MAP_FUNC),
+    GET_POS(mr_rmDir, MAP_FUNC),
+    GET_POS(mr_findStart, MAP_FUNC),
+    GET_POS(mr_findGetNext, MAP_FUNC),
+    GET_POS(mr_findStop, MAP_FUNC),
+
+    GET_POS(mr_exit, MAP_FUNC),
+    GET_POS(mr_startShake, MAP_FUNC),
+    GET_POS(mr_stopShake, MAP_FUNC),
+    GET_POS(mr_playSound, MAP_FUNC),
+    GET_POS(mr_stopSound, MAP_FUNC),
+
+    GET_POS(mr_sendSms, MAP_FUNC),
+    GET_POS(mr_call, MAP_FUNC),
+    GET_POS(mr_getNetworkID, MAP_FUNC),
+    GET_POS(mr_connectWAP, MAP_FUNC),
+
+    GET_POS(mr_menuCreate, MAP_FUNC),
+    GET_POS(mr_menuSetItem, MAP_FUNC),
+    GET_POS(mr_menuShow, MAP_FUNC),
+    GET_POS(reserve, MAP_DATA),
+    GET_POS(mr_menuRelease, MAP_FUNC),
+    GET_POS(mr_menuRefresh, MAP_FUNC),
+    GET_POS(mr_dialogCreate, MAP_FUNC),
+    GET_POS(mr_dialogRelease, MAP_FUNC),
+    GET_POS(mr_dialogRefresh, MAP_FUNC),
+    GET_POS(mr_textCreate, MAP_FUNC),
+    GET_POS(mr_textRelease, MAP_FUNC),
+    GET_POS(mr_textRefresh, MAP_FUNC),
+    GET_POS(mr_editCreate, MAP_FUNC),
+    GET_POS(mr_editRelease, MAP_FUNC),
+    GET_POS(mr_editGetText, MAP_FUNC),
+    GET_POS(mr_winCreate, MAP_FUNC),
+    GET_POS(mr_winRelease, MAP_FUNC),
+
+    GET_POS(mr_getScreenInfo, MAP_FUNC),
+
+    GET_POS(mr_initNetwork, MAP_FUNC),
+    GET_POS(mr_closeNetwork, MAP_FUNC),
+    GET_POS(mr_getHostByName, MAP_FUNC),
+    GET_POS(mr_socket, MAP_FUNC),
+    GET_POS(mr_connect, MAP_FUNC),
+    GET_POS(mr_closeSocket, MAP_FUNC),
+    GET_POS(mr_recv, MAP_FUNC),
+    GET_POS(mr_recvfrom, MAP_FUNC),
+    GET_POS(mr_send, MAP_FUNC),
+    GET_POS(mr_sendto, MAP_FUNC),
+
+    GET_POS(mr_screenBuf, MAP_DATA),
+    GET_POS(mr_screen_w, MAP_DATA),
+    GET_POS(mr_screen_h, MAP_DATA),
+    GET_POS(mr_screen_bit, MAP_DATA),
+    GET_POS(mr_bitmap, MAP_DATA),
+    GET_POS(mr_tile, MAP_DATA),
+    GET_POS(mr_map, MAP_DATA),
+    GET_POS(mr_sound, MAP_DATA),
+    GET_POS(mr_sprite, MAP_DATA),
+
+    GET_POS(pack_filename, MAP_DATA),
+    GET_POS(start_filename, MAP_DATA),
+    GET_POS(old_pack_filename, MAP_DATA),
+    GET_POS(old_start_filename, MAP_DATA),
+
+    GET_POS(mr_ram_file, MAP_DATA),
+    GET_POS(mr_ram_file_len, MAP_DATA),
+
+    GET_POS(mr_soundOn, MAP_DATA),
+    GET_POS(mr_shakeOn, MAP_DATA),
+
+    GET_POS(LG_mem_base, MAP_DATA),
+    GET_POS(LG_mem_len, MAP_DATA),
+    GET_POS(LG_mem_end, MAP_DATA),
+    GET_POS(LG_mem_left, MAP_DATA),
+
+    GET_POS(mr_sms_cfg_buf, MAP_DATA),
+    GET_POS(mr_md5_init, MAP_FUNC),
+    GET_POS(mr_md5_append, MAP_FUNC),
+    GET_POS(mr_md5_finish, MAP_FUNC),
+    GET_POS(_mr_load_sms_cfg, MAP_FUNC),
+    GET_POS(_mr_save_sms_cfg, MAP_FUNC),
+    GET_POS(_DispUpEx, MAP_FUNC),
+
+    GET_POS(_DrawPoint, MAP_FUNC),
+    GET_POS(_DrawBitmap, MAP_FUNC),
+    GET_POS(_DrawBitmapEx, MAP_FUNC),
+    GET_POS(DrawRect, MAP_FUNC),
+    GET_POS(_DrawText, MAP_FUNC),
+    GET_POS(_BitmapCheck, MAP_FUNC),
+    GET_POS(_mr_readFile, MAP_FUNC),
+    GET_POS(mr_wstrlen, MAP_FUNC),
+    GET_POS(mr_registerAPP, MAP_FUNC),
+    GET_POS(_DrawTextEx, MAP_FUNC),
+    GET_POS(_mr_EffSetCon, MAP_FUNC),
+    GET_POS(_mr_TestCom, MAP_FUNC),
+    GET_POS(_mr_TestCom1, MAP_FUNC),
+    GET_POS(c2u, MAP_FUNC),
+
+    GET_POS(_mr_div, MAP_FUNC),
+    GET_POS(_mr_mod, MAP_FUNC),
+
+    GET_POS(LG_mem_min, MAP_DATA),
+    GET_POS(LG_mem_top, MAP_DATA),
+    GET_POS(mr_updcrc, MAP_DATA),
+    GET_POS(start_fileparameter, MAP_DATA),
+    GET_POS(mr_sms_return_flag, MAP_DATA),
+    GET_POS(mr_sms_return_val, MAP_DATA),
+    GET_POS(mr_unzip, MAP_DATA),
+    GET_POS(mr_exit_cb, MAP_DATA),
+    GET_POS(mr_exit_cb_data, MAP_DATA),
+    GET_POS(mr_entry, MAP_DATA),
+    GET_POS(mr_platDrawChar, MAP_FUNC),
+};
+
 int32 mrc_init(void) {
-    // mrp不支持全局变量的静态初始化，因此要放在函数里面
-    StructOffset offsets[] = {
-        GET_POS(mr_malloc, MAP_FUNC, NULL),
-        GET_POS(mr_free, MAP_FUNC, NULL),
-        GET_POS(mr_realloc, MAP_FUNC, NULL),
-
-        GET_POS(memcpy, MAP_FUNC, NULL),
-        GET_POS(memmove, MAP_FUNC, NULL),
-        GET_POS(strcpy, MAP_FUNC, NULL),
-        GET_POS(strncpy, MAP_FUNC, NULL),
-        GET_POS(strcat, MAP_FUNC, NULL),
-        GET_POS(strncat, MAP_FUNC, NULL),
-        GET_POS(memcmp, MAP_FUNC, NULL),
-        GET_POS(strcmp, MAP_FUNC, NULL),
-        GET_POS(strncmp, MAP_FUNC, NULL),
-        GET_POS(strcoll, MAP_FUNC, NULL),
-        GET_POS(memchr, MAP_FUNC, NULL),
-        GET_POS(memset, MAP_FUNC, NULL),
-        GET_POS(strlen, MAP_FUNC, NULL),
-        GET_POS(strstr, MAP_FUNC, NULL),
-        GET_POS(sprintf, MAP_FUNC, NULL),
-        GET_POS(atoi, MAP_FUNC, NULL),
-        GET_POS(strtoul, MAP_FUNC, NULL),
-        GET_POS(rand, MAP_FUNC, NULL),
-
-        GET_POS(reserve0, MAP_DATA, NULL),
-        GET_POS(reserve1, MAP_DATA, NULL),
-        GET_POS(_mr_c_internal_table, MAP_DATA, NULL),
-        GET_POS(_mr_c_port_table, MAP_DATA, NULL),
-        GET_POS(_mr_c_function_new, MAP_FUNC, NULL),
-
-        GET_POS(mr_printf, MAP_FUNC, NULL),
-        GET_POS(mr_mem_get, MAP_FUNC, NULL),
-        GET_POS(mr_mem_free, MAP_FUNC, NULL),
-        GET_POS(mr_drawBitmap, MAP_FUNC, NULL),
-        GET_POS(mr_getCharBitmap, MAP_FUNC, NULL),
-        GET_POS(g_mr_timerStart, MAP_FUNC, NULL),
-        GET_POS(g_mr_timerStop, MAP_FUNC, NULL),
-        GET_POS(mr_getTime, MAP_FUNC, NULL),
-        GET_POS(mr_getDatetime, MAP_FUNC, NULL),
-        GET_POS(mr_getUserInfo, MAP_FUNC, NULL),
-        GET_POS(mr_sleep, MAP_FUNC, NULL),
-
-        GET_POS(mr_plat, MAP_FUNC, NULL),
-        GET_POS(mr_platEx, MAP_FUNC, NULL),
-
-        GET_POS(mr_ferrno, MAP_FUNC, NULL),
-        GET_POS(mr_open, MAP_FUNC, NULL),
-        GET_POS(mr_close, MAP_FUNC, NULL),
-        GET_POS(mr_info, MAP_FUNC, NULL),
-        GET_POS(mr_write, MAP_FUNC, NULL),
-        GET_POS(mr_read, MAP_FUNC, NULL),
-        GET_POS(mr_seek, MAP_FUNC, NULL),
-        GET_POS(mr_getLen, MAP_FUNC, NULL),
-        GET_POS(mr_remove, MAP_FUNC, NULL),
-        GET_POS(mr_rename, MAP_FUNC, NULL),
-        GET_POS(mr_mkDir, MAP_FUNC, NULL),
-        GET_POS(mr_rmDir, MAP_FUNC, NULL),
-        GET_POS(mr_findStart, MAP_FUNC, NULL),
-        GET_POS(mr_findGetNext, MAP_FUNC, NULL),
-        GET_POS(mr_findStop, MAP_FUNC, NULL),
-
-        GET_POS(mr_exit, MAP_FUNC, NULL),
-        GET_POS(mr_startShake, MAP_FUNC, NULL),
-        GET_POS(mr_stopShake, MAP_FUNC, NULL),
-        GET_POS(mr_playSound, MAP_FUNC, NULL),
-        GET_POS(mr_stopSound, MAP_FUNC, NULL),
-
-        GET_POS(mr_sendSms, MAP_FUNC, NULL),
-        GET_POS(mr_call, MAP_FUNC, NULL),
-        GET_POS(mr_getNetworkID, MAP_FUNC, NULL),
-        GET_POS(mr_connectWAP, MAP_FUNC, NULL),
-
-        GET_POS(mr_menuCreate, MAP_FUNC, NULL),
-        GET_POS(mr_menuSetItem, MAP_FUNC, NULL),
-        GET_POS(mr_menuShow, MAP_FUNC, NULL),
-        GET_POS(reserve, MAP_DATA, NULL),
-        GET_POS(mr_menuRelease, MAP_FUNC, NULL),
-        GET_POS(mr_menuRefresh, MAP_FUNC, NULL),
-        GET_POS(mr_dialogCreate, MAP_FUNC, NULL),
-        GET_POS(mr_dialogRelease, MAP_FUNC, NULL),
-        GET_POS(mr_dialogRefresh, MAP_FUNC, NULL),
-        GET_POS(mr_textCreate, MAP_FUNC, NULL),
-        GET_POS(mr_textRelease, MAP_FUNC, NULL),
-        GET_POS(mr_textRefresh, MAP_FUNC, NULL),
-        GET_POS(mr_editCreate, MAP_FUNC, NULL),
-        GET_POS(mr_editRelease, MAP_FUNC, NULL),
-        GET_POS(mr_editGetText, MAP_FUNC, NULL),
-        GET_POS(mr_winCreate, MAP_FUNC, NULL),
-        GET_POS(mr_winRelease, MAP_FUNC, NULL),
-
-        GET_POS(mr_getScreenInfo, MAP_FUNC, NULL),
-
-        GET_POS(mr_initNetwork, MAP_FUNC, NULL),
-        GET_POS(mr_closeNetwork, MAP_FUNC, NULL),
-        GET_POS(mr_getHostByName, MAP_FUNC, NULL),
-        GET_POS(mr_socket, MAP_FUNC, NULL),
-        GET_POS(mr_connect, MAP_FUNC, NULL),
-        GET_POS(mr_closeSocket, MAP_FUNC, NULL),
-        GET_POS(mr_recv, MAP_FUNC, NULL),
-        GET_POS(mr_recvfrom, MAP_FUNC, NULL),
-        GET_POS(mr_send, MAP_FUNC, NULL),
-        GET_POS(mr_sendto, MAP_FUNC, NULL),
-
-        GET_POS(mr_screenBuf, MAP_DATA, NULL),
-        GET_POS(mr_screen_w, MAP_DATA, NULL),
-        GET_POS(mr_screen_h, MAP_DATA, NULL),
-        GET_POS(mr_screen_bit, MAP_DATA, NULL),
-        GET_POS(mr_bitmap, MAP_DATA, NULL),
-        GET_POS(mr_tile, MAP_DATA, NULL),
-        GET_POS(mr_map, MAP_DATA, NULL),
-        GET_POS(mr_sound, MAP_DATA, NULL),
-        GET_POS(mr_sprite, MAP_DATA, NULL),
-
-        GET_POS(pack_filename, MAP_DATA, NULL),
-        GET_POS(start_filename, MAP_DATA, NULL),
-        GET_POS(old_pack_filename, MAP_DATA, NULL),
-        GET_POS(old_start_filename, MAP_DATA, NULL),
-
-        GET_POS(mr_ram_file, MAP_DATA, NULL),
-        GET_POS(mr_ram_file_len, MAP_DATA, NULL),
-
-        GET_POS(mr_soundOn, MAP_DATA, NULL),
-        GET_POS(mr_shakeOn, MAP_DATA, NULL),
-
-        GET_POS(LG_mem_base, MAP_DATA, NULL),
-        GET_POS(LG_mem_len, MAP_DATA, NULL),
-        GET_POS(LG_mem_end, MAP_DATA, NULL),
-        GET_POS(LG_mem_left, MAP_DATA, NULL),
-
-        GET_POS(mr_sms_cfg_buf, MAP_DATA, NULL),
-        GET_POS(mr_md5_init, MAP_FUNC, NULL),
-        GET_POS(mr_md5_append, MAP_FUNC, NULL),
-        GET_POS(mr_md5_finish, MAP_FUNC, NULL),
-        GET_POS(_mr_load_sms_cfg, MAP_FUNC, NULL),
-        GET_POS(_mr_save_sms_cfg, MAP_FUNC, NULL),
-        GET_POS(_DispUpEx, MAP_FUNC, NULL),
-
-        GET_POS(_DrawPoint, MAP_FUNC, NULL),
-        GET_POS(_DrawBitmap, MAP_FUNC, NULL),
-        GET_POS(_DrawBitmapEx, MAP_FUNC, NULL),
-        GET_POS(DrawRect, MAP_FUNC, NULL),
-        GET_POS(_DrawText, MAP_FUNC, NULL),
-        GET_POS(_BitmapCheck, MAP_FUNC, NULL),
-        GET_POS(_mr_readFile, MAP_FUNC, NULL),
-        GET_POS(mr_wstrlen, MAP_FUNC, NULL),
-        GET_POS(mr_registerAPP, MAP_FUNC, NULL),
-        GET_POS(_DrawTextEx, MAP_FUNC, NULL),
-        GET_POS(_mr_EffSetCon, MAP_FUNC, NULL),
-        GET_POS(_mr_TestCom, MAP_FUNC, NULL),
-        GET_POS(_mr_TestCom1, MAP_FUNC, NULL),
-        GET_POS(c2u, MAP_FUNC, NULL),
-
-        GET_POS(_mr_div, MAP_FUNC, NULL),
-        GET_POS(_mr_mod, MAP_FUNC, NULL),
-
-        GET_POS(LG_mem_min, MAP_DATA, NULL),
-        GET_POS(LG_mem_top, MAP_DATA, NULL),
-        GET_POS(mr_updcrc, MAP_DATA, NULL),
-        GET_POS(start_fileparameter, MAP_DATA, NULL),
-        GET_POS(mr_sms_return_flag, MAP_DATA, NULL),
-        GET_POS(mr_sms_return_val, MAP_DATA, NULL),
-        GET_POS(mr_unzip, MAP_DATA, NULL),
-        GET_POS(mr_exit_cb, MAP_DATA, NULL),
-        GET_POS(mr_exit_cb_data, MAP_DATA, NULL),
-        GET_POS(mr_entry, MAP_DATA, NULL),
-        GET_POS(mr_platDrawChar, MAP_FUNC, NULL),
-    };
-
+    char* filename = "mr_table_offsets.txt";
     mrc_clearScreen(0, 0, 0);
-    mrc_drawText("mr_table_offsets", 0, 0, 255, 255, 255, 0, 1);
+    mrc_drawText(filename, 0, 0, 255, 255, 255, 0, 1);
     mrc_refreshScreen(0, 0, 240, 320);
     {
         int i;
         char buf[128];
-        int32 f = mrc_open("offsets.txt", MR_FILE_CREATE | MR_FILE_WRONLY);
+        int32 f = mrc_open(filename, MR_FILE_CREATE | MR_FILE_WRONLY);
         for (i = 0; i < countof(offsets); i++) {
             StructOffset* o = &offsets[i];
             if (o->type == MAP_FUNC) {
