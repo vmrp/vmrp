@@ -52,17 +52,11 @@ int extractFile() {
 #define BRIDGE_TABLE_ADDRESS STACK_ADDRESS + STACK_SIZE
 #define BRIDGE_TABLE_SIZE 4096  // 最小值，实际完全足够，为了4k对齐
 
-// ext文件0x4地址处的值(cfunction_table指针)
-#define CFUNCTION_TABLE_ADDRESS MR_TABLE_ADDRESS + MR_TABLE_SIZE
-#define CFUNCTION_TABLE_SIZE 4096  // 最小值，实际完全足够，为了4k对齐
-
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     printf(">>> Tracing basic block at 0x%" PRIx64 ", block size = 0x%x\n", address, size);
 }
 
 static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
-    // printf(">>> PC:0x%" PRIX64 ", size:0x%x\n", address, size);
-    // mr_table_bridge_exec(uc, MR_TABLE_ADDRESS + 0x10, size, user_data);
     hook_code_debug(uc, address);
 }
 
@@ -85,11 +79,30 @@ static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, 
     return false;
 }
 
+static int32_t loadCode(uc_engine *uc) {
+    char *filename = "cfunction.ext";
+    uint32_t value, length;
+    uint8_t *code;
+    int32_t ret = readMrpFileEx(MRPFILE, filename, (int32 *)&value, (int32 *)&length, &code);
+    if (ret == MR_FAILED) {
+        LOG("load %s failed", filename);
+        return ret;
+    }
+    LOG("load %s suc: offset:%d, length:%d", filename, value, length);
+
+    uc_mem_write(uc, CODE_ADDRESS, code, length);
+    free(code);
+    return ret;
+}
+
 static bool mem_init(uc_engine *uc) {
-    uc_err err;
-    err = uc_mem_map(uc, CODE_ADDRESS, CODE_SIZE, UC_PROT_ALL);
+    uc_err err = uc_mem_map(uc, CODE_ADDRESS, CODE_SIZE, UC_PROT_ALL);
     if (err) {
         printf("Failed mem map CODE_ADDRESS: %u (%s)\n", err, uc_strerror(err));
+        return false;
+    }
+
+    if (loadCode(uc) == MR_FAILED) {
         return false;
     }
 
@@ -101,10 +114,10 @@ static bool mem_init(uc_engine *uc) {
 
     err = uc_mem_map(uc, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_SIZE, UC_PROT_READ | UC_PROT_WRITE);
     if (err) {
-        printf("Failed mem map MR_TABLE_ADDRESS: %u (%s)\n", err, uc_strerror(err));
+        printf("Failed mem map BRIDGE_TABLE_ADDRESS: %u (%s)\n", err, uc_strerror(err));
         return err;
     }
-    err = bridge_init(uc, BRIDGE_TABLE_ADDRESS);
+    err = bridge_init(uc, CODE_ADDRESS, BRIDGE_TABLE_ADDRESS);
     if (err) {
         printf("Failed bridge_init(): %u (%s)\n", err, uc_strerror(err));
         return err;
@@ -133,18 +146,6 @@ static void emu(BOOL isThumb) {
         goto end;
     }
     {
-        char *filename = "cfunction.ext";
-        uint32 value, length;
-        uint8 *code;
-        int32 ret = readMrpFileEx(MRPFILE, filename, (int32 *)&value, (int32 *)&length, &code);
-        if (ret == MR_FAILED) {
-            LOG("load %s failed", filename);
-            goto end;
-        }
-        LOG("load %s suc: offset:%d, length:%d", filename, value, length);
-        uc_mem_write(uc, CODE_ADDRESS, code, length);
-        free(code);
-
         uc_hook trace1, trace2, traceMemInvalid, traceMemValid;
 
         uc_hook_add(uc, &trace1, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
@@ -153,7 +154,7 @@ static void emu(BOOL isThumb) {
         uc_hook_add(uc, &traceMemInvalid, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
         uc_hook_add(uc, &traceMemValid, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
 
-        value = STACK_ADDRESS + STACK_SIZE;  // 满递减
+        uint32_t value = STACK_ADDRESS + STACK_SIZE;  // 满递减
         uc_reg_write(uc, UC_ARM_REG_SP, &value);
 
         value = CODE_ADDRESS;
@@ -161,9 +162,6 @@ static void emu(BOOL isThumb) {
 
         value = 1;
         uc_reg_write(uc, UC_ARM_REG_R0, &value);  // 传参数值1
-
-        value = BRIDGE_TABLE_ADDRESS;
-        uc_mem_write(uc, CODE_ADDRESS, &value, 4);  // mr_table指针
 
         dumpREG(uc);
         // Note we start at ADDRESS | 1 to indicate THUMB mode.

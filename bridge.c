@@ -6,7 +6,7 @@
 #include "./header/bridge.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////
-#define TAG "bridge: "
+#define TAG "   -> bridge: "
 
 static bool _mr_c_function_new(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     uint32_t p0, p1, lr, ret;
@@ -249,24 +249,25 @@ static int init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t start
     return 0;
 }
 
-uc_err bridge_init(uc_engine *uc, uint32_t startAddress) {
+uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress) {
     uint32_t mr_table_startAddress = startAddress;
     uint32_t mr_c_function_startAddress = mr_table_startAddress + MR_TABLE_SIZE;
     uint32_t mrc_extChunk_startAddress = mr_c_function_startAddress + MR_C_FUNCTION_SIZE;
     uint32_t endAddress = mrc_extChunk_startAddress + MRC_EXTCHUNK_SIZE;
 
     uc_err err = init(uc, mr_table_funcMap, countof(mr_table_funcMap), mr_table_startAddress);
-    if (err) {
-        return err;
-    }
+    if (err) return err;
+    err = uc_mem_write(uc, codeAddress, &mr_table_startAddress, 4);
+    if (err) return err;
+
     err = init(uc, mr_c_function_funcMap, countof(mr_c_function_funcMap), mr_c_function_startAddress);
-    if (err) {
-        return err;
-    }
+    if (err) return err;
+    err = uc_mem_write(uc, codeAddress + 4, &mr_c_function_startAddress, 4);
+    if (err) return err;
+
     err = init(uc, mrc_extChunk_funcMap, countof(mrc_extChunk_funcMap), mrc_extChunk_startAddress);
-    if (err) {
-        return err;
-    }
+    if (err) return err;
+
     printf(TAG "startAddr: 0x%X, endAddr: 0x%X\n", startAddress, endAddress);
     return UC_ERR_OK;
 }

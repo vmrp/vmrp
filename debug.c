@@ -57,7 +57,10 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
         uint32_t pc;
         uc_reg_read(uc, UC_ARM_REG_PC, &pc);
         printf("debug[PC:0x%X, mem:0x%" PRIX64 "] > ", pc, address);
-        fgets(str, sizeof(str), stdin);
+        ptr = fgets(str, sizeof(str), stdin);
+        if (ptr == NULL) {
+            break;
+        }
 
         eqPos = 0;  // 等号的位置
         ptr = str;  // 转换成全小写
@@ -73,7 +76,6 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
             }
             ptr++;
         }
-        // printf("%s,%d, %d\n", str, str[0], '\n');
         if (str[0] == '\0') {
             break;
         } else if (strcmp("reg", str) == 0) {  // 打印所有寄存器内容
@@ -129,9 +131,15 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
                     }
                 } else if (buf[1] >= '0' && buf[1] <= '9') {  // r0-r9
                     uc_arm_reg arr[10] = {
-                        UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2,
-                        UC_ARM_REG_R3, UC_ARM_REG_R4, UC_ARM_REG_R5,
-                        UC_ARM_REG_R6, UC_ARM_REG_R7, UC_ARM_REG_R8,
+                        UC_ARM_REG_R0,
+                        UC_ARM_REG_R1,
+                        UC_ARM_REG_R2,
+                        UC_ARM_REG_R3,
+                        UC_ARM_REG_R4,
+                        UC_ARM_REG_R5,
+                        UC_ARM_REG_R6,
+                        UC_ARM_REG_R7,
+                        UC_ARM_REG_R8,
                         UC_ARM_REG_R9,
                     };
                     reg = arr[buf[1] - '0'];

@@ -521,7 +521,7 @@
      828:	e5100008 	ldr	r0, [r0, #-8]
      82c:	e5901000 	ldr	r1, [r0]
      830:	e2840004 	add	r0, r4, #4
-     834:	e12fff31 	blx	r1
+     834:	e12fff31 	blx	r1  ;调用 mr_malloc
      838:	e3500000 	cmp	r0, #0
      83c:	14804004 	strne	r4, [r0], #4
      840:	e8bd8010 	pop	{r4, pc}

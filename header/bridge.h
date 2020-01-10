@@ -41,6 +41,6 @@ typedef struct BridgeMap {
     { #field, offset, size, mapType, func }
 
 bool bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data);
-uc_err bridge_init(uc_engine *uc, uint32_t startAddress);
+uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress);
 
 #endif
