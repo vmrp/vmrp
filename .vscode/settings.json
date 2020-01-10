@@ -23,6 +23,7 @@
         "utils.h": "c",
         "stddef.h": "c",
         "rbtree.h": "c",
-        "mr_table_bridge.h": "c"
+        "mr_table_bridge.h": "c",
+        "bridge.h": "c"
     }
 }

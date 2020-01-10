@@ -1,6 +1,7 @@
 #include "mrc_base.h"
 
 #define offsetof(type, field) ((uint32) & ((type*)0)->field)
+#define szof(type, field) sizeof(((type*)0)->field)
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
 
 #undef memcpy
@@ -196,18 +197,19 @@ typedef struct {
 
 typedef enum BridgeMapType {
     MAP_DATA,  // 数据字段
-    MAP_FUNC  // 函数字段
+    MAP_FUNC   // 函数字段
 } BridgeMapType;
 
 typedef struct StructOffset {
     // mrp要求必需是字符数组，定义成字符串指针会导致字符串丢失
     char fieldName[50];
     uint32 pos;
+    uint32 size;
     BridgeMapType type;
 } StructOffset;
 
 #define GET_POS(field, mapType) \
-    { #field, offsetof(mr_table, field), mapType }
+    { #field, offsetof(mr_table, field), szof(mr_table, field), mapType }
 
 StructOffset offsets[] = {
     GET_POS(mr_malloc, MAP_FUNC),
@@ -388,29 +390,36 @@ int32 mrc_init(void) {
         int32 f = mrc_open(filename, MR_FILE_CREATE | MR_FILE_WRONLY);
         for (i = 0; i < countof(offsets); i++) {
             StructOffset* o = &offsets[i];
+            char* type = "MAP_DATA";
             if (o->type == MAP_FUNC) {
-                mrc_sprintf(buf,
-                            "BRIDGE_FUNC_MAP(0x%X, %s, MAP_FUNC, NULL),\r\n",
-                            o->pos, o->fieldName);
-            } else if (o->type == MAP_DATA) {
-                mrc_sprintf(buf,
-                            "BRIDGE_FUNC_MAP(0x%X, %s, MAP_DATA, NULL),\r\n",
-                            o->pos, o->fieldName);
+                type = "MAP_FUNC";
             }
+            mrc_sprintf(buf, "BRIDGE_FUNC_MAP(0x%X, 0x%X, %s, %s, NULL),\r\n",
+                        o->pos, o->size, type, o->fieldName);
             mrc_write(f, buf, mrc_strlen(buf));
         }
+        mrc_sprintf(buf, "sizeof(mr_table) = 0x%X\r\n", sizeof(mr_table));
+        mrc_write(f, buf, mrc_strlen(buf));
         mrc_close(f);
     }
     return MR_SUCCESS;
 }
 
-int32 mrc_exitApp(void) { return MR_SUCCESS; }
+int32 mrc_exitApp(void) {
+    return MR_SUCCESS;
+}
 
-int32 mrc_event(int32 code, int32 param0, int32 param1) { return MR_SUCCESS; }
+int32 mrc_event(int32 code, int32 param0, int32 param1) {
+    return MR_SUCCESS;
+}
 
-int32 mrc_pause() { return MR_SUCCESS; }
+int32 mrc_pause() {
+    return MR_SUCCESS;
+}
 
-int32 mrc_resume() { return MR_SUCCESS; }
+int32 mrc_resume() {
+    return MR_SUCCESS;
+}
 
 int32 mrc_extRecvAppEventEx(int32 code, int32 param0, int32 param1) {
     return MR_SUCCESS;

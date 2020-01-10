@@ -1,5 +1,4 @@
 #include "./header/utils.h"
-#include "./header/rbtree.h"
 
 char *memTypeStr(uc_mem_type type) {
     // clang-format off
@@ -62,13 +61,8 @@ void dumpMemStr(void *ptr, size_t len) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-typedef struct uIntMap {
-    struct rb_node node;
-    unsigned int key;
-    void *data;
-} uIntMap;
 
-static struct uIntMap *uIntMap_search(struct rb_root *root, unsigned int key) {
+uIntMap *uIntMap_search(struct rb_root *root, uint32_t key) {
     struct rb_node *n = root->rb_node;
     uIntMap *obj;
     int cmp;
@@ -88,7 +82,7 @@ static struct uIntMap *uIntMap_search(struct rb_root *root, unsigned int key) {
     return NULL;
 }
 
-static int uIntMap_insert(struct rb_root *root, uIntMap *obj) {
+int uIntMap_insert(struct rb_root *root, uIntMap *obj) {
     struct rb_node **p = &(root->rb_node);
     struct rb_node *parent = NULL;
     uIntMap *cur;
@@ -111,7 +105,7 @@ static int uIntMap_insert(struct rb_root *root, uIntMap *obj) {
     return 0;
 }
 
-static uIntMap *uIntMap_delete(struct rb_root *root, unsigned int key) {
+uIntMap *uIntMap_delete(struct rb_root *root, uint32_t key) {
     uIntMap *obj = uIntMap_search(root, key);
     if (!obj) {
         return NULL;
@@ -120,7 +114,7 @@ static uIntMap *uIntMap_delete(struct rb_root *root, unsigned int key) {
     return obj;
 }
 
-static void testInsert(struct rb_root *root, unsigned int key, void *data) {
+static void testInsert(struct rb_root *root, uint32_t key, void *data) {
     uIntMap *obj;
     int ret;
 
@@ -135,7 +129,7 @@ static void testInsert(struct rb_root *root, unsigned int key, void *data) {
     printf("insert %d success.\n", key);
 }
 
-static void testSearch(struct rb_root *root, unsigned int key) {
+static void testSearch(struct rb_root *root, uint32_t key) {
     uIntMap *obj = uIntMap_search(root, key);
     if (obj == NULL) {
         printf("search: not found %d\n", key);
@@ -151,7 +145,7 @@ static void printAll(struct rb_root *root) {
     }
 }
 
-static void testDelete(struct rb_root *root, unsigned int key) {
+static void testDelete(struct rb_root *root, uint32_t key) {
     uIntMap *obj = uIntMap_delete(root, key);
     if (obj != NULL) {
         printf("delete %d %s\n", obj->key, (char *)obj->data);
@@ -161,7 +155,7 @@ static void testDelete(struct rb_root *root, unsigned int key) {
     }
 }
 
-void mr_table_bridge_testMain() {
+void uIntMap_testMain() {
     struct rb_root root = RB_ROOT;
 
     testInsert(&root, 100, "hell");

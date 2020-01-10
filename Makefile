@@ -2,7 +2,7 @@ CC := gcc
 CFLAGS := -g -Wall -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast 
 
 OBJS = dsm.o engine.o fileLib.o font16_st.o gb2unicode.o main.o tsf_font.o utils.o debug.o \
-	rbtree.o mr_table_bridge.o cfunction_table_bridge.o
+	rbtree.o bridge.o
 
 UNICORN = -lunicorn
 ifeq ($(OS),Windows_NT)

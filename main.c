@@ -49,43 +49,36 @@ int extractFile() {
 #define STACK_SIZE 1024 * 1024 * 1              // 栈大小
 
 // ext文件0x0地址处的值(mr_table指针)
-#define MR_TABLE_ADDRESS STACK_ADDRESS + STACK_SIZE
-#define MR_TABLE_SIZE 4096  // 最小值，实际完全足够，为了4k对齐
+#define BRIDGE_TABLE_ADDRESS STACK_ADDRESS + STACK_SIZE
+#define BRIDGE_TABLE_SIZE 4096  // 最小值，实际完全足够，为了4k对齐
 
 // ext文件0x4地址处的值(cfunction_table指针)
 #define CFUNCTION_TABLE_ADDRESS MR_TABLE_ADDRESS + MR_TABLE_SIZE
 #define CFUNCTION_TABLE_SIZE 4096  // 最小值，实际完全足够，为了4k对齐
 
-static void hook_block(uc_engine *uc, uint64_t address, uint32_t size,
-                       void *user_data) {
-    printf(">>> Tracing basic block at 0x%" PRIx64 ", block size = 0x%x\n",
-           address, size);
+static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+    printf(">>> Tracing basic block at 0x%" PRIx64 ", block size = 0x%x\n", address, size);
 }
 
-static void hook_code(uc_engine *uc, uint64_t address, uint32_t size,
-                      void *user_data) {
+static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     // printf(">>> PC:0x%" PRIX64 ", size:0x%x\n", address, size);
     // mr_table_bridge_exec(uc, MR_TABLE_ADDRESS + 0x10, size, user_data);
     hook_code_debug(uc, address);
 }
 
-static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address,
-                           int size, int64_t value, void *user_data) {
-    printf(">>> Tracing mem_valid mem_type:%s at 0x%" PRIx64
-           ", size:0x%x, value:0x%" PRIx64 "\n",
+static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    printf(">>> Tracing mem_valid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
            memTypeStr(type), address, size, value);
 }
 
-static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address,
-                             int size, int64_t value, void *user_data) {
-    printf(">>> Tracing mem_invalid mem_type:%s at 0x%" PRIx64
-           ", size:0x%x, value:0x%" PRIx64 "\n",
+static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    printf(">>> Tracing mem_invalid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
            memTypeStr(type), address, size, value);
 
     hook_code_debug(uc, address);
 
     if (type == UC_MEM_FETCH_PROT) {
-        if (mr_table_bridge_exec(uc, type, address, size, value, user_data)) {
+        if (bridge_exec(uc, type, address, size, value, user_data)) {
             return true;
         }
     }
@@ -100,26 +93,21 @@ static bool mem_init(uc_engine *uc) {
         return false;
     }
 
-    err =
-        uc_mem_map(uc, STACK_ADDRESS, STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    err = uc_mem_map(uc, STACK_ADDRESS, STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE);
     if (err) {
-        printf("Failed mem map STACK_ADDRESS: %u (%s)\n", err,
-               uc_strerror(err));
+        printf("Failed mem map STACK_ADDRESS: %u (%s)\n", err, uc_strerror(err));
         return false;
     }
 
-    err = mr_table_bridge_init(uc, MR_TABLE_ADDRESS);
+    err = uc_mem_map(uc, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_SIZE, UC_PROT_READ | UC_PROT_WRITE);
     if (err) {
-        printf("Failed mem map MR_TABLE_ADDRESS: %u (%s)\n", err,
-               uc_strerror(err));
-        return false;
+        printf("Failed mem map MR_TABLE_ADDRESS: %u (%s)\n", err, uc_strerror(err));
+        return err;
     }
-
-    err = cfunction_table_bridge_init(uc, CFUNCTION_TABLE_ADDRESS);
+    err = bridge_init(uc, BRIDGE_TABLE_ADDRESS);
     if (err) {
-        printf("Failed mem map CFUNCTION_TABLE_ADDRESS: %u (%s)\n", err,
-               uc_strerror(err));
-        return false;
+        printf("Failed bridge_init(): %u (%s)\n", err, uc_strerror(err));
+        return err;
     }
     return true;
 }
@@ -128,8 +116,7 @@ static void emu(BOOL isThumb) {
     uc_engine *uc;
     uc_err err;
 
-    printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, MR_TABLE_ADDRESS:0x%X\n",
-           CODE_ADDRESS, STACK_ADDRESS, MR_TABLE_ADDRESS);
+    printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, BRIDGE_TABLE_ADDRESS:0x%X\n", CODE_ADDRESS, STACK_ADDRESS, BRIDGE_TABLE_ADDRESS);
 
     if (isThumb) {
         err = uc_open(UC_ARCH_ARM, UC_MODE_THUMB, &uc);
@@ -138,8 +125,7 @@ static void emu(BOOL isThumb) {
     }
 
     if (err) {
-        printf("Failed on uc_open() with error returned: %u (%s)\n", err,
-               uc_strerror(err));
+        printf("Failed on uc_open() with error returned: %u (%s)\n", err, uc_strerror(err));
         return;
     }
     if (!mem_init(uc)) {
@@ -150,8 +136,7 @@ static void emu(BOOL isThumb) {
         char *filename = "cfunction.ext";
         uint32 value, length;
         uint8 *code;
-        int32 ret = readMrpFileEx(MRPFILE, filename, (int32 *)&value,
-                                  (int32 *)&length, &code);
+        int32 ret = readMrpFileEx(MRPFILE, filename, (int32 *)&value, (int32 *)&length, &code);
         if (ret == MR_FAILED) {
             LOG("load %s failed", filename);
             goto end;
@@ -165,10 +150,8 @@ static void emu(BOOL isThumb) {
         uc_hook_add(uc, &trace1, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
         uc_hook_add(uc, &trace2, UC_HOOK_CODE, hook_code, NULL, 1, 0);
         // uc_hook_add(uc, &trace2, UC_HOOK_CODE, hook_code_debug, NULL, 1, 0);
-        uc_hook_add(uc, &traceMemInvalid, UC_HOOK_MEM_INVALID, hook_mem_invalid,
-                    NULL, 1, 0);
-        uc_hook_add(uc, &traceMemValid, UC_HOOK_MEM_VALID, hook_mem_valid, NULL,
-                    1, 0);
+        uc_hook_add(uc, &traceMemInvalid, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
+        uc_hook_add(uc, &traceMemValid, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
 
         value = STACK_ADDRESS + STACK_SIZE;  // 满递减
         uc_reg_write(uc, UC_ARM_REG_SP, &value);
@@ -179,7 +162,7 @@ static void emu(BOOL isThumb) {
         value = 1;
         uc_reg_write(uc, UC_ARM_REG_R0, &value);  // 传参数值1
 
-        value = MR_TABLE_ADDRESS;
+        value = BRIDGE_TABLE_ADDRESS;
         uc_mem_write(uc, CODE_ADDRESS, &value, 4);  // mr_table指针
 
         dumpREG(uc);
@@ -188,8 +171,7 @@ static void emu(BOOL isThumb) {
         value = isThumb ? value | 1 : value;
         err = uc_emu_start(uc, value, CODE_ADDRESS, 0, 0);
         if (err) {
-            printf("Failed on uc_emu_start() with error returned: %u (%s)\n",
-                   err, uc_strerror(err));
+            printf("Failed on uc_emu_start() with error returned: %u (%s)\n", err, uc_strerror(err));
         }
         dumpREG(uc);
     }
