@@ -212,13 +212,14 @@ bool bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address, int size, in
         if (obj->type == MAP_FUNC) {
             if (obj->fn == NULL) {
                 printf(TAG "%s() Not yet implemented function !!! \n", obj->name);
+                exit(1);
                 return false;
             }
             return obj->fn(obj, uc, type, address, size, value, user_data);
         }
         printf(TAG "unregister function at 0x%" PRIX64 "\n", address);
     } else {
-        printf(TAG "unregister address at 0x%" PRIX64 "\n", address);
+        // printf(TAG "unregister address at 0x%" PRIX64 "\n", address);
     }
     return false;
 }

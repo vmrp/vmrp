@@ -58,6 +58,9 @@ static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *use
 
 static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     hook_code_debug(uc, address);
+    if (address >= BRIDGE_TABLE_ADDRESS && address <= BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE) {
+        bridge_exec(uc, 0, address, 0, 0, NULL);
+    }
 }
 
 static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -146,13 +149,12 @@ static void emu(BOOL isThumb) {
         goto end;
     }
     {
-        uc_hook trace1, trace2, traceMemInvalid, traceMemValid;
+        uc_hook trace;
 
-        uc_hook_add(uc, &trace1, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
-        uc_hook_add(uc, &trace2, UC_HOOK_CODE, hook_code, NULL, 1, 0);
-        // uc_hook_add(uc, &trace2, UC_HOOK_CODE, hook_code_debug, NULL, 1, 0);
-        uc_hook_add(uc, &traceMemInvalid, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
-        uc_hook_add(uc, &traceMemValid, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
+        uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
+        uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
+        uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
+        uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
 
         uint32_t value = STACK_ADDRESS + STACK_SIZE;  // 满递减
         uc_reg_write(uc, UC_ARM_REG_SP, &value);
