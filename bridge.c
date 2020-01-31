@@ -342,5 +342,8 @@ uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress) {
     if (err) return err;
 
     printf(TAG "startAddr: 0x%X, endAddr: 0x%X\n", startAddress, endAddress);
+    printf(TAG "mr_table_startAddress: 0x%X\n", mr_table_startAddress);
+    printf(TAG "mr_c_function_startAddress: 0x%X\n", mr_c_function_startAddress);
+    printf(TAG "mrc_extChunk_startAddress: 0x%X\n", mrc_extChunk_startAddress);
     return UC_ERR_OK;
 }

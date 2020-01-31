@@ -1,26 +1,40 @@
+code:  0x80000 - 0x180000
+    mr_table: 0x80000
+    mr_c_function: 0x80004
+stack: 0x280000 - 0x180000  向下生长
+bridge: 0x280000 - 0x281000
+    *mr_table:[0x280000]
+    *mr_c_function:[0x280248]
+    *mrc_extChunk:[0x28025c]
+    endAddress:[0x280290]
+
+heap:  0x281000 - 0x381000  向上生长
+
+mr_helper函数： 0x80550
+
        8:	e92d4038 	push	{r3, r4, r5, lr}
        c:	e59f410c 	ldr	r4, [pc, #268]	; 0x120
       10:	e08f4004 	add	r4, pc, r4
-      14:	e5141008 	ldr	r1, [r4, #-8]
+      14:	e5141008 	ldr	r1, [r4, #-8] ; r1是mr_table地址
       18:	e3500001 	cmp	r0, #1
-      1c:	e5912064 	ldr	r2, [r1, #100]	; 0x64
+      1c:	e5912064 	ldr	r2, [r1, #100]	; 0x64 r2是_mr_c_function_new地址
       20:	e3a01014 	mov	r1, #20
-      24:	1a00000f 	bne	0x68
+      24:	1a00000f 	bne	0x68 ; 0x18处传了1此处不跳转
       28:	e59f00f4 	ldr	r0, [pc, #244]	; 0x124
-      2c:	e08f0000 	add	r0, pc, r0
-      30:	e12fff32 	blx	r2
+      2c:	e08f0000 	add	r0, pc, r0 ; r0此时是mr_helper函数指针0x80550
+      30:	e12fff32 	blx	r2 ; 跳转_mr_c_function_new
       34:	e3700001 	cmn	r0, #1
-      38:	0a000036 	beq	0x118
-      3c:	e5141004 	ldr	r1, [r4, #-4]
+      38:	0a000036 	beq	0x118 ; _mr_c_function_new 返回0表示成功，此处不跳转
+      3c:	e5141004 	ldr	r1, [r4, #-4] ; mr_c_function 地址
       40:	e3a00001 	mov	r0, #1
-      44:	e5810008 	str	r0, [r1, #8]
+      44:	e5810008 	str	r0, [r1, #8] ; mr_c_function.ext_type = 1
       48:	e59f00d8 	ldr	r0, [pc, #216]	; 0x128
       4c:	e08f0000 	add	r0, pc, r0
       50:	e5141008 	ldr	r1, [r4, #-8]
-      54:	e581007c 	str	r0, [r1, #124]	; 0x7c
+      54:	e581007c 	str	r0, [r1, #124]	; 0x7c mr_table.g_mr_timerStart=0x8064c
       58:	e59f00cc 	ldr	r0, [pc, #204]	; 0x12c
       5c:	e08f0000 	add	r0, pc, r0
-      60:	e5810080 	str	r0, [r1, #128]	; 0x80
+      60:	e5810080 	str	r0, [r1, #128]	; 0x80 mr_table.g_mr_timerStop=0x80680
       64:	ea000007 	b	0x88
       68:	e59f00c0 	ldr	r0, [pc, #192]	; 0x130
       6c:	e08f0000 	add	r0, pc, r0
@@ -32,42 +46,42 @@
       84:	e5810008 	str	r0, [r1, #8]
       88:	eb000032 	bl	0x158
       8c:	e5141004 	ldr	r1, [r4, #-4]
-      90:	e5810004 	str	r0, [r1, #4]
+      90:	e5810004 	str	r0, [r1, #4] ; mr_c_function.ER_RW_Length=0x104
       94:	eb0001df 	bl	0x818
       98:	e5141004 	ldr	r1, [r4, #-4]
       9c:	e3500000 	cmp	r0, #0
-      a0:	e5810000 	str	r0, [r1]
-      a4:	0a00001b 	beq	0x118
-      a8:	eb000032 	bl	0x178
-      ac:	e1a05000 	mov	r5, r0
+      a0:	e5810000 	str	r0, [r1] ; mr_c_function.start_of_ER_RW=0x281004(申请的内存地址+4)
+      a4:	0a00001b 	beq	0x118 ; 不跳
+      a8:	eb000032 	bl	0x178  ;直接看到ac就行了不用跟过去
+      ac:	e1a05000 	mov	r5, r0 ; r5=4
       b0:	eb000033 	bl	0x184
       b4:	e0801004 	add	r1, r0, r4
       b8:	e5140004 	ldr	r0, [r4, #-4]
       bc:	e5142008 	ldr	r2, [r4, #-8]
-      c0:	e5900000 	ldr	r0, [r0]
+      c0:	e5900000 	ldr	r0, [r0] ; r0=mr_c_function.start_of_ER_RW
       c4:	e592300c 	ldr	r3, [r2, #12]
       c8:	e1a02005 	mov	r2, r5
-      cc:	e12fff33 	blx	r3
-      d0:	eb000028 	bl	0x178
+      cc:	e12fff33 	blx	r3 ; 调用memcpy(mr_c_function.start_of_ER_RW, 0x81130, 4) ;0x81130处4字节都是0
+      d0:	eb000028 	bl	0x178 ; 178处的功能只是将r0=4
       d4:	e5141004 	ldr	r1, [r4, #-4]
-      d8:	e5911004 	ldr	r1, [r1, #4]
-      dc:	e0415000 	sub	r5, r1, r0
+      d8:	e5911004 	ldr	r1, [r1, #4] ; r1=mr_c_function.ER_RW_Length
+      dc:	e0415000 	sub	r5, r1, r0 ;r5=0x100
       e0:	eb000024 	bl	0x178
       e4:	e5141004 	ldr	r1, [r4, #-4]
       e8:	e1a02005 	mov	r2, r5
-      ec:	e5911000 	ldr	r1, [r1]
-      f0:	e0800001 	add	r0, r0, r1
+      ec:	e5911000 	ldr	r1, [r1] ;r1=mr_c_function.start_of_ER_RW
+      f0:	e0800001 	add	r0, r0, r1 ;r0=r1+4(0x281008)
       f4:	e5141008 	ldr	r1, [r4, #-8]
-      f8:	e5913038 	ldr	r3, [r1, #56]	; 0x38
+      f8:	e5913038 	ldr	r3, [r1, #56]	; 0x38 memset
       fc:	e3a01000 	mov	r1, #0
-     100:	e12fff33 	blx	r3
+     100:	e12fff33 	blx	r3 ; memset(0x281008, 0, 0x100)
      104:	e5140004 	ldr	r0, [r4, #-4]
-     108:	e5900000 	ldr	r0, [r0]
+     108:	e5900000 	ldr	r0, [r0] ;r0=mr_c_function.start_of_ER_RW
      10c:	e3500000 	cmp	r0, #0
-     110:	13a00000 	movne	r0, #0
-     114:	1a000000 	bne	0x11c
+     110:	13a00000 	movne	r0, #0 ; r0=0
+     114:	1a000000 	bne	0x11c ;跳转
      118:	e3e00000 	mvn	r0, #0
-     11c:	e8bd8038 	pop	{r3, r4, r5, pc}
+     11c:	e8bd8038 	pop	{r3, r4, r5, pc} ;完成mr_c_function_load()调用，即0x80000的完整调用
      120:	fffffff0 			; <UNDEFINED> instruction: 0xfffffff0
      124:	0000051c 	andeq	r0, r0, ip, lsl r5
      128:	000005f8 	strdeq	r0, [r0], -r8
@@ -521,9 +535,9 @@
      828:	e5100008 	ldr	r0, [r0, #-8]
      82c:	e5901000 	ldr	r1, [r0]
      830:	e2840004 	add	r0, r4, #4
-     834:	e12fff31 	blx	r1  ;调用 mr_malloc
+     834:	e12fff31 	blx	r1  ;调用 mr_malloc(0x108)返回0x281000内存地址
      838:	e3500000 	cmp	r0, #0
-     83c:	14804004 	strne	r4, [r0], #4
+     83c:	14804004 	strne	r4, [r0], #4  ; 将0x104存入0x281000内存
      840:	e8bd8010 	pop	{r4, pc}
      844:	fffff7dc 			; <UNDEFINED> instruction: 0xfffff7dc
      848:	e3a00000 	mov	r0, #0
