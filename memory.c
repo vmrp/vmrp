@@ -73,7 +73,7 @@ bool freeMem(size_t addr) {
         if (addr == block->addr) {
             if (block->prev) {
                 block->prev->next = block->next;
-                if(block->next) block->next->prev = block->prev;
+                if (block->next) block->next->prev = block->prev;
             } else {
                 usedList = block->next;
                 usedList->prev = NULL;
@@ -84,6 +84,15 @@ bool freeMem(size_t addr) {
         block = block->next;
     }
     return false;
+}
+
+void freeAllMem() {
+    Block *ptr;
+    while (usedList != NULL) {
+        ptr = usedList;
+        usedList = usedList->next;
+        insertFreeBlock(ptr);
+    }
 }
 
 static void compact() {
@@ -137,7 +146,6 @@ size_t allocMem(size_t num) {
         return 0;
     }
     num = (num + HEAP_ALIGNMENT - 1) & -HEAP_ALIGNMENT;
-    printf("allocMem: %d sizeof(int): %d\n", num, sizeof(int));
     Block *scan = freeList;
     Block *ptr = NULL;
     int min;
@@ -164,6 +172,11 @@ size_t allocMem(size_t num) {
         ptr->next->prev = ptr->prev;
     }
 
+    if (min >= HEAP_ALIGNMENT) {
+        printf("allocMem: %d %d\n", num, min);
+        insertFreeBlock(newBlock(ptr->addr + num, min));
+        ptr->size = num;
+    }
     insertUsedBlock(ptr);
     return ptr->addr;
 }
@@ -197,16 +210,17 @@ void main() {
     printList(freeList);
     // compact();
     // printList(freeList);
+    printf("======================================\n");
 
     printf("freeList: %d\n", countBlocks(freeList));
     printf("usedList: %d\n", countBlocks(usedList));
 
     printf("%d\n", allocMem(12));
-    printf("%d\n", allocMem(16));
+    printf("%d\n", allocMem(12));
     printf("%d\n", allocMem(4));
     printf("%d\n", allocMem(8));
     printf("%d\n", allocMem(8));
-    printf("%d\n", allocMem(24));
+    printf("%d\n", allocMem(12));
     printf("%d\n", allocMem(48));
     printf("%d\n", allocMem(48));
 
@@ -218,7 +232,13 @@ void main() {
     freeMem(10036);
     printList(usedList);
 
+    printList(freeList);
+    printf("freeList: %d\n", countBlocks(freeList));
+    printf("usedList: %d\n", countBlocks(usedList));
 
+    printf("\nfreeAllMem(): -----------------------------\n");
+    freeAllMem();
+    compact();
     printList(freeList);
     printf("freeList: %d\n", countBlocks(freeList));
     printf("usedList: %d\n", countBlocks(usedList));
