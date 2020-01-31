@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "./header/bridge.h"
+#include "./header/memory.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////
 #define TAG "   -> bridge: "
@@ -25,11 +26,25 @@ static bool _mr_c_function_new(BridgeMap *o, uc_engine *uc, uc_mem_type type, ui
     return true;
 }
 
+static bool mr_malloc(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    uint32_t p0, lr, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &p0);
+    uc_reg_read(uc, UC_ARM_REG_LR, &lr);
+
+    printf(TAG "ext call %s(0x%X[%u])\n", o->name, p0, p0);
+    dumpREG(uc);
+
+    ret = (uint32_t)allocMem((size_t)p0);
+    uc_reg_write(uc, UC_ARM_REG_R0, &ret);
+    uc_reg_write(uc, UC_ARM_REG_PC, &lr);
+    return true;
+}
 //////////////////////////////////////////////////////////////////////////////////////////
 
 // 偏移量由./mrc/[x]_offsets.c直接从mrp中导出
 static BridgeMap mr_table_funcMap[] = {
-    BRIDGE_FUNC_MAP(0x0, 0x4, MAP_FUNC, mr_malloc, NULL),
+    BRIDGE_FUNC_MAP(0x0, 0x4, MAP_FUNC, mr_malloc, mr_malloc),
     BRIDGE_FUNC_MAP(0x4, 0x4, MAP_FUNC, mr_free, NULL),
     BRIDGE_FUNC_MAP(0x8, 0x4, MAP_FUNC, mr_realloc, NULL),
     BRIDGE_FUNC_MAP(0xC, 0x4, MAP_FUNC, memcpy, NULL),

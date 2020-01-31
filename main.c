@@ -12,6 +12,7 @@
 #include "./header/bridge.h"
 #include "./header/debug.h"
 #include "./header/fileLib.h"
+#include "./header/memory.h"
 #include "./header/mr_helper.h"
 #include "./header/utils.h"
 
@@ -51,6 +52,10 @@ int extractFile() {
 // ext文件0x0地址处的值(mr_table指针)
 #define BRIDGE_TABLE_ADDRESS STACK_ADDRESS + STACK_SIZE
 #define BRIDGE_TABLE_SIZE 4096  // 最小值，实际完全足够，为了4k对齐
+
+// 由malloc和free管理的供mrp使用的内存
+#define MEMORY_MANAGER_ADDRESS BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE
+#define MEMORY_MANAGER_SIZE 1024 * 1024 * 1
 
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     printf(">>> Tracing basic block at 0x%" PRIx64 ", block size = 0x%x\n", address, size);
@@ -125,6 +130,14 @@ static bool mem_init(uc_engine *uc) {
         printf("Failed bridge_init(): %u (%s)\n", err, uc_strerror(err));
         return err;
     }
+
+    err = uc_mem_map(uc, MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    if (err) {
+        printf("Failed mem map MEMORY_MANAGER_ADDRESS: %u (%s)\n", err, uc_strerror(err));
+        return err;
+    }
+    initMemoryManager(MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE);
+
     return true;
 }
 
