@@ -15,6 +15,8 @@
 #include <unicorn/unicorn.h>
 #endif
 
+#define HEAP_ALIGNMENT 4
+
 bool freeMem(size_t addr);
 size_t allocMem(size_t num);
 void initMemoryManager(size_t baseAddress, size_t len);

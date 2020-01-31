@@ -21,7 +21,9 @@ hd mythroad/arm.mrp -n 100
 ```
 # 参考资料
 https://github.com/Yichou/mrpoid2018
+
 https://github.com/alphaSeclab/awesome-reverse-engineering
+
 https://github.com/nationalsecurityagency/ghidra
 
 反汇编：
@@ -32,6 +34,7 @@ arm汇编学习工具:
 https://github.com/linouxis9/ARMStrong
 
 https://github.com/unicorn-engine/unicorn
+
 https://bbs.pediy.com/thread-253868.htm
 
 

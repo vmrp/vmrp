@@ -44,6 +44,7 @@ static uint32_t toUint32(const char *str) {
 }
 
 static uint32_t brkAddress = 0;
+static bool run = false;
 
 void hook_code_debug(uc_engine *uc, uint64_t address) {
     char str[30];
@@ -51,6 +52,9 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
     int eqPos;
     uc_err err;
 
+    if (run) {
+        return;
+    }
     while (brkAddress == 0 || brkAddress == address) {
         brkAddress = 0;
 
@@ -77,9 +81,15 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
             ptr++;
         }
         if (str[0] == '\0') {
-            break;
+            return;
+
         } else if (strcmp("reg", str) == 0) {  // 打印所有寄存器内容
             dumpREG(uc);
+
+        } else if (strncmp("run", str, 3) == 0) {  // 停止debug，不中断运行
+            run = true;
+            return;
+
         } else if (strncmp("brk", str, 3) == 0) {  // 执行到断点地址
             brkAddress = toUint32(str);
             printf("-------------> brk 0x%X\n", brkAddress);
@@ -167,6 +177,7 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
             // clang-format off
             printf(
                 "    reg                    - print all regs\n"
+                "    run                    - run\n"
                 "    brk 0x80030            - run code to 0x80030\n"
                 "    SP=0x0027FFF0          - set SP register to 0x0027FFF0\n"
                 "    0x00080008             - print 0x00080008 memory content\n"

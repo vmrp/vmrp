@@ -1,6 +1,11 @@
 #include "./header/memory.h"
 
-#define HEAP_ALIGNMENT 4
+/*
+实现在模拟器中对malloc()和free()调用的管理功能，管理的是模拟器地址，因此本机代码为了方便开发仍然使用了原生的malloc()和free()
+malloc(): 从freeList双向链表中找到合适的最小块，如果找不到则调用compat()合并连续的可用块再次尝试，如果块大小超过需要的数量并且大于HEAP_ALIGNMENT，则拆分此块，并将剩余部分放回freeList
+free(): 简单地将块从usedList放回freeList
+2020/1/31 17:26 zengming
+*/
 
 typedef struct Block {
     size_t addr;
@@ -9,8 +14,8 @@ typedef struct Block {
     struct Block *next;
 } Block;
 
-static Block *freeList;
-static Block *usedList;
+static Block *freeList; // 有序双向链表
+static Block *usedList; // 无序单向链表
 
 static void printList(Block *list) {
     printf("==================\n");
@@ -93,6 +98,7 @@ static void freeAllMem() {
     }
 }
 
+// 合并连续的可用块
 static void compact() {
     Block *ptr = freeList;
     Block *prev;

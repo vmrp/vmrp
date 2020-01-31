@@ -9,45 +9,102 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 #define TAG "   -> bridge: "
 
-static bool _mr_c_function_new(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
-    uint32_t p0, p1, lr, ret;
+#define RET()                                                                    \
+    {                                                                            \
+        uint32_t lr;                                                             \
+        uc_reg_read(uc, UC_ARM_REG_LR, &lr);                                     \
+        uc_reg_write(uc, UC_ARM_REG_PC, &lr); /* 返回ext调用点 */           \
+        return true;                          /* 返回true允许继续运行 */ \
+    }
 
-    uc_reg_read(uc, UC_ARM_REG_R0, &p0);
-    uc_reg_read(uc, UC_ARM_REG_R1, &p1);
-    uc_reg_read(uc, UC_ARM_REG_LR, &lr);
+#define SET_RET_V(ret) uc_reg_write(uc, UC_ARM_REG_R0, &ret);
 
-    printf(TAG "ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p0, p0, p1, p1);
+static bool br__mr_c_function_new(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    uint32_t p_f, p_len, ret;
+    uc_reg_read(uc, UC_ARM_REG_R0, &p_f);
+    uc_reg_read(uc, UC_ARM_REG_R1, &p_len);
+
+    printf(TAG "ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p_f, p_f, p_len, p_len);
     dumpREG(uc);
 
     ret = MR_SUCCESS;
-    uc_reg_write(uc, UC_ARM_REG_R0, &ret);
-    uc_reg_write(uc, UC_ARM_REG_PC, &lr);  // 返回ext调用点
-    // 返回true允许继续运行
-    return true;
+    SET_RET_V(ret);
+    RET();
 }
 
-static bool mr_malloc(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
-    uint32_t p0, lr, ret;
+static bool br_mr_malloc(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    uint32_t p_len, ret;
+    uc_reg_read(uc, UC_ARM_REG_R0, &p_len);
 
-    uc_reg_read(uc, UC_ARM_REG_R0, &p0);
-    uc_reg_read(uc, UC_ARM_REG_LR, &lr);
-
-    printf(TAG "ext call %s(0x%X[%u])\n", o->name, p0, p0);
+    printf(TAG "ext call %s(0x%X[%u])\n", o->name, p_len, p_len);
     dumpREG(uc);
 
-    ret = (uint32_t)allocMem((size_t)p0);
-    uc_reg_write(uc, UC_ARM_REG_R0, &ret);
-    uc_reg_write(uc, UC_ARM_REG_PC, &lr);
-    return true;
+    ret = (uint32_t)allocMem((size_t)p_len);
+    printf(TAG "ext call %s(0x%X[%u]) ret=0x%X[%u]\n", o->name, p_len, p_len, ret, ret);
+    SET_RET_V(ret);
+    RET();
 }
+
+static bool br_mr_free(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    uint32_t p, len;
+    uc_reg_read(uc, UC_ARM_REG_R0, &p);
+    uc_reg_read(uc, UC_ARM_REG_R1, &len);
+
+    printf(TAG "ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p, p, len, len);
+    dumpREG(uc);
+
+    freeMem((size_t)p);
+    RET();
+}
+
+// todo 采用直接执行arm机器码的方式优化
+static bool br_memcpy(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    uint32_t p_dst, p_src, p_size, ret;
+    uc_reg_read(uc, UC_ARM_REG_R0, &p_dst);
+    uc_reg_read(uc, UC_ARM_REG_R1, &p_src);
+    uc_reg_read(uc, UC_ARM_REG_R2, &p_size);
+
+    printf(TAG "ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_src, p_src, p_size, p_size);
+    dumpREG(uc);
+
+    ret = p_dst;
+    uint32_t b;
+    for (size_t i = 0; i < p_size; i++) {
+        uc_mem_read(uc, p_src + i, &b, 1);
+        uc_mem_write(uc, p_dst + i, &b, 1);
+    }
+    SET_RET_V(ret);
+    RET();
+}
+
+// todo 采用直接执行arm机器码的方式优化
+static bool br_memset(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    uint32_t p_dst, p_val, p_size, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &p_dst);
+    uc_reg_read(uc, UC_ARM_REG_R1, &p_val);
+    uc_reg_read(uc, UC_ARM_REG_R2, &p_size);
+
+    printf(TAG "ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_val, p_val, p_size, p_size);
+    dumpREG(uc);
+
+    ret = p_dst;
+    for (size_t i = 0; i < p_size; i++) {
+        uc_mem_write(uc, p_dst + i, &p_val, 1);
+    }
+
+    SET_RET_V(ret);
+    RET();
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 
 // 偏移量由./mrc/[x]_offsets.c直接从mrp中导出
 static BridgeMap mr_table_funcMap[] = {
-    BRIDGE_FUNC_MAP(0x0, 0x4, MAP_FUNC, mr_malloc, mr_malloc),
-    BRIDGE_FUNC_MAP(0x4, 0x4, MAP_FUNC, mr_free, NULL),
+    BRIDGE_FUNC_MAP(0x0, 0x4, MAP_FUNC, mr_malloc, br_mr_malloc),
+    BRIDGE_FUNC_MAP(0x4, 0x4, MAP_FUNC, mr_free, br_mr_free),
     BRIDGE_FUNC_MAP(0x8, 0x4, MAP_FUNC, mr_realloc, NULL),
-    BRIDGE_FUNC_MAP(0xC, 0x4, MAP_FUNC, memcpy, NULL),
+    BRIDGE_FUNC_MAP(0xC, 0x4, MAP_FUNC, memcpy, br_memcpy),
     BRIDGE_FUNC_MAP(0x10, 0x4, MAP_FUNC, memmove, NULL),
     BRIDGE_FUNC_MAP(0x14, 0x4, MAP_FUNC, strcpy, NULL),
     BRIDGE_FUNC_MAP(0x18, 0x4, MAP_FUNC, strncpy, NULL),
@@ -58,7 +115,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x2C, 0x4, MAP_FUNC, strncmp, NULL),
     BRIDGE_FUNC_MAP(0x30, 0x4, MAP_FUNC, strcoll, NULL),
     BRIDGE_FUNC_MAP(0x34, 0x4, MAP_FUNC, memchr, NULL),
-    BRIDGE_FUNC_MAP(0x38, 0x4, MAP_FUNC, memset, NULL),
+    BRIDGE_FUNC_MAP(0x38, 0x4, MAP_FUNC, memset, br_memset),
     BRIDGE_FUNC_MAP(0x3C, 0x4, MAP_FUNC, strlen, NULL),
     BRIDGE_FUNC_MAP(0x40, 0x4, MAP_FUNC, strstr, NULL),
     BRIDGE_FUNC_MAP(0x44, 0x4, MAP_FUNC, sprintf, NULL),
@@ -69,7 +126,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x58, 0x4, MAP_DATA, reserve1, NULL),
     BRIDGE_FUNC_MAP(0x5C, 0x4, MAP_DATA, _mr_c_internal_table, NULL),
     BRIDGE_FUNC_MAP(0x60, 0x4, MAP_DATA, _mr_c_port_table, NULL),
-    BRIDGE_FUNC_MAP(0x64, 0x4, MAP_FUNC, _mr_c_function_new, _mr_c_function_new),
+    BRIDGE_FUNC_MAP(0x64, 0x4, MAP_FUNC, _mr_c_function_new, br__mr_c_function_new),
     BRIDGE_FUNC_MAP(0x68, 0x4, MAP_FUNC, mr_printf, NULL),
     BRIDGE_FUNC_MAP(0x6C, 0x4, MAP_FUNC, mr_mem_get, NULL),
     BRIDGE_FUNC_MAP(0x70, 0x4, MAP_FUNC, mr_mem_free, NULL),
