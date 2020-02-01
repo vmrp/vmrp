@@ -159,11 +159,11 @@ mr_helper函数： 0x80550
      248:	e5841070 	str	r1, [r4, #112]	; 0x70
      24c:	e3a01000 	mov	r1, #0
      250:	e5821000 	str	r1, [r2]
-     254:	e5903208 	ldr	r3, [r0, #520]	; 0x208
+     254:	e5903208 	ldr	r3, [r0, #520]	; 0x208 r3=_mr_TestCom
      258:	e3a00000 	mov	r0, #0
      25c:	e59f2024 	ldr	r2, [pc, #36]	; 0x288
      260:	e3a01007 	mov	r1, #7
-     264:	e12fff33 	blx	r3
+     264:	e12fff33 	blx	r3 ; _mr_TestCom(0,7,0x270f)
      268:	e240cd9c 	sub	ip, r0, #156, 26	; 0x2700
      26c:	e25cc00f 	subs	ip, ip, #15
      270:	059f0014 	ldreq	r0, [pc, #20]	; 0x28c
@@ -256,8 +256,8 @@ mr_helper函数： 0x80550
      3cc:	e08f0000 	add	r0, pc, r0
      3d0:	e88d000e 	stm	sp, {r1, r2, r3}
      3d4:	e5100008 	ldr	r0, [r0, #-8]
-     3d8:	e5901174 	ldr	r1, [r0, #372]	; 0x174
-     3dc:	e5911000 	ldr	r1, [r1]
+     3d8:	e5901174 	ldr	r1, [r0, #372]	; 0x174 r1=&mr_table.mr_screen_h
+     3dc:	e5911000 	ldr	r1, [r1] ; r1=屏幕高度
      3e0:	e1a03801 	lsl	r3, r1, #16
      3e4:	e5901170 	ldr	r1, [r0, #368]	; 0x170
      3e8:	e1a03843 	asr	r3, r3, #16
@@ -350,7 +350,7 @@ mr_helper函数： 0x80550
      544:	0000006c 	andeq	r0, r0, ip, rrx
      548:	e3a00000 	mov	r0, #0
      54c:	e12fff1e 	bx	lr
-     550:	e92d45fe 	push	{r1, r2, r3, r4, r5, r6, r7, r8, sl, lr}
+     550:	e92d45fe 	push	{r1, r2, r3, r4, r5, r6, r7, r8, sl, lr} ; mr_init()函数
      554:	e1a05000 	mov	r5, r0
      558:	e5900000 	ldr	r0, [r0]
      55c:	e1a0a009 	mov	sl, r9
@@ -358,8 +358,8 @@ mr_helper函数： 0x80550
      564:	e1a07003 	mov	r7, r3
      568:	e1a06002 	mov	r6, r2
      56c:	e3a04000 	mov	r4, #0
-     570:	ebfffefe 	bl	0x170
-     574:	e59f00cc 	ldr	r0, [pc, #204]	; 0x648
+     570:	ebfffefe 	bl	0x170 ; r9=r0
+     574:	e59f00cc 	ldr	r0, [pc, #204]	; 0x648 r0=4
      578:	e358000a 	cmp	r8, #10
      57c:	e0800009 	add	r0, r0, r9
      580:	908ff108 	addls	pc, pc, r8, lsl #2

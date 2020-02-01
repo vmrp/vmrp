@@ -12,6 +12,7 @@
 #include "./header/bridge.h"
 #include "./header/debug.h"
 #include "./header/fileLib.h"
+#include "./header/main.h"
 #include "./header/memory.h"
 #include "./header/mr_helper.h"
 #include "./header/utils.h"
@@ -43,19 +44,6 @@ int extractFile() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-
-#define CODE_ADDRESS 0x80000                    // ext开始执行的地址
-#define CODE_SIZE 1024 * 1024 * 1               // 为ext分配的内存大小
-#define STACK_ADDRESS CODE_ADDRESS + CODE_SIZE  // 栈开始地址
-#define STACK_SIZE 1024 * 1024 * 1              // 栈大小
-
-// ext文件0x0地址处的值(mr_table指针)
-#define BRIDGE_TABLE_ADDRESS STACK_ADDRESS + STACK_SIZE
-#define BRIDGE_TABLE_SIZE 4096  // 最小值，实际完全足够，为了4k对齐
-
-// 由malloc和free管理的供mrp使用的内存
-#define MEMORY_MANAGER_ADDRESS BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE
-#define MEMORY_MANAGER_SIZE 1024 * 1024 * 1
 
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     printf(">>> Tracing basic block at 0x%" PRIx64 ", block size = 0x%x\n", address, size);
@@ -141,18 +129,14 @@ static bool mem_init(uc_engine *uc) {
     return true;
 }
 
-static void emu(BOOL isThumb) {
+static void emu() {
     uc_engine *uc;
     uc_err err;
+    uc_hook trace;
 
     printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, BRIDGE_TABLE_ADDRESS:0x%X\n", CODE_ADDRESS, STACK_ADDRESS, BRIDGE_TABLE_ADDRESS);
 
-    if (isThumb) {
-        err = uc_open(UC_ARCH_ARM, UC_MODE_THUMB, &uc);
-    } else {
-        err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &uc);
-    }
-
+    err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &uc);
     if (err) {
         printf("Failed on uc_open() with error returned: %u (%s)\n", err, uc_strerror(err));
         return;
@@ -161,33 +145,19 @@ static void emu(BOOL isThumb) {
         printf("mem_init() fail\n");
         goto end;
     }
-    {
-        uc_hook trace;
 
-        uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
-        uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
-        uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
-        uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
+    uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
+    uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
+    uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
+    uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
 
-        uint32_t value = STACK_ADDRESS + STACK_SIZE;  // 满递减
-        uc_reg_write(uc, UC_ARM_REG_SP, &value);
+    uint32_t value = STACK_ADDRESS + STACK_SIZE;  // 满递减
+    uc_reg_write(uc, UC_ARM_REG_SP, &value);
 
-        value = CODE_ADDRESS;
-        uc_reg_write(uc, UC_ARM_REG_LR, &value);  // 当程序执行到这里时停止运行
-
-        value = 1;
-        uc_reg_write(uc, UC_ARM_REG_R0, &value);  // 传参数值1
-
-        dumpREG(uc);
-        // Note we start at ADDRESS | 1 to indicate THUMB mode.
-        value = CODE_ADDRESS + 8;
-        value = isThumb ? value | 1 : value;
-        err = uc_emu_start(uc, value, CODE_ADDRESS, 0, 0);
-        if (err) {
-            printf("Failed on uc_emu_start() with error returned: %u (%s)\n", err, uc_strerror(err));
-        }
-        dumpREG(uc);
-    }
+    value = 1;
+    uc_reg_write(uc, UC_ARM_REG_R0, &value);  // 传参数值1
+    runCode(uc, CODE_ADDRESS + 8, STOP_ADDRESS, false);
+    bridge_mr_init(uc);
 end:
     uc_close(uc);
 }

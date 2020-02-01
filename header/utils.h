@@ -32,6 +32,7 @@
 char *memTypeStr(uc_mem_type type);
 void dumpREG(uc_engine *uc);
 void dumpMemStr(void *ptr, size_t len);
+void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb);
 
 typedef struct uIntMap {
     struct rb_node node;

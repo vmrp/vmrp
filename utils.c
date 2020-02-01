@@ -59,8 +59,18 @@ void dumpMemStr(void *ptr, size_t len) {
     }
 }
 
-//////////////////////////////////////////////////////////////////////////////
+void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb) {
+    uint32_t value = stopAddr;
+    uc_reg_write(uc, UC_ARM_REG_LR, &value);  // 当程序执行到这里时停止运行(return)
 
+    // Note we start at ADDRESS | 1 to indicate THUMB mode.
+    startAddr = isThumb ? (startAddr | 1) : startAddr;
+    uc_err err = uc_emu_start(uc, startAddr, stopAddr, 0, 0);
+    if (err) {
+        printf("Failed on uc_emu_start() with error returned: %u (%s)\n", err, uc_strerror(err));
+    }
+}
+//////////////////////////////////////////////////////////////////////////////
 
 uIntMap *uIntMap_search(struct rb_root *root, uint32_t key) {
     struct rb_node *n = root->rb_node;

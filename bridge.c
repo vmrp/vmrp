@@ -4,10 +4,14 @@
 #include <string.h>
 
 #include "./header/bridge.h"
+#include "./header/main.h"
 #include "./header/memory.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////
-#define TAG "   -> bridge: "
+#ifdef LOG
+#undef LOG
+#endif
+#define LOG(format, ...) printf("   -> bridge: " format, ##__VA_ARGS__)
 
 #define RET()                                                                    \
     {                                                                            \
@@ -19,14 +23,18 @@
 
 #define SET_RET_V(ret) uc_reg_write(uc, UC_ARM_REG_R0, &ret);
 
+static uint32_t mr_helper_addr;
+static uint32_t mr_table_startAddress;
+static uint32_t mr_c_function_startAddress;
+static uint32_t mrc_extChunk_startAddress;
+static uint32_t endAddress;
+
 static bool br__mr_c_function_new(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     uint32_t p_f, p_len, ret;
     uc_reg_read(uc, UC_ARM_REG_R0, &p_f);
     uc_reg_read(uc, UC_ARM_REG_R1, &p_len);
-
-    printf(TAG "ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p_f, p_f, p_len, p_len);
-    dumpREG(uc);
-
+    LOG("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p_f, p_f, p_len, p_len);
+    mr_helper_addr = p_f;
     ret = MR_SUCCESS;
     SET_RET_V(ret);
     RET();
@@ -36,11 +44,11 @@ static bool br_mr_malloc(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t
     uint32_t p_len, ret;
     uc_reg_read(uc, UC_ARM_REG_R0, &p_len);
 
-    printf(TAG "ext call %s(0x%X[%u])\n", o->name, p_len, p_len);
+    LOG("ext call %s(0x%X[%u])\n", o->name, p_len, p_len);
     dumpREG(uc);
 
     ret = (uint32_t)allocMem((size_t)p_len);
-    printf(TAG "ext call %s(0x%X[%u]) ret=0x%X[%u]\n", o->name, p_len, p_len, ret, ret);
+    LOG("ext call %s(0x%X[%u]) ret=0x%X[%u]\n", o->name, p_len, p_len, ret, ret);
     SET_RET_V(ret);
     RET();
 }
@@ -50,7 +58,7 @@ static bool br_mr_free(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t a
     uc_reg_read(uc, UC_ARM_REG_R0, &p);
     uc_reg_read(uc, UC_ARM_REG_R1, &len);
 
-    printf(TAG "ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p, p, len, len);
+    LOG("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p, p, len, len);
     dumpREG(uc);
 
     freeMem((size_t)p);
@@ -64,7 +72,7 @@ static bool br_memcpy(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t ad
     uc_reg_read(uc, UC_ARM_REG_R1, &p_src);
     uc_reg_read(uc, UC_ARM_REG_R2, &p_size);
 
-    printf(TAG "ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_src, p_src, p_size, p_size);
+    LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_src, p_src, p_size, p_size);
     dumpREG(uc);
 
     ret = p_dst;
@@ -85,7 +93,7 @@ static bool br_memset(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t ad
     uc_reg_read(uc, UC_ARM_REG_R1, &p_val);
     uc_reg_read(uc, UC_ARM_REG_R2, &p_size);
 
-    printf(TAG "ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_val, p_val, p_size, p_size);
+    LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_val, p_val, p_size, p_size);
     dumpREG(uc);
 
     ret = p_dst;
@@ -97,11 +105,27 @@ static bool br_memset(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t ad
     RET();
 }
 
+static bool br__mr_TestCom(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    // typedef int32 (*T__mr_TestCom)(int32 L, int input0, int input1);
+    uint32_t L, input0, input1, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &L);
+    uc_reg_read(uc, UC_ARM_REG_R1, &input0);
+    uc_reg_read(uc, UC_ARM_REG_R2, &input1);
+
+    LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, L, L, input0, input0, input1, input1);
+    dumpREG(uc);
+
+    ret = MR_SUCCESS;
+    SET_RET_V(ret);
+    RET();
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 
 // 偏移量由./mrc/[x]_offsets.c直接从mrp中导出
 static BridgeMap mr_table_funcMap[] = {
-    BRIDGE_FUNC_MAP(0x0, 0x4, MAP_FUNC, mr_malloc, br_mr_malloc),
+    BRIDGE_FUNC_MAP(0x0, 0x4, MAP_FUNC, mr_malloc, br_mr_malloc),  // 0x280000
     BRIDGE_FUNC_MAP(0x4, 0x4, MAP_FUNC, mr_free, br_mr_free),
     BRIDGE_FUNC_MAP(0x8, 0x4, MAP_FUNC, mr_realloc, NULL),
     BRIDGE_FUNC_MAP(0xC, 0x4, MAP_FUNC, memcpy, br_memcpy),
@@ -231,7 +255,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x1FC, 0x4, MAP_FUNC, mr_registerAPP, NULL),
     BRIDGE_FUNC_MAP(0x200, 0x4, MAP_FUNC, _DrawTextEx, NULL),
     BRIDGE_FUNC_MAP(0x204, 0x4, MAP_FUNC, _mr_EffSetCon, NULL),
-    BRIDGE_FUNC_MAP(0x208, 0x4, MAP_FUNC, _mr_TestCom, NULL),
+    BRIDGE_FUNC_MAP(0x208, 0x4, MAP_FUNC, _mr_TestCom, br__mr_TestCom),
     BRIDGE_FUNC_MAP(0x20C, 0x4, MAP_FUNC, _mr_TestCom1, NULL),
     BRIDGE_FUNC_MAP(0x210, 0x4, MAP_FUNC, c2u, NULL),
     BRIDGE_FUNC_MAP(0x214, 0x4, MAP_FUNC, _mr_div, NULL),
@@ -250,10 +274,10 @@ static BridgeMap mr_table_funcMap[] = {
 };
 
 static BridgeMap mr_c_function_funcMap[] = {
-    BRIDGE_FUNC_MAP(0x0, 0x4, MAP_DATA, start_of_ER_RW, NULL),
+    BRIDGE_FUNC_MAP(0x0, 0x4, MAP_DATA, start_of_ER_RW, NULL),  // 0x280248
     BRIDGE_FUNC_MAP(0x4, 0x4, MAP_DATA, ER_RW_Length, NULL),
     BRIDGE_FUNC_MAP(0x8, 0x4, MAP_DATA, ext_type, NULL),
-    BRIDGE_FUNC_MAP(0xC, 0x4, MAP_DATA, mrc_extChunk, NULL),
+    BRIDGE_FUNC_MAP(0xC, 0x4, MAP_DATA, mrc_extChunk, NULL),  // 0x280254
     BRIDGE_FUNC_MAP(0x10, 0x4, MAP_DATA, stack, NULL),
 };
 
@@ -283,15 +307,15 @@ bool bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address, int size, in
         BridgeMap *obj = mobj->data;
         if (obj->type == MAP_FUNC) {
             if (obj->fn == NULL) {
-                printf(TAG "%s() Not yet implemented function !!! \n", obj->name);
+                printf("!!! %s() Not yet implemented function !!! \n", obj->name);
                 exit(1);
                 return false;
             }
             return obj->fn(obj, uc, type, address, size, value, user_data);
         }
-        printf(TAG "unregister function at 0x%" PRIX64 "\n", address);
+        printf("!!! unregister function at 0x%" PRIX64 " !!! \n", address);
     } else {
-        // printf(TAG "unregister address at 0x%" PRIX64 "\n", address);
+        // LOG("unregister address at 0x%" PRIX64 "\n", address);
     }
     return false;
 }
@@ -323,10 +347,10 @@ static int init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t start
 }
 
 uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress) {
-    uint32_t mr_table_startAddress = startAddress;
-    uint32_t mr_c_function_startAddress = mr_table_startAddress + MR_TABLE_SIZE;
-    uint32_t mrc_extChunk_startAddress = mr_c_function_startAddress + MR_C_FUNCTION_SIZE;
-    uint32_t endAddress = mrc_extChunk_startAddress + MRC_EXTCHUNK_SIZE;
+    mr_table_startAddress = startAddress;
+    mr_c_function_startAddress = mr_table_startAddress + MR_TABLE_SIZE;
+    mrc_extChunk_startAddress = mr_c_function_startAddress + MR_C_FUNCTION_SIZE;
+    endAddress = mrc_extChunk_startAddress + MRC_EXTCHUNK_SIZE;
 
     uc_err err = init(uc, mr_table_funcMap, countof(mr_table_funcMap), mr_table_startAddress);
     if (err) return err;
@@ -341,9 +365,27 @@ uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress) {
     err = init(uc, mrc_extChunk_funcMap, countof(mrc_extChunk_funcMap), mrc_extChunk_startAddress);
     if (err) return err;
 
-    printf(TAG "startAddr: 0x%X, endAddr: 0x%X\n", startAddress, endAddress);
-    printf(TAG "mr_table_startAddress: 0x%X\n", mr_table_startAddress);
-    printf(TAG "mr_c_function_startAddress: 0x%X\n", mr_c_function_startAddress);
-    printf(TAG "mrc_extChunk_startAddress: 0x%X\n", mrc_extChunk_startAddress);
+    LOG("startAddr: 0x%X, endAddr: 0x%X\n", startAddress, endAddress);
+    LOG("mr_table_startAddress: 0x%X\n", mr_table_startAddress);
+    LOG("mr_c_function_startAddress: 0x%X\n", mr_c_function_startAddress);
+    LOG("mrc_extChunk_startAddress: 0x%X\n", mrc_extChunk_startAddress);
     return UC_ERR_OK;
+}
+
+// todo 传递参数超过4个，用寄存器传所有参数应该是错的，有待研究
+void bridge_mr_init(uc_engine *uc) {
+    // typedef int32 (*MR_C_FUNCTION)(void* P, int32 code, uint8* input, int32 input_len, uint8** output, int32* output_len);
+    // mr_helper(&cfunction_table, 0, NULL, 0, NULL, NULL);
+    LOG("bridge_mr_init()\n");
+
+    uint32_t v = mr_c_function_startAddress;
+    uc_reg_write(uc, UC_ARM_REG_R0, &v);  // p
+    v = 0;
+    uc_reg_write(uc, UC_ARM_REG_R1, &v);  // code
+    uc_reg_write(uc, UC_ARM_REG_R2, &v);  // input
+    uc_reg_write(uc, UC_ARM_REG_R3, &v);  // input_len
+    uc_reg_write(uc, UC_ARM_REG_R4, &v);  // output
+    uc_reg_write(uc, UC_ARM_REG_R5, &v);  // output_len
+
+    runCode(uc, mr_helper_addr, STOP_ADDRESS, false);
 }
