@@ -259,9 +259,9 @@ mr_helper函数： 0x80550
      3d8:	e5901174 	ldr	r1, [r0, #372]	; 0x174 r1=&mr_table.mr_screen_h
      3dc:	e5911000 	ldr	r1, [r1] ; r1=屏幕高度
      3e0:	e1a03801 	lsl	r3, r1, #16
-     3e4:	e5901170 	ldr	r1, [r0, #368]	; 0x170
+     3e4:	e5901170 	ldr	r1, [r0, #368]	; 0x170 r1=&mr_table.mr_screen_w
      3e8:	e1a03843 	asr	r3, r3, #16
-     3ec:	e5911000 	ldr	r1, [r1]
+     3ec:	e5911000 	ldr	r1, [r1] ; r1=屏幕宽度
      3f0:	e590c1e8 	ldr	ip, [r0, #488]	; 0x1e8
      3f4:	e1a02801 	lsl	r2, r1, #16
      3f8:	e1a02842 	asr	r2, r2, #16

@@ -13,6 +13,9 @@
 #include <unicorn/unicorn.h>
 #endif
 
+#define SCREEN_WIDTH 240
+#define SCREEN_HEIGHT 320
+
 #define CODE_ADDRESS 0x80000                    // ext开始执行的地址
 #define STOP_ADDRESS CODE_ADDRESS               // 代码停止位置
 #define CODE_SIZE 1024 * 1024 * 1               // 为ext分配的内存大小

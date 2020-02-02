@@ -100,6 +100,13 @@ static bool mem_init(uc_engine *uc) {
         return false;
     }
 
+    err = uc_mem_map(uc, MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    if (err) {
+        printf("Failed mem map MEMORY_MANAGER_ADDRESS: %u (%s)\n", err, uc_strerror(err));
+        return err;
+    }
+    initMemoryManager(MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE);
+
     // unicorn存在BUG，UC_HOOK_MEM_INVALID只能拦截第一次UC_MEM_FETCH_PROT，所以干脆设置成可执行，统一在UC_HOOK_CODE事件中处理
     // err = uc_mem_map(uc, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_SIZE, UC_PROT_READ | UC_PROT_WRITE);
     err = uc_mem_map(uc, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_SIZE, UC_PROT_ALL);
@@ -112,13 +119,6 @@ static bool mem_init(uc_engine *uc) {
         printf("Failed bridge_init(): %u (%s)\n", err, uc_strerror(err));
         return err;
     }
-
-    err = uc_mem_map(uc, MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE, UC_PROT_READ | UC_PROT_WRITE);
-    if (err) {
-        printf("Failed mem map MEMORY_MANAGER_ADDRESS: %u (%s)\n", err, uc_strerror(err));
-        return err;
-    }
-    initMemoryManager(MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE);
 
     return true;
 }
