@@ -124,6 +124,36 @@ static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
     RET();
 }
 
+static void br_DrawRect(BridgeMap *o, uc_engine *uc) {
+    // typedef  void (*T_DrawRect)(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b);
+    uint32_t x, y, w, h, r, g, b;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &x);
+    uc_reg_read(uc, UC_ARM_REG_R1, &y);
+    uc_reg_read(uc, UC_ARM_REG_R2, &w);
+    uc_reg_read(uc, UC_ARM_REG_R3, &h);
+
+    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, x, y, w, h);
+    LOG("ext call %s([%u], [%u], [%u], [%u])\n", o->name, x, y, w, h);
+    dumpREG(uc);
+    RET();
+}
+
+static void br__DrawText(BridgeMap *o, uc_engine *uc) {
+    // typedef  int32 (*T__DrawText)(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int is_unicode, uint16 font);
+    uint32_t pcText, x, y, r, g, b, is_unicode, font;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &pcText);
+    uc_reg_read(uc, UC_ARM_REG_R1, &x);
+    uc_reg_read(uc, UC_ARM_REG_R2, &y);
+    uc_reg_read(uc, UC_ARM_REG_R3, &r);
+
+    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, pcText, x, y, r);
+    LOG("ext call %s([%u], [%u], [%u], [%u])\n", o->name, pcText, x, y, r);
+    dumpREG(uc);
+    RET();
+}
+
 // data ////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t mr_screen_h;  // 只是一个地址值
@@ -271,8 +301,8 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x1DC, 0x4, MAP_FUNC, _DrawPoint, NULL, NULL),
     BRIDGE_FUNC_MAP(0x1E0, 0x4, MAP_FUNC, _DrawBitmap, NULL, NULL),
     BRIDGE_FUNC_MAP(0x1E4, 0x4, MAP_FUNC, _DrawBitmapEx, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x1E8, 0x4, MAP_FUNC, DrawRect, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x1EC, 0x4, MAP_FUNC, _DrawText, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x1E8, 0x4, MAP_FUNC, DrawRect, NULL, br_DrawRect),
+    BRIDGE_FUNC_MAP(0x1EC, 0x4, MAP_FUNC, _DrawText, NULL, br__DrawText),
     BRIDGE_FUNC_MAP(0x1F0, 0x4, MAP_FUNC, _BitmapCheck, NULL, NULL),
     BRIDGE_FUNC_MAP(0x1F4, 0x4, MAP_FUNC, _mr_readFile, NULL, NULL),
     BRIDGE_FUNC_MAP(0x1F8, 0x4, MAP_FUNC, mr_wstrlen, NULL, NULL),
