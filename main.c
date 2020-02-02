@@ -52,7 +52,7 @@ static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *use
 static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     hook_code_debug(uc, address);
     if (address >= BRIDGE_TABLE_ADDRESS && address <= BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE) {
-        bridge_exec(uc, 0, address, 0, 0, NULL);
+        bridge(uc, UC_MEM_FETCH, address);
     }
 }
 
@@ -64,14 +64,6 @@ static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, in
 static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     printf(">>> Tracing mem_invalid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
            memTypeStr(type), address, size, value);
-
-    hook_code_debug(uc, address);
-
-    if (type == UC_MEM_FETCH_PROT) {
-        if (bridge_exec(uc, type, address, size, value, user_data)) {
-            return true;
-        }
-    }
     return false;
 }
 
@@ -108,7 +100,9 @@ static bool mem_init(uc_engine *uc) {
         return false;
     }
 
-    err = uc_mem_map(uc, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    // unicorn存在BUG，UC_HOOK_MEM_INVALID只能拦截第一次UC_MEM_FETCH_PROT，所以干脆设置成可执行，统一在UC_HOOK_CODE事件中处理
+    // err = uc_mem_map(uc, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    err = uc_mem_map(uc, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_SIZE, UC_PROT_ALL);
     if (err) {
         printf("Failed mem map BRIDGE_TABLE_ADDRESS: %u (%s)\n", err, uc_strerror(err));
         return err;

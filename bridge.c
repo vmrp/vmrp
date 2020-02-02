@@ -13,12 +13,11 @@
 #endif
 #define LOG(format, ...) printf("   -> bridge: " format, ##__VA_ARGS__)
 
-#define RET()                                                                    \
-    {                                                                            \
-        uint32_t lr;                                                             \
-        uc_reg_read(uc, UC_ARM_REG_LR, &lr);                                     \
-        uc_reg_write(uc, UC_ARM_REG_PC, &lr); /* 返回ext调用点 */           \
-        return true;                          /* 返回true允许继续运行 */ \
+#define RET()                                 \
+    {                                         \
+        uint32_t lr;                          \
+        uc_reg_read(uc, UC_ARM_REG_LR, &lr);  \
+        uc_reg_write(uc, UC_ARM_REG_PC, &lr); \
     }
 
 #define SET_RET_V(ret) uc_reg_write(uc, UC_ARM_REG_R0, &ret);
@@ -29,7 +28,7 @@ static uint32_t mr_c_function_startAddress;
 static uint32_t mrc_extChunk_startAddress;
 static uint32_t endAddress;
 
-static bool br__mr_c_function_new(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
     uint32_t p_f, p_len, ret;
     uc_reg_read(uc, UC_ARM_REG_R0, &p_f);
     uc_reg_read(uc, UC_ARM_REG_R1, &p_len);
@@ -40,7 +39,7 @@ static bool br__mr_c_function_new(BridgeMap *o, uc_engine *uc, uc_mem_type type,
     RET();
 }
 
-static bool br_mr_malloc(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+static void br_mr_malloc(BridgeMap *o, uc_engine *uc) {
     uint32_t p_len, ret;
     uc_reg_read(uc, UC_ARM_REG_R0, &p_len);
 
@@ -53,7 +52,7 @@ static bool br_mr_malloc(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t
     RET();
 }
 
-static bool br_mr_free(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+static void br_mr_free(BridgeMap *o, uc_engine *uc) {
     uint32_t p, len;
     uc_reg_read(uc, UC_ARM_REG_R0, &p);
     uc_reg_read(uc, UC_ARM_REG_R1, &len);
@@ -66,7 +65,7 @@ static bool br_mr_free(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t a
 }
 
 // todo 采用直接执行arm机器码的方式优化
-static bool br_memcpy(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+static void br_memcpy(BridgeMap *o, uc_engine *uc) {
     uint32_t p_dst, p_src, p_size, ret;
     uc_reg_read(uc, UC_ARM_REG_R0, &p_dst);
     uc_reg_read(uc, UC_ARM_REG_R1, &p_src);
@@ -86,7 +85,7 @@ static bool br_memcpy(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t ad
 }
 
 // todo 采用直接执行arm机器码的方式优化
-static bool br_memset(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+static void br_memset(BridgeMap *o, uc_engine *uc) {
     uint32_t p_dst, p_val, p_size, ret;
 
     uc_reg_read(uc, UC_ARM_REG_R0, &p_dst);
@@ -105,7 +104,7 @@ static bool br_memset(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t ad
     RET();
 }
 
-static bool br__mr_TestCom(BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T__mr_TestCom)(int32 L, int input0, int input1);
     uint32_t L, input0, input1, ret;
 
@@ -301,7 +300,7 @@ static BridgeMap mrc_extChunk_funcMap[] = {
 
 static struct rb_root root = RB_ROOT;
 
-bool bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+void bridge(uc_engine *uc, uc_mem_type type, uint64_t address) {
     uIntMap *mobj = uIntMap_search(&root, address);
     if (mobj) {
         BridgeMap *obj = mobj->data;
@@ -309,15 +308,13 @@ bool bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address, int size, in
             if (obj->fn == NULL) {
                 printf("!!! %s() Not yet implemented function !!! \n", obj->name);
                 exit(1);
-                return false;
+                return;
             }
-            return obj->fn(obj, uc, type, address, size, value, user_data);
+            obj->fn(obj, uc);
+            return;
         }
         printf("!!! unregister function at 0x%" PRIX64 " !!! \n", address);
-    } else {
-        // LOG("unregister address at 0x%" PRIX64 "\n", address);
     }
-    return false;
 }
 
 static int init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t startAddress) {

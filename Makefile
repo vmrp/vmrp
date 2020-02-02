@@ -17,4 +17,4 @@ main: $(OBJS)
 
 .PHONY: clean
 clean:
-	-rm $(OBJS) main
+	-rm $(OBJS) main *.exe

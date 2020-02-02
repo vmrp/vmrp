@@ -22,7 +22,7 @@
 
 typedef struct BridgeMap BridgeMap;
 
-typedef bool (*BridgeCB)(struct BridgeMap *o, uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data);
+typedef void (*BridgeCB)(struct BridgeMap *o, uc_engine *uc);
 
 typedef enum BridgeMapType {
     MAP_DATA,
@@ -40,7 +40,7 @@ typedef struct BridgeMap {
 #define BRIDGE_FUNC_MAP(offset, size, mapType, field, func) \
     { #field, offset, size, mapType, func }
 
-bool bridge_exec(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data);
+void bridge(uc_engine *uc, uc_mem_type type, uint64_t address);
 uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress);
 void bridge_mr_init(uc_engine *uc);
 
