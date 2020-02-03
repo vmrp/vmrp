@@ -94,6 +94,17 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
             brkAddress = toUint32(str);
             printf("-------------> brk 0x%X\n", brkAddress);
 
+        } else if (str[0] == '=' && str[1] == '0' && str[2] == 'x') {  // 打印指定地址处的字符串
+            uint32_t addr = toUint32(str);
+            uint8_t v;
+            printf("==> print 0x%x memory string: ", addr);
+            do {
+                uc_mem_read(uc, addr, &v, 1);
+                putchar(v);
+                addr++;
+            } while (v);
+            putchar('\n');
+
         } else if (str[0] == '0' && str[1] == 'x') {  // 读写内存
             if (eqPos > 0) {
                 char buf[11];  // "0x4750524D".length + 1
@@ -181,6 +192,7 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
                 "    brk 0x80030            - run code to 0x80030\n"
                 "    SP=0x0027FFF0          - set SP register to 0x0027FFF0\n"
                 "    0x00080008             - print 0x00080008 memory content\n"
+                "    =0x80E34               - print 0x80E34 address string content\n"
                 "    0x00080008=0xFFFFFFFF  - set 0x00080008 memory content to 0xFFFFFFFF\n"
             );
             // clang-format on
