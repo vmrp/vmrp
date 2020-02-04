@@ -14,8 +14,8 @@ typedef struct Block {
     struct Block *next;
 } Block;
 
-static Block *freeList; // 有序双向链表
-static Block *usedList; // 无序单向链表
+static Block *freeList;  // 有序双向链表
+static Block *usedList;  // 无序单向链表
 
 static void printList(Block *list) {
     printf("==================\n");
@@ -205,7 +205,8 @@ static size_t countBlocks(Block *ptr) {
 
 void initMemoryManager(size_t baseAddress, size_t len) {
     insertFreeBlock(newBlock(baseAddress, len));
-    printList(freeList);
+    // printList(freeList);
+    printf("initMemoryManager: baseAddress:0x%I64X len: 0x%I64X\n", baseAddress, len);
 }
 
 void test() {

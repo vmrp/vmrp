@@ -25,6 +25,7 @@
         "rbtree.h": "c",
         "mr_table_bridge.h": "c",
         "bridge.h": "c",
-        "memory.h": "c"
+        "memory.h": "c",
+        "cstdio": "c"
     }
 }

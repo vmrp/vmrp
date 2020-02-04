@@ -28,6 +28,7 @@ static uint32_t mr_c_function_startAddress;
 static uint32_t mrc_extChunk_startAddress;
 static uint32_t endAddress;
 
+// 默认的函数初始化，初始化为地址值，当pc执行到该地址时拦截下来进入我们的回调函数
 static void br_defaultInit(BridgeMap *o, uc_engine *uc, uint32_t addr) {
     uc_mem_write(uc, addr, &addr, 4);
 }
@@ -127,14 +128,21 @@ static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
 static void br_DrawRect(BridgeMap *o, uc_engine *uc) {
     // typedef  void (*T_DrawRect)(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b);
     uint32_t x, y, w, h, r, g, b;
-
+    // 前四个参数是通过寄存器传递
     uc_reg_read(uc, UC_ARM_REG_R0, &x);
     uc_reg_read(uc, UC_ARM_REG_R1, &y);
     uc_reg_read(uc, UC_ARM_REG_R2, &w);
     uc_reg_read(uc, UC_ARM_REG_R3, &h);
 
-    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, x, y, w, h);
-    LOG("ext call %s([%u], [%u], [%u], [%u])\n", o->name, x, y, w, h);
+    // 后面的参数通过栈传递（注意内存对齐遵循ATPCS）
+    uint32_t sp;
+    uc_reg_read(uc, UC_ARM_REG_SP, &sp);
+    uc_mem_read(uc, sp, &r, 4);
+    uc_mem_read(uc, sp + 4, &g, 4);
+    uc_mem_read(uc, sp + 8, &b, 4);
+
+    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, x, y, w, h, r, g, b);
+    LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, x, y, w, h, r, g, b);
     dumpREG(uc);
     RET();
 }
@@ -158,20 +166,60 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, pcText, x, y, r, g, b, is_unicode, font);
     LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, x, y, r, g, b, is_unicode, font);
     dumpREG(uc);
+    // todo 返回值
+    RET();
+}
+
+static void br_sprintf(BridgeMap *o, uc_engine *uc) {
+    // typedef int (*T_sprintf)(char * s, const char * format, ...);
+    uint32_t s, fmt;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &s);
+    uc_reg_read(uc, UC_ARM_REG_R1, &fmt);
+
+    // uint32_t sp;
+    // uc_reg_read(uc, UC_ARM_REG_SP, &sp);
+    // uc_mem_read(uc, sp, &g, 4);
+    // uc_mem_read(uc, sp + 4, &b, 4);
+    // uc_mem_read(uc, sp + 8, &is_unicode, 4);
+    // uc_mem_read(uc, sp + 12, &font, 4);
+
+    LOG("ext call %s(0x%X, 0x%X)\n", o->name, s, fmt);
+    // LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, x, y, r, g, b, is_unicode, font);
+    dumpREG(uc);
+    RET();
+}
+
+static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
+    // typedef void (*T_mr_drawBitmap)(uint16* bmp, int16 x, int16 y, uint16 w, uint16 h);
+    uint32_t bmp, x, y, w, h;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &bmp);
+    uc_reg_read(uc, UC_ARM_REG_R1, &x);
+    uc_reg_read(uc, UC_ARM_REG_R2, &y);
+    uc_reg_read(uc, UC_ARM_REG_R3, &w);
+
+    uint32_t sp;
+    uc_reg_read(uc, UC_ARM_REG_SP, &sp);
+    uc_mem_read(uc, sp, &h, 4);
+
+    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, bmp, x, y, w, h);
+    LOG("ext call %s([%u], [%u], [%u], [%u], [%u])\n", o->name, bmp, x, y, w, h);
+    dumpREG(uc);
     RET();
 }
 
 // data ////////////////////////////////////////////////////////////////////////////////////////
-
-static uint32_t mr_screen_h;  // 只是一个地址值
-static uint32_t mr_screen_w;  // 只是一个地址值
+static uint32_t mr_screen_h;   // 只是一个地址值
+static uint32_t mr_screen_w;   // 只是一个地址值
+static uint32_t mr_screenBuf;  // 只是一个地址值
 
 static void br_mr_screen_h_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
     LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
     uint32_t h = SCREEN_HEIGHT;
-    mr_screen_h = allocMem(4);
-    uc_mem_write(uc, addr, &mr_screen_h, 4);
-    uc_mem_write(uc, mr_screen_h, &h, 4);
+    mr_screen_h = allocMem(4);                // 获取一块模拟器中的内存，返回一个地址
+    uc_mem_write(uc, addr, &mr_screen_h, 4);  // 往mr_table中写入指针值
+    uc_mem_write(uc, mr_screen_h, &h, 4);     // 写入实际的数据
 }
 
 static void br_mr_screen_w_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
@@ -182,6 +230,16 @@ static void br_mr_screen_w_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
     uc_mem_write(uc, mr_screen_w, &w, 4);
 }
 
+static void br_mr_screenBuf_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
+    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
+    mr_screenBuf = allocMem(4);                // 获取一个指针变量的内存
+    uc_mem_write(uc, addr, &mr_screenBuf, 4);  // 往mr_table中写入指针值
+
+    // 因为mr_screenBuf是二级指针，所以还要一块内存
+    uint32_t buf = allocMem(SCREEN_WIDTH * SCREEN_HEIGHT * 2);  // 获取一块屏幕缓存，每像素两字节
+    uc_mem_write(uc, mr_screenBuf, &buf, 4);                    // 指针变量存入缓存的地址
+    LOG("screenBuf: 0x%X[%u]\n", buf, buf);
+}
 //////////////////////////////////////////////////////////////////////////////////////////
 
 // 偏移量由./mrc/[x]_offsets.c直接从mrp中导出
@@ -203,7 +261,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x38, 0x4, MAP_FUNC, memset, NULL, br_memset),
     BRIDGE_FUNC_MAP(0x3C, 0x4, MAP_FUNC, strlen, NULL, NULL),
     BRIDGE_FUNC_MAP(0x40, 0x4, MAP_FUNC, strstr, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x44, 0x4, MAP_FUNC, sprintf, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x44, 0x4, MAP_FUNC, sprintf, NULL, br_sprintf),
     BRIDGE_FUNC_MAP(0x48, 0x4, MAP_FUNC, atoi, NULL, NULL),
     BRIDGE_FUNC_MAP(0x4C, 0x4, MAP_FUNC, strtoul, NULL, NULL),
     BRIDGE_FUNC_MAP(0x50, 0x4, MAP_FUNC, rand, NULL, NULL),
@@ -215,7 +273,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x68, 0x4, MAP_FUNC, mr_printf, NULL, NULL),
     BRIDGE_FUNC_MAP(0x6C, 0x4, MAP_FUNC, mr_mem_get, NULL, NULL),
     BRIDGE_FUNC_MAP(0x70, 0x4, MAP_FUNC, mr_mem_free, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x74, 0x4, MAP_FUNC, mr_drawBitmap, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x74, 0x4, MAP_FUNC, mr_drawBitmap, NULL, br_mr_drawBitmap),
     BRIDGE_FUNC_MAP(0x78, 0x4, MAP_FUNC, mr_getCharBitmap, NULL, NULL),
     BRIDGE_FUNC_MAP(0x7C, 0x4, MAP_FUNC, g_mr_timerStart, NULL, NULL),
     BRIDGE_FUNC_MAP(0x80, 0x4, MAP_FUNC, g_mr_timerStop, NULL, NULL),
@@ -277,7 +335,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x160, 0x4, MAP_FUNC, mr_recvfrom, NULL, NULL),
     BRIDGE_FUNC_MAP(0x164, 0x4, MAP_FUNC, mr_send, NULL, NULL),
     BRIDGE_FUNC_MAP(0x168, 0x4, MAP_FUNC, mr_sendto, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x16C, 0x4, MAP_DATA, mr_screenBuf, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x16C, 0x4, MAP_DATA, mr_screenBuf, br_mr_screenBuf_init, NULL),
     BRIDGE_FUNC_MAP(0x170, 0x4, MAP_DATA, mr_screen_w, br_mr_screen_w_init, NULL),
     BRIDGE_FUNC_MAP(0x174, 0x4, MAP_DATA, mr_screen_h, br_mr_screen_h_init, NULL),
     BRIDGE_FUNC_MAP(0x178, 0x4, MAP_DATA, mr_screen_bit, NULL, NULL),
@@ -456,4 +514,5 @@ void bridge_mr_init(uc_engine *uc) {
     runCode(uc, mr_helper_addr, STOP_ADDRESS, false);
 
     uc_reg_write(uc, UC_ARM_REG_SP, &sp);
+    LOG("bridge_mr_init() done.\n");
 }

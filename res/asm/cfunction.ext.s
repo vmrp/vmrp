@@ -517,7 +517,7 @@ mr_helper函数： 0x80550
      7e0:	e3a020f0 	mov	r2, #240	; 0xf0
      7e4:	e3a01000 	mov	r1, #0
      7e8:	e3a00000 	mov	r0, #0
-     7ec:	eb000017 	bl	0x850
+     7ec:	eb000017 	bl	0x850 ; mrc_refreshScreen(0,0,240,320)
      7f0:	e3a00000 	mov	r0, #0
      7f4:	e28dd030 	add	sp, sp, #48	; 0x30
      7f8:	e8bd8010 	pop	{r4, pc}
@@ -557,10 +557,10 @@ mr_helper函数： 0x80550
      880:	e58d7000 	str	r7, [sp]
      884:	e5101008 	ldr	r1, [r0, #-8]
      888:	e1a03006 	mov	r3, r6
-     88c:	e591016c 	ldr	r0, [r1, #364]	; 0x16c
+     88c:	e591016c 	ldr	r0, [r1, #364]	; 0x16c mr_table.mr_screenBuf
      890:	e1a02005 	mov	r2, r5
      894:	e5900000 	ldr	r0, [r0]
-     898:	e591c074 	ldr	ip, [r1, #116]	; 0x74
+     898:	e591c074 	ldr	ip, [r1, #116]	; 0x74 mr_table.mr_drawBitmap()
      89c:	e1a01004 	mov	r1, r4
      8a0:	e12fff3c 	blx	ip
      8a4:	e8bd80f8 	pop	{r3, r4, r5, r6, r7, pc}
