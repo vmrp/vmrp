@@ -87,11 +87,11 @@ mr_helper函数： 0x80550
      128:	000005f8 	strdeq	r0, [r0], -r8
      12c:	0000061c 	andeq	r0, r0, ip, lsl r6
      130:	0000021c 	andeq	r0, r0, ip, lsl r2
-     134:	e0c32190 	smull	r2, r3, r0, r1
+     134:	e0c32190 	smull	r2, r3, r0, r1  ; FixedByFrac函数
      138:	e1a00822 	lsr	r0, r2, #16
      13c:	e1800803 	orr	r0, r0, r3, lsl #16
      140:	e12fff1e 	bx	lr
-     144:	e92d4008 	push	{r3, lr}
+     144:	e92d4008 	push	{r3, lr} ; isLittleEndian函数
      148:	e3a00001 	mov	r0, #1
      14c:	e58d0000 	str	r0, [sp]
      150:	e5dd0000 	ldrb	r0, [sp]
@@ -303,7 +303,7 @@ mr_helper函数： 0x80550
      488:	e1a0000e 	mov	r0, lr
      48c:	e1a02005 	mov	r2, r5
      490:	e1a01004 	mov	r1, r4
-     494:	e12fff3c 	blx	ip
+     494:	e12fff3c 	blx	ip ; _DrawText(0x80E34,0,0,0xff,0xff,0xff,0,1);
      498:	e28dd010 	add	sp, sp, #16
      49c:	e8bd8070 	pop	{r4, r5, r6, pc}
      4a0:	fffffb88 			; <UNDEFINED> instruction: 0xfffffb88
@@ -472,7 +472,7 @@ mr_helper函数： 0x80550
      72c:	e59f40d0 	ldr	r4, [pc, #208]	; 0x804
      730:	e1a01004 	mov	r1, r4
      734:	e1a00004 	mov	r0, r4
-     738:	ebfffe7d 	bl	0x134
+     738:	ebfffe7d 	bl	0x134 ; FixedByFrac(65539,65539)
      73c:	e59f10c4 	ldr	r1, [pc, #196]	; 0x808
      740:	e1a03004 	mov	r3, r4
      744:	e1a02004 	mov	r2, r4
@@ -483,7 +483,7 @@ mr_helper函数： 0x80550
      758:	e59cc000 	ldr	ip, [ip]
      75c:	e28d4010 	add	r4, sp, #16
      760:	e1a00004 	mov	r0, r4
-     764:	e12fff3c 	blx	ip
+     764:	e12fff3c 	blx	ip ; 调用sprintf()
      768:	e3a010ff 	mov	r1, #255	; 0xff
      76c:	e58d1000 	str	r1, [sp]
      770:	e3a03001 	mov	r3, #1

@@ -148,8 +148,15 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R2, &y);
     uc_reg_read(uc, UC_ARM_REG_R3, &r);
 
-    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, pcText, x, y, r);
-    LOG("ext call %s([%u], [%u], [%u], [%u])\n", o->name, pcText, x, y, r);
+    uint32_t sp;
+    uc_reg_read(uc, UC_ARM_REG_SP, &sp);
+    uc_mem_read(uc, sp, &g, 4);
+    uc_mem_read(uc, sp + 4, &b, 4);
+    uc_mem_read(uc, sp + 8, &is_unicode, 4);
+    uc_mem_read(uc, sp + 12, &font, 4);
+
+    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, pcText, x, y, r, g, b, is_unicode, font);
+    LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, x, y, r, g, b, is_unicode, font);
     dumpREG(uc);
     RET();
 }
@@ -424,7 +431,6 @@ uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress) {
     return UC_ERR_OK;
 }
 
-// todo 传递参数超过4个，用寄存器传所有参数应该是错的，有待研究
 void bridge_mr_init(uc_engine *uc) {
     // typedef int32 (*MR_C_FUNCTION)(void* P, int32 code, uint8* input, int32 input_len, uint8** output, int32* output_len);
     // mr_helper(&cfunction_table, 0, NULL, 0, NULL, NULL);
@@ -436,8 +442,18 @@ void bridge_mr_init(uc_engine *uc) {
     uc_reg_write(uc, UC_ARM_REG_R1, &v);  // code
     uc_reg_write(uc, UC_ARM_REG_R2, &v);  // input
     uc_reg_write(uc, UC_ARM_REG_R3, &v);  // input_len
-    uc_reg_write(uc, UC_ARM_REG_R4, &v);  // output
-    uc_reg_write(uc, UC_ARM_REG_R5, &v);  // output_len
+
+    uint32_t sp, addr;
+    uc_reg_read(uc, UC_ARM_REG_SP, &sp);
+    LOG("bridge_mr_init() sp: 0x%X[%u]\n", sp, sp);
+    addr = sp;
+    addr -= 4;
+    uc_mem_write(uc, addr, &v, 4);  // output_len
+    addr -= 4;
+    uc_mem_write(uc, addr, &v, 4);  // output
+    uc_reg_write(uc, UC_ARM_REG_SP, &addr);
 
     runCode(uc, mr_helper_addr, STOP_ADDRESS, false);
+
+    uc_reg_write(uc, UC_ARM_REG_SP, &sp);
 }

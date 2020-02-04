@@ -31,6 +31,7 @@ arm-linux-gnueabi-objdump -b binary --start-address=0x8 -m arm -D game.ext
 r2 -a arm -b 32 -s 8 game.ext
 
 arm汇编学习工具:
+
 https://github.com/linouxis9/ARMStrong
 
 https://github.com/unicorn-engine/unicorn
@@ -39,5 +40,8 @@ https://bbs.pediy.com/thread-253868.htm
 
 
 arm平台函数传递参数，反汇编实例分析:
+
 https://blog.csdn.net/ayu_ag/article/details/50734282
+
+https://blog.csdn.net/gooogleman/article/details/3538033
 

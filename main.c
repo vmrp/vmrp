@@ -151,6 +151,9 @@ static void emu() {
     value = 1;
     uc_reg_write(uc, UC_ARM_REG_R0, &value);  // 传参数值1
     runCode(uc, CODE_ADDRESS + 8, STOP_ADDRESS, false);
+
+    printf("\n ----------------------------init done.--------------------------------------- \n");
+
     bridge_mr_init(uc);
 end:
     uc_close(uc);
