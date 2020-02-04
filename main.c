@@ -17,6 +17,8 @@
 #include "./header/mr_helper.h"
 #include "./header/utils.h"
 
+#define TRACE 0
+
 // #define MRPFILE "mr.mrp"
 #define MRPFILE "asm.mrp"
 
@@ -46,7 +48,9 @@ int extractFile() {
 //////////////////////////////////////////////////////////////////////////////////////
 
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+#if TRACE
     printf(">>> Tracing basic block at 0x%" PRIx64 ", block size = 0x%x\n", address, size);
+#endif
 }
 
 static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
@@ -57,8 +61,10 @@ static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
 }
 
 static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+#if TRACE
     printf(">>> Tracing mem_valid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
            memTypeStr(type), address, size, value);
+#endif
 }
 
 static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -158,6 +164,11 @@ int main() {
 
     bridge_mr_init(uc);
     bridge_mr_event(uc, MR_MOUSE_DOWN, 100, 123);
+    bridge_mr_pauseApp(uc);
+    bridge_mr_resumeApp(uc);
+
+    // mrc_exitApp() 由MR_EVENT_EXIT event之后自动调用
+    bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
 end:
     uc_close(uc);
     return 0;

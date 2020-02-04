@@ -20,7 +20,11 @@
         uc_reg_write(uc, UC_ARM_REG_PC, &lr); \
     }
 
-#define SET_RET_V(ret) uc_reg_write(uc, UC_ARM_REG_R0, &ret);
+#define SET_RET_V(ret)                       \
+    {                                        \
+        uint32_t v = ret;                    \
+        uc_reg_write(uc, UC_ARM_REG_R0, &v); \
+    }
 
 static uint32_t mr_helper_addr;
 static uint32_t mr_table_startAddress;
@@ -35,17 +39,18 @@ static void br_defaultInit(BridgeMap *o, uc_engine *uc, uint32_t addr) {
 }
 
 static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
-    uint32_t p_f, p_len, ret;
+    // typedef int32 (*T__mr_c_function_new)(MR_C_FUNCTION f, int32 len);
+    uint32_t p_f, p_len;
     uc_reg_read(uc, UC_ARM_REG_R0, &p_f);
     uc_reg_read(uc, UC_ARM_REG_R1, &p_len);
     LOG("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p_f, p_f, p_len, p_len);
     mr_helper_addr = p_f;
-    ret = MR_SUCCESS;
-    SET_RET_V(ret);
+    SET_RET_V(MR_SUCCESS);
     RET();
 }
 
 static void br_mr_malloc(BridgeMap *o, uc_engine *uc) {
+    // typedef void* (*T_mr_malloc)(uint32 len);
     uint32_t p_len, ret;
     uc_reg_read(uc, UC_ARM_REG_R0, &p_len);
 
@@ -59,6 +64,7 @@ static void br_mr_malloc(BridgeMap *o, uc_engine *uc) {
 }
 
 static void br_mr_free(BridgeMap *o, uc_engine *uc) {
+    // typedef void  (*T_mr_free)(void* p, uint32 len);
     uint32_t p, len;
     uc_reg_read(uc, UC_ARM_REG_R0, &p);
     uc_reg_read(uc, UC_ARM_REG_R1, &len);
@@ -72,6 +78,7 @@ static void br_mr_free(BridgeMap *o, uc_engine *uc) {
 
 // todo 采用直接执行arm机器码的方式优化
 static void br_memcpy(BridgeMap *o, uc_engine *uc) {
+    // typedef void *(*T_memcpy)(void * s1, const void * s2, int n);
     uint32_t p_dst, p_src, p_size, ret;
     uc_reg_read(uc, UC_ARM_REG_R0, &p_dst);
     uc_reg_read(uc, UC_ARM_REG_R1, &p_src);
@@ -92,6 +99,7 @@ static void br_memcpy(BridgeMap *o, uc_engine *uc) {
 
 // todo 采用直接执行arm机器码的方式优化
 static void br_memset(BridgeMap *o, uc_engine *uc) {
+    // typedef void *(*T_memset)(void * s, int c, int n);
     uint32_t p_dst, p_val, p_size, ret;
 
     uc_reg_read(uc, UC_ARM_REG_R0, &p_dst);
@@ -112,7 +120,7 @@ static void br_memset(BridgeMap *o, uc_engine *uc) {
 
 static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T__mr_TestCom)(int32 L, int input0, int input1);
-    uint32_t L, input0, input1, ret;
+    uint32_t L, input0, input1;
 
     uc_reg_read(uc, UC_ARM_REG_R0, &L);
     uc_reg_read(uc, UC_ARM_REG_R1, &input0);
@@ -121,8 +129,7 @@ static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, L, L, input0, input0, input1, input1);
     dumpREG(uc);
 
-    ret = MR_SUCCESS;
-    SET_RET_V(ret);
+    SET_RET_V(MR_SUCCESS);
     RET();
 }
 
@@ -145,6 +152,9 @@ static void br_DrawRect(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, x, y, w, h, r, g, b);
     LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, x, y, w, h, r, g, b);
     dumpREG(uc);
+
+    // todo 实现
+
     RET();
 }
 
@@ -164,10 +174,25 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
     uc_mem_read(uc, sp + 8, &is_unicode, 4);
     uc_mem_read(uc, sp + 12, &font, 4);
 
-    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, pcText, x, y, r, g, b, is_unicode, font);
-    LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, x, y, r, g, b, is_unicode, font);
+    uint32_t addr = pcText;
+    uint8_t v;
+    uint8_t i = 0;
+    char buf[255];
+    do {
+        uc_mem_read(uc, addr, &v, 1);
+        buf[i] = v;
+        addr++;
+        i++;
+    } while (v && i < 254);
+    buf[i] = '\0';
+
+    LOG("ext call %s(0x%X[\"%s\"], 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, pcText, buf, x, y, r, g, b, is_unicode, font);
+    LOG("ext call %s([%u][\"%s\"], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, buf, x, y, r, g, b, is_unicode, font);
     dumpREG(uc);
-    // todo 返回值
+
+    // todo 实现
+
+    SET_RET_V(MR_SUCCESS);
     RET();
 }
 
@@ -185,8 +210,20 @@ static void br_sprintf(BridgeMap *o, uc_engine *uc) {
     // uc_mem_read(uc, sp + 8, &is_unicode, 4);
     // uc_mem_read(uc, sp + 12, &font, 4);
 
-    LOG("ext call %s(0x%X, 0x%X)\n", o->name, s, fmt);
-    // LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, x, y, r, g, b, is_unicode, font);
+    uint32_t addr = fmt;
+    uint8_t v;
+    uint8_t i = 0;
+    char buf[255];
+    do {
+        uc_mem_read(uc, addr, &v, 1);
+        buf[i] = v;
+        addr++;
+        i++;
+    } while (v && i < 254);
+    buf[i] = '\0';
+
+    LOG("ext call %s(0x%X, 0x%X[\"%s\"])\n", o->name, s, fmt, buf);
+
     dumpREG(uc);
     RET();
 }
@@ -207,6 +244,9 @@ static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, bmp, x, y, w, h);
     LOG("ext call %s([%u], [%u], [%u], [%u], [%u])\n", o->name, bmp, x, y, w, h);
     dumpREG(uc);
+
+    // todo 实现
+
     RET();
 }
 
@@ -530,7 +570,7 @@ static int32_t bridge_mr_helper(uc_engine *uc, uint32_t code, uint32_t input, ui
 
 // 暂停应用
 int32_t bridge_mr_pauseApp(uc_engine *uc) {
-    LOG("bridge_mr_pauseApp()\n");
+    LOG("bridge_mr_pauseApp() ------------------------------------------------ \n");
     // return mr_helper(&cfunction_table, 4, NULL, 0, NULL, NULL);
     int32_t ret = bridge_mr_helper(uc, 4, 0, 0);
     LOG("bridge_mr_pauseApp() done.\n");
@@ -539,7 +579,7 @@ int32_t bridge_mr_pauseApp(uc_engine *uc) {
 
 // 恢复应用
 int32_t bridge_mr_resumeApp(uc_engine *uc) {
-    LOG("bridge_mr_resumeApp()\n");
+    LOG("bridge_mr_resumeApp() ------------------------------------------------ \n");
     // return mr_helper(&cfunction_table, 5, NULL, 0, NULL, NULL);
     int32_t ret = bridge_mr_helper(uc, 5, 0, 0);
     LOG("bridge_mr_resumeApp() done.\n");
@@ -558,7 +598,7 @@ int32_t bridge_mr_event(uc_engine *uc, int32_t code, int32_t param1, int32_t par
     // sizeof(mr_c_event_st) = 20
     // return mr_helper(&cfunction_table, 1, (uint8 *)input, sizeof(input), NULL, NULL);
 
-    LOG("bridge_mr_event()\n");
+    LOG("bridge_mr_event() ------------------------------------------------ \n");
     uc_mem_write(uc, mr_c_event_st_mem, &code, 4);
     uc_mem_write(uc, mr_c_event_st_mem + 4, &param1, 4);
     uc_mem_write(uc, mr_c_event_st_mem + 8, &param2, 4);
@@ -568,7 +608,7 @@ int32_t bridge_mr_event(uc_engine *uc, int32_t code, int32_t param1, int32_t par
 }
 
 int32_t bridge_mr_init(uc_engine *uc) {
-    LOG("bridge_mr_init()\n");
+    LOG("bridge_mr_init() ------------------------------------------------ \n");
     // mr_helper(&cfunction_table, 0, NULL, 0, NULL, NULL);
     int32_t ret = bridge_mr_helper(uc, 0, 0, 0);
     LOG("bridge_mr_init() done.\n");
