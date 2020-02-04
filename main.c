@@ -123,17 +123,19 @@ static bool mem_init(uc_engine *uc) {
     return true;
 }
 
-static void emu() {
+int main() {
     uc_engine *uc;
     uc_err err;
     uc_hook trace;
+
+    listMrpFiles(MRPFILE);
 
     printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, BRIDGE_TABLE_ADDRESS:0x%X\n", CODE_ADDRESS, STACK_ADDRESS, BRIDGE_TABLE_ADDRESS);
 
     err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &uc);
     if (err) {
         printf("Failed on uc_open() with error returned: %u (%s)\n", err, uc_strerror(err));
-        return;
+        return -1;
     }
     if (!mem_init(uc)) {
         printf("mem_init() fail\n");
@@ -155,20 +157,8 @@ static void emu() {
     printf("\n ----------------------------init done.--------------------------------------- \n");
 
     bridge_mr_init(uc);
+    bridge_mr_event(uc, MR_MOUSE_DOWN, 100, 123);
 end:
     uc_close(uc);
-}
-
-int main() {
-    // mr_stop();
-    // mr_event(MR_MOUSE_DOWN, x, y);
-    listMrpFiles(MRPFILE);
-    // extractFile();
-    // mr_start_dsm(MRPFILE);
-
-    // printf("thumb:\n");
-    // emu(TRUE);
-    printf("arm:\n");
-    emu(FALSE);
     return 0;
 }

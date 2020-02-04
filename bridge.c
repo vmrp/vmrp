@@ -27,6 +27,7 @@ static uint32_t mr_table_startAddress;
 static uint32_t mr_c_function_startAddress;
 static uint32_t mrc_extChunk_startAddress;
 static uint32_t endAddress;
+static uint32_t mr_c_event_st_mem;  // 用于mrc_event参数传递的内存
 
 // 默认的函数初始化，初始化为地址值，当pc执行到该地址时拦截下来进入我们的回调函数
 static void br_defaultInit(BridgeMap *o, uc_engine *uc, uint32_t addr) {
@@ -482,29 +483,36 @@ uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress) {
     err = init(uc, mrc_extChunk_funcMap, countof(mrc_extChunk_funcMap), mrc_extChunk_startAddress);
     if (err) return err;
 
-    LOG("startAddr: 0x%X, endAddr: 0x%X\n", startAddress, endAddress);
+    uint32_t size = endAddress - startAddress;
+    LOG("startAddr: 0x%X, endAddr: 0x%X, size: 0x%X\n", startAddress, endAddress, size);
     LOG("mr_table_startAddress: 0x%X\n", mr_table_startAddress);
     LOG("mr_c_function_startAddress: 0x%X\n", mr_c_function_startAddress);
     LOG("mrc_extChunk_startAddress: 0x%X\n", mrc_extChunk_startAddress);
+    if (size > BRIDGE_TABLE_SIZE) {
+        printf("error: size[%d] > BRIDGE_TABLE_SIZE[%d]\n", size, BRIDGE_TABLE_SIZE);
+    }
+    // 事件参数传递用的内存
+    mr_c_event_st_mem = allocMem(20);
+
     return UC_ERR_OK;
 }
 
-void bridge_mr_init(uc_engine *uc) {
+static int32_t bridge_mr_helper(uc_engine *uc, uint32_t code, uint32_t input, uint32_t input_len) {
     // typedef int32 (*MR_C_FUNCTION)(void* P, int32 code, uint8* input, int32 input_len, uint8** output, int32* output_len);
-    // mr_helper(&cfunction_table, 0, NULL, 0, NULL, NULL);
-    LOG("bridge_mr_init()\n");
 
     uint32_t v = mr_c_function_startAddress;
-    uc_reg_write(uc, UC_ARM_REG_R0, &v);  // p
-    v = 0;
-    uc_reg_write(uc, UC_ARM_REG_R1, &v);  // code
-    uc_reg_write(uc, UC_ARM_REG_R2, &v);  // input
-    uc_reg_write(uc, UC_ARM_REG_R3, &v);  // input_len
+    uc_reg_write(uc, UC_ARM_REG_R0, &v);          // p
+    uc_reg_write(uc, UC_ARM_REG_R1, &code);       // code
+    uc_reg_write(uc, UC_ARM_REG_R2, &input);      // input
+    uc_reg_write(uc, UC_ARM_REG_R3, &input_len);  // input_len
 
     uint32_t sp, addr;
     uc_reg_read(uc, UC_ARM_REG_SP, &sp);
-    LOG("bridge_mr_init() sp: 0x%X[%u]\n", sp, sp);
+    LOG("bridge_mr_helper() sp: 0x%X[%u]\n", sp, sp);
+
     addr = sp;
+    v = 0;  // 相当于传递 NULL
+
     addr -= 4;
     uc_mem_write(uc, addr, &v, 4);  // output_len
     addr -= 4;
@@ -514,5 +522,55 @@ void bridge_mr_init(uc_engine *uc) {
     runCode(uc, mr_helper_addr, STOP_ADDRESS, false);
 
     uc_reg_write(uc, UC_ARM_REG_SP, &sp);
+
+    int32_t ret;
+    uc_reg_read(uc, UC_ARM_REG_R0, &ret);
+    return ret;
+}
+
+// 暂停应用
+int32_t bridge_mr_pauseApp(uc_engine *uc) {
+    LOG("bridge_mr_pauseApp()\n");
+    // return mr_helper(&cfunction_table, 4, NULL, 0, NULL, NULL);
+    int32_t ret = bridge_mr_helper(uc, 4, 0, 0);
+    LOG("bridge_mr_pauseApp() done.\n");
+    return ret;
+}
+
+// 恢复应用
+int32_t bridge_mr_resumeApp(uc_engine *uc) {
+    LOG("bridge_mr_resumeApp()\n");
+    // return mr_helper(&cfunction_table, 5, NULL, 0, NULL, NULL);
+    int32_t ret = bridge_mr_helper(uc, 5, 0, 0);
+    LOG("bridge_mr_resumeApp() done.\n");
+    return ret;
+}
+
+// 事件进行处理
+int32_t bridge_mr_event(uc_engine *uc, int32_t code, int32_t param1, int32_t param2) {
+    // typedef struct _mr_c_event_st{
+    //     int32 code;
+    //     int32 param0;
+    //     int32 param1;
+    //     int32 param2;
+    //     int32 param3;
+    // }mr_c_event_st
+    // sizeof(mr_c_event_st) = 20
+    // return mr_helper(&cfunction_table, 1, (uint8 *)input, sizeof(input), NULL, NULL);
+
+    LOG("bridge_mr_event()\n");
+    uc_mem_write(uc, mr_c_event_st_mem, &code, 4);
+    uc_mem_write(uc, mr_c_event_st_mem + 4, &param1, 4);
+    uc_mem_write(uc, mr_c_event_st_mem + 8, &param2, 4);
+    int32_t ret = bridge_mr_helper(uc, 1, mr_c_event_st_mem, 20);
+    LOG("bridge_mr_event() done.\n");
+    return ret;
+}
+
+int32_t bridge_mr_init(uc_engine *uc) {
+    LOG("bridge_mr_init()\n");
+    // mr_helper(&cfunction_table, 0, NULL, 0, NULL, NULL);
+    int32_t ret = bridge_mr_helper(uc, 0, 0, 0);
     LOG("bridge_mr_init() done.\n");
+    return ret;
 }

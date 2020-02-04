@@ -44,6 +44,11 @@ typedef struct BridgeMap {
 
 void bridge(uc_engine *uc, uc_mem_type type, uint64_t address);
 uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress);
-void bridge_mr_init(uc_engine *uc);
+
+// 对应mrp中的几个入口函数
+int32_t bridge_mr_init(uc_engine *uc);
+int32_t bridge_mr_resumeApp(uc_engine *uc);
+int32_t bridge_mr_pauseApp(uc_engine *uc);
+int32_t bridge_mr_event(uc_engine *uc, int32_t code, int32_t param1, int32_t param2);
 
 #endif
