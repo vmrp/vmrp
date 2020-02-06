@@ -37,10 +37,14 @@ typedef struct BridgeMap {
     BridgeMapType type;
     BridgeInit initFn;
     BridgeCB fn;
+    uint32_t extraData;
 } BridgeMap;
 
 #define BRIDGE_FUNC_MAP(offset, size, mapType, field, init, func) \
-    { #field, offset, size, mapType, init, func }
+    { #field, offset, size, mapType, init, func, 0 }
+
+#define BRIDGE_FUNC_MAP_FULL(offset, size, mapType, field, init, func, extraData) \
+    { #field, offset, size, mapType, init, func, extraData }
 
 void bridge(uc_engine *uc, uc_mem_type type, uint64_t address);
 uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress);

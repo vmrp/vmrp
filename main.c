@@ -106,7 +106,7 @@ static bool mem_init(uc_engine *uc) {
         return false;
     }
 
-    err = uc_mem_map(uc, MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    err = uc_mem_map(uc, MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE, UC_PROT_ALL);
     if (err) {
         printf("Failed mem map MEMORY_MANAGER_ADDRESS: %u (%s)\n", err, uc_strerror(err));
         return err;
@@ -134,6 +134,7 @@ int main() {
     uc_err err;
     uc_hook trace;
 
+    // extractFile();
     listMrpFiles(MRPFILE);
 
     printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, BRIDGE_TABLE_ADDRESS:0x%X\n", CODE_ADDRESS, STACK_ADDRESS, BRIDGE_TABLE_ADDRESS);
@@ -167,7 +168,7 @@ int main() {
     bridge_mr_pauseApp(uc);
     bridge_mr_resumeApp(uc);
 
-    // mrc_exitApp() 由MR_EVENT_EXIT event之后自动调用
+    // mrc_exitApp() 可能由MR_EVENT_EXIT event之后自动调用
     bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
 end:
     uc_close(uc);

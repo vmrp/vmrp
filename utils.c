@@ -68,6 +68,7 @@ void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb)
     uc_err err = uc_emu_start(uc, startAddr, stopAddr, 0, 0);
     if (err) {
         printf("Failed on uc_emu_start() with error returned: %u (%s)\n", err, uc_strerror(err));
+        exit(1);
     }
 }
 
