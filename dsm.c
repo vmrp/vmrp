@@ -606,9 +606,9 @@ MR_FILE_HANDLE mr_open(const char *filename, uint32 mode) {
     //	new_mode  |= FS_OPEN_SHARED;
     get_filename((char *)fullpathname, filename);
     if (new_mode & O_CREAT) {
-        f = open((char *)fullpathname, new_mode, S_IRWXU | S_IRWXG | S_IRWXO);
+        f = open((char *)fullpathname, new_mode | O_RAW, S_IRWXU | S_IRWXG | S_IRWXO);
     } else {
-        f = open((char *)fullpathname, new_mode);
+        f = open((char *)fullpathname, new_mode | O_RAW);
     }
     if (f < 0) {
         LOG("mr_open fail.");

@@ -118,6 +118,23 @@ static void br_memset(BridgeMap *o, uc_engine *uc) {
     RET();
 }
 
+// todo 采用直接执行arm机器码的方式优化
+static void br_strlen(BridgeMap *o, uc_engine *uc) {
+    // typedef int (*T_strlen)(const char * s);
+    uint32_t s, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &s);
+
+    char *str = getStrFromUc(uc, s);
+    LOG("ext call %s(0x%X[%u]---{%s}%d---)\n", o->name, s, s, str, (int)strlen(str));
+    dumpREG(uc);
+    ret = strlen(str);
+    free(str);
+
+    SET_RET_V(ret);
+    RET();
+}
+
 static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T__mr_TestCom)(int32 L, int input0, int input1);
     uint32_t L, input0, input1;
@@ -250,6 +267,65 @@ static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
     RET();
 }
 
+static void br_mr_open(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_open)(const char* filename,  uint32 mode);
+    uint32_t filename, mode;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &filename);
+    uc_reg_read(uc, UC_ARM_REG_R1, &mode);
+
+    char *filenameStr = getStrFromUc(uc, filename);
+    LOG("ext call %s(0x%X[%s], 0x%X)\n", o->name, filename, filenameStr, mode);
+    LOG("ext call %s([%u], [%u])\n", o->name, filename, mode);
+    dumpREG(uc);
+
+    int32_t ret = mr_open(filenameStr, mode);
+    free(filenameStr);
+
+    LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
+
+    SET_RET_V(ret);
+    RET();
+}
+
+static void br_mr_close(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_close)(int32 f);
+    uint32_t f, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &f);
+
+    LOG("ext call %s(0x%X)\n", o->name, f);
+    LOG("ext call %s([%u])\n", o->name, f);
+    dumpREG(uc);
+
+    ret = mr_close(f);
+    LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
+
+    SET_RET_V(ret);
+    RET();
+}
+
+static void br_mr_write(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_write)(int32 f,void *p,uint32 l);
+    uint32_t f, p, l, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &f);
+    uc_reg_read(uc, UC_ARM_REG_R1, &p);
+    uc_reg_read(uc, UC_ARM_REG_R2, &l);
+
+    LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, f, p, l);
+    LOG("ext call %s([%u], [%u], [%u])\n", o->name, f, p, l);
+    dumpREG(uc);
+
+    char *buf = malloc(l);
+    uc_mem_read(uc, p, buf, l);
+    ret = mr_write(f, buf, l);
+    free(buf);
+
+    SET_RET_V(ret);
+    RET();
+}
+
 // data ////////////////////////////////////////////////////////////////////////////////////////
 static uint32_t mr_screen_h;   // 只是一个地址值
 static uint32_t mr_screen_w;   // 只是一个地址值
@@ -300,7 +376,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x30, 0x4, MAP_FUNC, strcoll, NULL, NULL),
     BRIDGE_FUNC_MAP(0x34, 0x4, MAP_FUNC, memchr, NULL, NULL),
     BRIDGE_FUNC_MAP(0x38, 0x4, MAP_FUNC, memset, NULL, br_memset),
-    BRIDGE_FUNC_MAP(0x3C, 0x4, MAP_FUNC, strlen, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x3C, 0x4, MAP_FUNC, strlen, NULL, br_strlen),
     BRIDGE_FUNC_MAP(0x40, 0x4, MAP_FUNC, strstr, NULL, NULL),
     BRIDGE_FUNC_MAP(0x44, 0x4, MAP_FUNC, sprintf, NULL, br_sprintf),
     BRIDGE_FUNC_MAP(0x48, 0x4, MAP_FUNC, atoi, NULL, NULL),
@@ -325,10 +401,10 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x94, 0x4, MAP_FUNC, mr_plat, NULL, NULL),
     BRIDGE_FUNC_MAP(0x98, 0x4, MAP_FUNC, mr_platEx, NULL, NULL),
     BRIDGE_FUNC_MAP(0x9C, 0x4, MAP_FUNC, mr_ferrno, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xA0, 0x4, MAP_FUNC, mr_open, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xA4, 0x4, MAP_FUNC, mr_close, NULL, NULL),
+    BRIDGE_FUNC_MAP(0xA0, 0x4, MAP_FUNC, mr_open, NULL, br_mr_open),
+    BRIDGE_FUNC_MAP(0xA4, 0x4, MAP_FUNC, mr_close, NULL, br_mr_close),
     BRIDGE_FUNC_MAP(0xA8, 0x4, MAP_FUNC, mr_info, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xAC, 0x4, MAP_FUNC, mr_write, NULL, NULL),
+    BRIDGE_FUNC_MAP(0xAC, 0x4, MAP_FUNC, mr_write, NULL, br_mr_write),
     BRIDGE_FUNC_MAP(0xB0, 0x4, MAP_FUNC, mr_read, NULL, NULL),
     BRIDGE_FUNC_MAP(0xB4, 0x4, MAP_FUNC, mr_seek, NULL, NULL),
     BRIDGE_FUNC_MAP(0xB8, 0x4, MAP_FUNC, mr_getLen, NULL, NULL),

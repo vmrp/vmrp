@@ -171,5 +171,6 @@ int main() {
     bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
 end:
     uc_close(uc);
+    printf("exit.\n");
     return 0;
 }

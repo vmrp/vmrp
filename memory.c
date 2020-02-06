@@ -209,7 +209,7 @@ void initMemoryManager(size_t baseAddress, size_t len) {
     printf("initMemoryManager: baseAddress:0x%I64X len: 0x%I64X\n", baseAddress, len);
 }
 
-void test() {
+void memory_test() {
     // Block *b1 = newBlock(10000, 12);
     // Block *b2 = newBlock(10012, 24);
     // Block *b3 = newBlock(10036, 16);

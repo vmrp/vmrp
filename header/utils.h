@@ -43,5 +43,6 @@ typedef struct uIntMap {
 uIntMap *uIntMap_search(struct rb_root *root, uint32_t key);
 int uIntMap_insert(struct rb_root *root, uIntMap *obj);
 uIntMap *uIntMap_delete(struct rb_root *root, uint32_t key);
+char *getStrFromUc(uc_engine *uc, uint32_t addr);
 
 #endif

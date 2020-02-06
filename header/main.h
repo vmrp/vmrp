@@ -28,6 +28,6 @@
 
 // 由malloc和free管理的供mrp使用的内存
 #define MEMORY_MANAGER_ADDRESS BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE
-#define MEMORY_MANAGER_SIZE 1024 * 1024 * 1
+#define MEMORY_MANAGER_SIZE 1024 * 1024 * 2
 
 #endif

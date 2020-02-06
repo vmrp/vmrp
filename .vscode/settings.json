@@ -26,6 +26,7 @@
         "mr_table_bridge.h": "c",
         "bridge.h": "c",
         "memory.h": "c",
-        "cstdio": "c"
+        "cstdio": "c",
+        "float.h": "c"
     }
 }

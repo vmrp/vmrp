@@ -70,6 +70,22 @@ void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb)
         printf("Failed on uc_emu_start() with error returned: %u (%s)\n", err, uc_strerror(err));
     }
 }
+
+#define BUF_LEN (1024 * 1024)  // 1M内存
+char *getStrFromUc(uc_engine *uc, uint32_t addr) {
+    char *buf = malloc(BUF_LEN);
+    uint8_t v;
+    uint8_t i = 0;
+    do {
+        uc_mem_read(uc, addr, &v, 1);
+        buf[i] = v;
+        addr++;
+        i++;
+    } while (v && i < BUF_LEN - 1);
+    buf[i] = '\0';
+    return buf;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 uIntMap *uIntMap_search(struct rb_root *root, uint32_t key) {
