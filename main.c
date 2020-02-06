@@ -16,6 +16,7 @@
 #include "./header/memory.h"
 #include "./header/mr_helper.h"
 #include "./header/utils.h"
+#include "./header/tsf_font.h"
 
 #define TRACE 0
 
@@ -136,6 +137,8 @@ int main() {
 
     // extractFile();
     listMrpFiles(MRPFILE);
+
+    tsf_init();
 
     printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, BRIDGE_TABLE_ADDRESS:0x%X\n", CODE_ADDRESS, STACK_ADDRESS, BRIDGE_TABLE_ADDRESS);
 

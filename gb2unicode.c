@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include "./header/dsm.h"
 
-#define gb2uCount 15416
-//编码表
+// clang-format off
+// 编码表
 static const unsigned char gb2uTable[] = {
     0x00, 0x30, 0x01, 0x30, 0x02, 0x30, 0xb7, 0x00, 0xc9, 0x02, 0xc7, 0x02,
     0xa8, 0x00, 0x03, 0x30, 0x05, 0x30, 0x14, 0x20, 0x5e, 0xff, 0x16, 0x20,
@@ -1274,23 +1274,23 @@ static const unsigned char gb2uTable[] = {
     0xe7, 0x9e, 0xe5, 0x9e, 0xea, 0x9e, 0xef, 0x9e, 0x22, 0x9f, 0x2c, 0x9f,
     0x2f, 0x9f, 0x39, 0x9f, 0x37, 0x9f, 0x3d, 0x9f, 0x3e, 0x9f, 0x44, 0x9f,
 };
+// clang-format on
 
 //编码转换，从GB2312转成unicode
 const unsigned char *GBCodeToUnicode(unsigned char *gbCode) {
-    const unsigned char *p_map = 0;
     int i;
 
     if ((*(gbCode + 1) >= 0xa1) && (*(gbCode + 1) <= 0xfe)) {
         if ((*gbCode >= 0xa1) && (*gbCode <= 0xa9)) {
             i = ((*gbCode - 0xa1) * 94 + (*(gbCode + 1) - 0xa1)) * 2;
-            p_map = &gb2uTable[i];
         } else if ((*gbCode >= 0xb0) && (*gbCode <= 0xf7)) {
             i = ((*gbCode - 0xb0 + 9) * 94 + (*(gbCode + 1) - 0xa1)) * 2;
-            p_map = &gb2uTable[i];
+        }
+        if (i < sizeof(gb2uTable)) {
+            return &gb2uTable[i];
         }
     }
-
-    return p_map;
+    return (void *)0;
 }
 
 /* 说明
@@ -1304,10 +1304,6 @@ const unsigned char *GBCodeToUnicode(unsigned char *gbCode) {
 int gbToUCS2BE(unsigned char *gbCode, unsigned char *unicode, int bufSize) {
     int i = 0, j = 0;
 
-    if (!gbCode || !gbCode[0] || !unicode || bufSize <= 0) return -1;
-
-    mr_memset(unicode, 0, bufSize);
-
     while (gbCode[i] && j < bufSize - 2) {
         if (gbCode[i] < 0x80) {
             unicode[j] = 0;
@@ -1315,21 +1311,18 @@ int gbToUCS2BE(unsigned char *gbCode, unsigned char *unicode, int bufSize) {
             i += 1;
         } else {
             const unsigned char *pReturn = GBCodeToUnicode(&gbCode[i]);
-
-            if (pReturn)  //&& (0 != *(pReturn))
-            {
+            if (pReturn) {
                 unicode[j] = *(pReturn + 1);
                 unicode[j + 1] = *pReturn;
-            } else {  //全角空格
+            } else {  // 全角空格
                 unicode[j] = 0x30;
                 unicode[j + 1] = 0x00;
             }
-
             i += 2;
         }
-
         j += 2;
     }
-
+    unicode[j] = 0;
+    unicode[j + 1] = 0;
     return j;
 }

@@ -1083,14 +1083,11 @@ int32 mr_TestCom1(int32 L, int input0, char *input1, int32 len) {
     return MR_SUCCESS;
 }
 
-// static char buf[1024];
 uint16 *mr_c2u(char *cp, int32 *err, int32 *size) {
-    int l = mr_strlen(cp);
-    unsigned char *out = mr_malloc(l * 2 + 2);
-    mr_memset(out, 0, l * 2 + 2);
-    l = gbToUCS2BE((unsigned char *)cp, out, l * 2);
+    int l = strlen(cp) * 2 + 2;
+    char *out = malloc(l);
+    l = gbToUCS2BE((unsigned char *)cp, (unsigned char *)out, l);
     if (size) *size = l;
-
     return (uint16 *)out;
 }
 

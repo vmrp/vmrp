@@ -5,6 +5,7 @@ main
 emu
 *.ext
 *.exe
+mythroad/*.bmp
 
 
 

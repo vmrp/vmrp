@@ -27,6 +27,8 @@
         "bridge.h": "c",
         "memory.h": "c",
         "cstdio": "c",
-        "float.h": "c"
+        "float.h": "c",
+        "cstdlib": "c",
+        "iconv.h": "c"
     }
 }

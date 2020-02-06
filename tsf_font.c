@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 
 // TSF点阵字库模块 [4/30/2012 JianbinZhu]
@@ -10,10 +11,9 @@
 
 //字体信息结构体
 typedef struct fontPoint {
-    int32 uIndexOff;  // unicode字库索引表在字库文件中的偏移
-    int32 uIndexLen;  // unicode字库索引表长度
-    uint8
-        *uIndexBuf;  // unicode字库索引表缓冲区地址，字库索引表是会加载到内存的
+    int32 uIndexOff;   // unicode字库索引表在字库文件中的偏移
+    int32 uIndexLen;   // unicode字库索引表长度
+    uint8 *uIndexBuf;  // unicode字库索引表缓冲区地址，字库索引表是会加载到内存的
 
     int32 PointOff;   //字库点阵在字库文件中的偏移
     int32 PointLen;   //字库点阵长度
@@ -32,12 +32,9 @@ typedef struct fontPoint {
 
 static T_FONT_INFO g_nowUse;  //当前使用的字库
 static uint8 Buf[FONT_DES];   //字体点阵信息缓存
-static uint8 enable;          //是否可用标志
-static uint8 gMemLoad;        //内存加载标志
 
 static uint16 *pscn;      //屏幕缓冲区地址
 static int32 scnw, scnh;  //屏幕尺寸
-
 
 static const unsigned char masks[] = {
     0x80,  // 1000 0000
@@ -56,13 +53,9 @@ static int32 GetOffSet(uint16 chr) {
     uint16 iB = 1;
     uint16 iE = 0;
     int32 UValue = 0;
-    int32 indexLen = 0;
-    uint8 *buf = NULL;
+    int32 indexLen = g_nowUse.uIndexLen;
+    uint8 *buf = g_nowUse.uIndexBuf;
 
-    indexLen = g_nowUse.uIndexLen;
-    buf = g_nowUse.uIndexBuf;
-
-    // 2012、5、9 修正 iE = (uint16)indexLen /5;
     iE = indexLen / 5;
     while (iB <= iE) {
         iM = (iB + iE) / 2;
@@ -84,7 +77,6 @@ static int32 GetOffSet(uint16 chr) {
             iE = iM - 1;
         }
     }
-
     return 0;
 }
 
@@ -93,116 +85,101 @@ static int32 GetOffSet(uint16 chr) {
 uint8 *tsf_getCharBitmap(uint16 ch) {
     int32 offset = GetOffSet(ch);
 
-    memset(Buf, 0, FONT_DES);
-
     if (offset == 0) {
         offset = GetOffSet(0x53e3);  //返回 □
-        if (!offset) return (uint8 *)Buf;
+        if (!offset) {
+            memset(Buf, 0, FONT_DES);
+            return (uint8 *)Buf;
+        }
     }
-
     //第一个字节 字宽 第二个字节 字字节数
-    if (gMemLoad) {
-        memcpy(Buf, g_nowUse.PointBuf + offset, FONT_DES);
-    }
-
+    memcpy(Buf, g_nowUse.PointBuf + offset, FONT_DES);
     return (uint8 *)Buf;
 }
 
 //单行绘制
 int32 tsf_drawText(uint8 *chr, int16 x, int16 y, mr_colourSt colorst) {
-    if (!enable || !chr) {
+    if (!chr) {
         return -1;
     }
 
-    {
-        int totalPoint, totalIndex, index_I, index_J;
-        uint16 *tempBuf = (uint16 *)chr;
-        uint16 ch = 0;
-        int32 temp_mr_screen_w;
-        int32 X1, Y1, chx, chy;
-        const uint8 *current_bitmap;
-        uint8 *p = (uint8 *)tempBuf;
-        uint8 temp = 0;
-        uint16 color = MAKERGB(colorst.r, colorst.g, colorst.b);
-        int32 fw, fh = g_nowUse.fontHeight, flen;
-        int32 tx, ty;
+    int totalPoint, totalIndex, index_I, index_J;
+    uint16 ch = 0;
+    int32 X1, Y1, chx, chy;
+    const uint8 *current_bitmap;
+    uint8 *p = chr;
+    uint8 temp = 0;
+    uint16 color = MAKERGB(colorst.r, colorst.g, colorst.b);
+    int32 fw, fh = g_nowUse.fontHeight, flen;
+    int32 tx, ty;
 
-        mr_getScreenSize((int32 *)&scnw, (int32 *)&scnh);
-        pscn = w_getScreenBuffer();
+    ch = (uint16)((*p << 8) + *(p + 1));
 
-        temp_mr_screen_w = scnw;
+    chx = x;
+    chy = y;
+    while (ch) {
+        X1 = Y1 = 0;
+        totalIndex = totalPoint = 0;
 
-        ch = (uint16)((*p << 8) + *(p + 1));
-
-        chx = x;
-        chy = y;
-        while (ch) {
-            X1 = Y1 = 0;
-            totalIndex = totalPoint = 0;
-
-            if ((ch == 0x0a) || (ch == 0x0d))  //换行直接返回
-            {
-                return 1;
-            } else if (ch == CHR_SPACE)  //空格则空格
-            {
-                chx += g_nowUse.AsciiWidth;
-                //超出屏幕范围检查
-                if ((chx) > temp_mr_screen_w) return 1;
-                goto next;
-            } else if (ch == CHR_TAB) {
-                chx += 4 * g_nowUse.AsciiWidth;
-                //超出屏幕范围检查
-                if ((chx) > temp_mr_screen_w) return 1;
-                goto next;
-            } else {
-                current_bitmap = tsf_getCharBitmap(ch);
-
-                fw = *current_bitmap;
-                flen = *(current_bitmap + 1);
-                current_bitmap += 2;
-                if (fw == 0) fw = g_nowUse.GBWidth;
-            }
-
+        if ((ch == '\r') || (ch == '\n')) {  //换行直接返回
+            return 1;
+        } else if (ch == CHR_SPACE) {  //空格则空格
+            chx += g_nowUse.AsciiWidth;
             //超出屏幕范围检查
-            if ((chx + fw) > temp_mr_screen_w) return 1;
+            if ((chx) > scnw) return 1;
+            goto next;
+        } else if (ch == CHR_TAB) {
+            chx += 4 * g_nowUse.AsciiWidth;
+            //超出屏幕范围检查
+            if ((chx) > scnw) return 1;
+            goto next;
+        } else {
+            current_bitmap = tsf_getCharBitmap(ch);
 
-            //绘制点阵
-            totalPoint = fh * fw;
-            totalIndex = 0;
-            for (index_I = 0; index_I < flen; index_I++) {
-                temp = current_bitmap[index_I];
-
-                for (index_J = 0; index_J < 8; index_J++) {
-                    tx = chx + X1, ty = chy + Y1;
-                    totalIndex++;
-
-                    if (tx < 0 || ty < 0 || tx > scnw - 1 || ty > scnh - 1) {
-                    } else if (temp & masks[index_J]) {
-                        *(pscn + (chy + Y1) * scnw + (chx + X1)) = color;
-                    }
-                    X1++;
-                    if ((totalIndex % fw) == 0) {
-                        Y1++;
-                        X1 = 0;
-                    }
-                    if (totalIndex >= totalPoint) break;
-                }
-            }
-
-            chx = chx + fw + TS_FONT_HMARGIN;  //字间距为 4
-        next:
-            p += 2;
-            ch = (uint16)((*p << 8) + *(p + 1));
+            fw = *current_bitmap;
+            flen = *(current_bitmap + 1);
+            current_bitmap += 2;
+            if (fw == 0) fw = g_nowUse.GBWidth;
         }
-    }
 
+        //超出屏幕范围检查
+        if ((chx + fw) > scnw) return 1;
+
+        //绘制点阵
+        totalPoint = fh * fw;
+        totalIndex = 0;
+        for (index_I = 0; index_I < flen; index_I++) {
+            temp = current_bitmap[index_I];
+
+            for (index_J = 0; index_J < 8; index_J++) {
+                tx = chx + X1, ty = chy + Y1;
+                totalIndex++;
+
+                if (tx < 0 || ty < 0 || tx > scnw - 1 || ty > scnh - 1) {
+                } else if (temp & masks[index_J]) {
+                    *(pscn + (chy + Y1) * scnw + (chx + X1)) = color;
+                }
+                X1++;
+                if ((totalIndex % fw) == 0) {
+                    Y1++;
+                    X1 = 0;
+                }
+                if (totalIndex >= totalPoint) break;
+            }
+        }
+
+        chx = chx + fw + TS_FONT_HMARGIN;  //字间距为 4
+    next:
+        p += 2;
+        ch = (uint16)((*p << 8) + *(p + 1));
+    }
     return 1;
 }
 
-//从走往右换行绘制
+//从左往右换行绘制
 int32 tsf_drawTextLeft(uint8 *pcText, int16 x, int16 y, mr_screenRectSt rect,
                        mr_colourSt colorst, uint16 flag) {
-    if (!enable || !pcText || rect.w == 0 || rect.h == 0) {
+    if (!pcText || rect.w == 0 || rect.h == 0) {
         return -1;
     }
 
@@ -218,9 +195,6 @@ int32 tsf_drawTextLeft(uint8 *pcText, int16 x, int16 y, mr_screenRectSt rect,
         int32 fw, fh = g_nowUse.fontHeight, flen;
         int32 lines = 0;
         int32 tx, ty;
-
-        mr_getScreenSize((int32 *)&scnw, (int32 *)&scnh);
-        pscn = w_getScreenBuffer();
 
         //生成unicode/GB编码值
         ch = (uint16)((*p << 8) + *(p + 1));
@@ -334,7 +308,7 @@ int32 tsf_textWidthHeightLines(uint8 *pcText, uint16 showWidth, int32 *width,
 
     *width = *height = *lines = 0;
 
-    if (!enable || !tempChr || showWidth == 0) {
+    if (!tempChr || showWidth == 0) {
         return -1;
     }
 
@@ -396,7 +370,7 @@ int32 tsf_textWidthHeight(uint8 *pcText, int32 *width, int32 *height) {
     uint8 *bmpPoint = NULL;
     int32 w = 0;
 
-    if (!enable || !p) {
+    if (!p) {
         return -1;
     }
 
@@ -423,14 +397,39 @@ int32 tsf_textWidthHeight(uint8 *pcText, int32 *width, int32 *height) {
     return MR_SUCCESS;
 }
 
-extern unsigned char font16_st[399063];
+static void printScreen(char *filename, uint16_t *buf, uint32_t size) {
+    // clang-format off
+    unsigned char bmpHeader[70] =
+    {
+        0x42, 0x4D, 0x48, 0x58, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46, 0x00, 0x00, 0x00, 0x38, 0x00, 
+        0x00, 0x00, 0xF0, 0x00, 0x00, 0x00, 0xC0, 0xFE, 0xFF, 0xFF, 0x01, 0x00, 0x10, 0x00, 0x03, 0x00, 
+        0x00, 0x00, 0x02, 0x58, 0x02, 0x00, 0x12, 0x0B, 0x00, 0x00, 0x12, 0x0B, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x00, 0x00, 0xE0, 0x07, 0x00, 0x00, 0x1F, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+    } ;
+    // clang-format on
+
+    int fh = mr_open(filename, MR_FILE_CREATE | MR_FILE_RDWR);
+
+    mr_write(fh, bmpHeader, sizeof(bmpHeader));
+
+    mr_write(fh, buf, size);
+
+    uint16_t end = 0;
+    mr_write(fh, &end, sizeof(end));
+
+    mr_close(fh);
+}
 
 //初始化字库
 int32 tsf_init(void) {
+    extern unsigned char font16_st[399063];
     uint8 *head = font16_st;
 
-    enable = 0;  //可用标志为0
-    memset(&g_nowUse, 0, sizeof(T_FONT_INFO));
+    scnw = 240;
+    scnh = 320;
+    pscn = malloc(scnw * scnh * 2);
+    memset(pscn, 0, scnw * scnh * 2);
 
     //读取unicode索引表信息
     g_nowUse.uIndexOff = *(int32 *)(head + 12);
@@ -441,14 +440,26 @@ int32 tsf_init(void) {
     g_nowUse.PointOff = *(int32 *)(head + 20);
     g_nowUse.PointLen = *(int32 *)(head + 24);
     g_nowUse.PointBuf = head + g_nowUse.PointOff;
-    gMemLoad = TRUE;
 
     //字体尺寸信息
     g_nowUse.GBWidth = head[28];
     g_nowUse.AsciiWidth = head[29];
     g_nowUse.fontHeight = head[30];
 
-    enable = 1;  //加载成功，可用
+    mr_colourSt c;
+    c.r = 255, c.g = 255, c.b = 0;
+
+    uint8 *out = (uint8 *)mr_c2u("hello", NULL, NULL);
+    tsf_drawText(out, 0, 0, c);
+    mr_free(out, 0);
+
+    // 中国
+    // char *str = "\x4e\x2d\x56\xfd\x00\x00";
+    // helloworld
+    // char *str = "\x0\x68\x0\x65\x0\x6c\x0\x6c\x0\x6f\x0\x77\x0\x6f\x0\x72\x0\x6c\x0\x64\x0\x0";
+    // tsf_drawText((uint8 *)str, 0, 0, c);
+
+    printScreen("1.bmp", pscn, scnw * scnh * 2);
 
     return MR_SUCCESS;
 }
