@@ -29,6 +29,11 @@
 // 字节对齐
 #define ALIGN(x, align) (((x) + ((align)-1)) & ~((align)-1))
 
+#define MAKERGB565(r, g, b) (uint16_t)(((uint32_t)(r >> 3) << 11) | ((uint32_t)(g >> 2) << 5) | ((uint32_t)(b >> 3)))
+#define PIXEL565R(v) ((((uint32_t)v >> 11) << 3) & 0xff)
+#define PIXEL565G(v) ((((uint32_t)v >> 5) << 2) & 0xff)
+#define PIXEL565B(v) (((uint32_t)v << 3) & 0xff)
+
 char *memTypeStr(uc_mem_type type);
 void dumpREG(uc_engine *uc);
 void dumpMemStr(void *ptr, size_t len);

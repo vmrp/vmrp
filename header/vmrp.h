@@ -28,4 +28,13 @@
 #define SCREEN_BUF_ADDRESS (MEMORY_MANAGER_ADDRESS + MEMORY_MANAGER_SIZE)
 #define SCREEN_BUF_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT * 2)  //屏幕缓存大小，每像素两字节
 
+int vmrp_test();
+uc_engine *initVmrp();
+int freeVmrp();
+uint16_t *getScreenBuf();
+
+// 需要外部实现的接口
+extern void guiSetPixel(int32_t x, int32_t y, uint16_t color);
+extern void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h);
+
 #endif

@@ -5,15 +5,16 @@
 
 #include "./header/bridge.h"
 #include "./header/dsm.h"
-#include "./header/main.h"
 #include "./header/memory.h"
 #include "./header/tsf_font.h"
+#include "./header/vmrp.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////
 #ifdef LOG
 #undef LOG
 #endif
-#define LOG(format, ...) printf("   -> bridge: " format, ##__VA_ARGS__)
+// #define LOG(format, ...) printf("   -> bridge: " format, ##__VA_ARGS__)
+#define LOG(format, ...)
 
 #define RET()                                 \
     {                                         \
@@ -184,7 +185,10 @@ static inline void setPixel(int32_t x, int32_t y, uint16_t color, void *userData
     if (x < 0 || y < 0 || x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
         return;
     }
-    uc_mem_write(userData, SCREEN_BUF_ADDRESS + (x + SCREEN_WIDTH * y) * 2, &color, 2);
+    // uc_mem_write(userData, SCREEN_BUF_ADDRESS + (x + SCREEN_WIDTH * y) * 2, &color, 2);
+    // 直接操作屏幕缓存提高效率
+    uint16_t *buf = getScreenBuf();
+    *(buf + (x + SCREEN_WIDTH * y)) = color;
 }
 
 static void br__DrawPoint(BridgeMap *o, uc_engine *uc) {
@@ -220,7 +224,7 @@ static void br_DrawRect(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, x, y, w, h, r, g, b);
     LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, x, y, w, h, r, g, b);
-    uint16_t color = MAKERGB(r, g, b);
+    uint16_t color = MAKERGB565(r, g, b);
 
     for (uint32_t i = 0; i < w; i++) {
         for (uint32_t j = 0; j < h; j++) {
@@ -253,10 +257,10 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s([%u][\"%s\"], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, str, x, y, r, g, b, is_unicode, font);
 
     if (is_unicode) {
-        tsf_drawText((uint8_t *)str, x, y, MAKERGB(r, g, b), uc);
+        tsf_drawText((uint8_t *)str, x, y, MAKERGB565(r, g, b), uc);
     } else {
         uint8_t *out = (uint8_t *)mr_c2u(str, NULL, NULL);
-        tsf_drawText(out, x, y, MAKERGB(r, g, b), uc);
+        tsf_drawText(out, x, y, MAKERGB565(r, g, b), uc);
         free(out);
     }
     free(str);
@@ -313,7 +317,19 @@ static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, bmp, x, y, w, h);
     LOG("ext call %s([%u], [%u], [%u], [%u], [%u])\n", o->name, bmp, x, y, w, h);
 
-    // todo 实现
+    for (uint32_t i = 0; i < w; i++) {
+        for (uint32_t j = 0; j < h; j++) {
+            int32_t xx = x + i;
+            int32_t yy = y + j;
+            if (xx < 0 || yy < 0 || xx >= SCREEN_WIDTH || yy >= SCREEN_HEIGHT) {
+                continue;
+            }
+            uint16_t color;
+            uc_mem_read(uc, bmp + (xx + yy * SCREEN_WIDTH) * 2, &color, 2);
+            guiSetPixel(xx, yy, color);
+        }
+    }
+    guiRefreshScreen(x, y, w, h);
 
     RET();
 }

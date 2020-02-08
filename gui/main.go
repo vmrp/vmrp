@@ -1,6 +1,9 @@
 package main
 
 /*
+#cgo windows CFLAGS: -Wno-pointer-to-int-cast
+#cgo windows LDFLAGS: -L. -lvmrp ${SRCDIR}/../windows/unicorn.a -lpthread -lm -lz
+
 #include "gui.h"
 */
 import "C"
@@ -110,5 +113,9 @@ func main() {
 	window.SetContent(g_game)
 	window.SetFixedSize(true)
 	window.CenterOnScreen()
-	window.ShowAndRun()
+	window.Show()
+
+	C.init()
+
+	app.Run()
 }

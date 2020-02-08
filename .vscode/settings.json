@@ -29,6 +29,9 @@
         "cstdio": "c",
         "float.h": "c",
         "cstdlib": "c",
-        "iconv.h": "c"
+        "iconv.h": "c",
+        "vmrp.h": "c",
+        "zlib.h": "c",
+        "gui.h": "c"
     }
 }

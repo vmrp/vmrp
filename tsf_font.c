@@ -437,7 +437,7 @@ void tsf_test() {
     screenBuf = malloc(SCREEN_BUF_LEN);
     memset(screenBuf, 0, SCREEN_BUF_LEN);
 
-    uint16 color = MAKERGB(255, 255, 0);
+    uint16 color = MAKERGB565(255, 255, 0);
 
     // uint8 *out = (uint8 *)mr_c2u("hello", NULL, NULL);
     // tsf_drawText(out, 0, 0, c);
