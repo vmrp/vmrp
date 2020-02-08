@@ -15,10 +15,11 @@
 #include "./header/main.h"
 #include "./header/memory.h"
 #include "./header/mr_helper.h"
-#include "./header/utils.h"
 #include "./header/tsf_font.h"
+#include "./header/utils.h"
 
 #define TRACE 0
+#define DEBUG 0
 
 // #define MRPFILE "mr.mrp"
 #define MRPFILE "asm.mrp"
@@ -55,7 +56,9 @@ static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *use
 }
 
 static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+#if DEBUG
     hook_code_debug(uc, address);
+#endif
     if (address >= BRIDGE_TABLE_ADDRESS && address <= BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE) {
         bridge(uc, UC_MEM_FETCH, address);
     }
@@ -130,13 +133,16 @@ static bool mem_init(uc_engine *uc) {
     return true;
 }
 
-int main() {
-    uc_engine *uc;
+static uc_engine *uc;
+
+int freeVmrp() {
+    uc_close(uc);
+    return 0;
+}
+
+int initVmrp() {
     uc_err err;
     uc_hook trace;
-
-    // extractFile();
-    listMrpFiles(MRPFILE);
 
     tsf_init();
 
@@ -165,6 +171,20 @@ int main() {
     runCode(uc, CODE_ADDRESS + 8, STOP_ADDRESS, false);
 
     printf("\n ----------------------------init done.--------------------------------------- \n");
+    return 0;
+end:
+    uc_close(uc);
+    return -1;
+}
+
+int main() {
+    // extractFile();
+    listMrpFiles(MRPFILE);
+
+    if (initVmrp() == -1) {
+        printf("initVmrp() fail.\n");
+        return 1;
+    }
 
     bridge_mr_init(uc);
     bridge_mr_event(uc, MR_MOUSE_DOWN, 100, 123);
@@ -173,8 +193,7 @@ int main() {
 
     // mrc_exitApp() 可能由MR_EVENT_EXIT event之后自动调用
     bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
-end:
-    uc_close(uc);
+    freeVmrp();
     printf("exit.\n");
     return 0;
 }

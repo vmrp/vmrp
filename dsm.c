@@ -927,35 +927,6 @@ int32 mr_save_sms_cfg(int32 f) {
     return MR_FAILED;
 }
 
-static void fix_x0y0x1y1(int *x0, int *y0, int *x1, int *y1) {
-    if (*x0 > *x1) {  //交换
-        int tmp = *x0;
-        *x0 = *x1;
-        *x1 = tmp;
-    }
-
-    if (*y0 > *y1) {  //交换
-        int tmp = *y0;
-        *y0 = *y1;
-        *y1 = tmp;
-    }
-}
-
-int clip_rect(int *x0, int *y0, int *x1, int *y1, int r, int b) {
-    fix_x0y0x1y1(x0, y0, x1, y1);
-
-    //超出的情况
-    if (*x0 > r || *y0 > b || *x1 < 0 || *y1 < 0) return 1;
-
-    //根据Clip修正后的 x y r b
-    *x0 = MAX(*x0, 0);
-    *y0 = MAX(*y0, 0);
-    *x1 = MIN(*x1, r);
-    *y1 = MIN(*y1, b);
-
-    return 0;
-}
-
 void mr_drawBitmap(uint16 *bmp, int16 x, int16 y, uint16 w, uint16 h) {
     // if(showApiLog) printf("mr_drawBitmap(bmp:0x%08x, x:%d, y:%d, w:%d,
     // h:%d)", bmp, x, y, w, h);
@@ -993,24 +964,6 @@ void mr_DrawBitmapEx(mr_bitmapDrawSt *srcbmp, mr_bitmapDrawSt *dstbmp, uint16 w,
 
 void mr_DrawRect(int16 sx, int16 sy, int16 w, int16 h, uint8 cr, uint8 cg,
                  uint8 cb) {
-    uint16 c = MAKERGB(cr, cg, cb);
-    int32 sw, sh;
-    int x, y, r, b, x1, y1, i, j;
-    uint16 *p = w_getScreenBuffer();
-
-    mr_getScreenSize(&sw, &sh);
-    x = sx, y = sy, r = sw - 1, b = sh - 1;
-    x1 = sx + w - 1, y1 = sy + h - 1;
-
-    if (clip_rect(&x, &y, &x1, &y1, r, b)) return;
-
-    h = y1 - y + 1;
-    w = x1 - x + 1;
-    for (i = y; i <= y1; i++) {
-        for (j = x; j <= x1; j++) *(p + i * sw + j) = c;
-    }
-
-    if (showApiLog) LOG("mr_DrawRect(x:%d, y:%d, w:%d, h:%d)", x, y, w, h);
 }
 
 int32 mr_DrawText(char *pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b,

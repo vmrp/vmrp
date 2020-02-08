@@ -459,7 +459,7 @@ int32 tsf_init(void) {
     // char *str = "\x0\x68\x0\x65\x0\x6c\x0\x6c\x0\x6f\x0\x77\x0\x6f\x0\x72\x0\x6c\x0\x64\x0\x0";
     // tsf_drawText((uint8 *)str, 0, 0, c);
 
-    printScreen("1.bmp", pscn, scnw * scnh * 2);
+    // printScreen("1.bmp", pscn, scnw * scnh * 2);
 
     return MR_SUCCESS;
 }

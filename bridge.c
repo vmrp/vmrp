@@ -34,6 +34,40 @@ static uint32_t endAddress;
 static uint32_t mr_c_event_st_mem;  // 用于mrc_event参数传递的内存
 static uint32_t baseLib_cfunction_ext_mem;
 
+// data ////////////////////////////////////////////////////////////////////////////////////////
+static uint32_t mr_screen_h;       // 只是一个地址值
+static uint32_t mr_screen_w;       // 只是一个地址值
+static uint32_t mr_screenBuf;      // 只是一个地址值
+static uint32_t mr_screenBuf_mem;  // 只是一个地址值
+
+static void br_mr_screen_h_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
+    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
+    uint32_t h = SCREEN_HEIGHT;
+    mr_screen_h = allocMem(4);                // 获取一块模拟器中的内存，返回一个地址
+    uc_mem_write(uc, addr, &mr_screen_h, 4);  // 往mr_table中写入指针值
+    uc_mem_write(uc, mr_screen_h, &h, 4);     // 写入实际的数据
+}
+
+static void br_mr_screen_w_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
+    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
+    uint32_t w = SCREEN_WIDTH;
+    mr_screen_w = allocMem(4);
+    uc_mem_write(uc, addr, &mr_screen_w, 4);
+    uc_mem_write(uc, mr_screen_w, &w, 4);
+}
+
+static void br_mr_screenBuf_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
+    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
+    mr_screenBuf = allocMem(4);                // 获取一个指针变量的内存
+    uc_mem_write(uc, addr, &mr_screenBuf, 4);  // 往mr_table中写入指针值
+
+    // 因为mr_screenBuf是二级指针，所以还要一块内存
+    mr_screenBuf_mem = allocMem(SCREEN_WIDTH * SCREEN_HEIGHT * 2);  // 获取一块屏幕缓存，每像素两字节
+    uc_mem_write(uc, mr_screenBuf, &mr_screenBuf_mem, 4);           // 指针变量存入缓存的地址
+    LOG("screenBuf: 0x%X[%u]\n", mr_screenBuf_mem, mr_screenBuf_mem);
+}
+// func ////////////////////////////////////////////////////////////////////////////////////////
+
 // 默认的函数初始化，初始化为地址值，当pc执行到该地址时拦截下来进入我们的回调函数
 static void br_defaultInit(BridgeMap *o, uc_engine *uc, uint32_t addr) {
     uc_mem_write(uc, addr, &addr, 4);
@@ -151,6 +185,28 @@ static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
     RET();
 }
 
+static inline void setPixel(uc_engine *uc, uint32_t x, uint32_t y, uint32_t color) {
+    if (x < SCREEN_WIDTH || y < SCREEN_HEIGHT) {
+        uc_mem_write(uc, mr_screenBuf_mem + (x + SCREEN_WIDTH * y) * 2, &color, 2);
+    }
+}
+
+static void br__DrawPoint(BridgeMap *o, uc_engine *uc) {
+    // typedef  void (*T__DrawPoint)(int16 x, int16 y, uint16 nativecolor);
+    uint32_t x, y, nativecolor;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &x);
+    uc_reg_read(uc, UC_ARM_REG_R1, &y);
+    uc_reg_read(uc, UC_ARM_REG_R2, &nativecolor);
+
+    LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, x, y, nativecolor);
+    LOG("ext call %s([%u], [%u], [%u])\n", o->name, x, y, nativecolor);
+    dumpREG(uc);
+    setPixel(uc, x, y, nativecolor);
+    RET();
+}
+
+// 实际上mrc_clearScreen()也是调用的这个方法
 static void br_DrawRect(BridgeMap *o, uc_engine *uc) {
     // typedef  void (*T_DrawRect)(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b);
     uint32_t x, y, w, h, r, g, b;
@@ -170,8 +226,7 @@ static void br_DrawRect(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, x, y, w, h, r, g, b);
     LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, x, y, w, h, r, g, b);
     dumpREG(uc);
-
-    // todo 实现
+    uint16_t color = MAKERGB(r, g, b);
 
     RET();
 }
@@ -247,6 +302,7 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
 //     RET();
 // }
 
+// 实际上mrc_refreshScreen()是调用的这个方法
 static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
     // typedef void (*T_mr_drawBitmap)(uint16* bmp, int16 x, int16 y, uint16 w, uint16 h);
     uint32_t bmp, x, y, w, h;
@@ -328,42 +384,10 @@ static void br_mr_write(BridgeMap *o, uc_engine *uc) {
     RET();
 }
 
-// data ////////////////////////////////////////////////////////////////////////////////////////
-static uint32_t mr_screen_h;   // 只是一个地址值
-static uint32_t mr_screen_w;   // 只是一个地址值
-static uint32_t mr_screenBuf;  // 只是一个地址值
-
-static void br_mr_screen_h_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
-    uint32_t h = SCREEN_HEIGHT;
-    mr_screen_h = allocMem(4);                // 获取一块模拟器中的内存，返回一个地址
-    uc_mem_write(uc, addr, &mr_screen_h, 4);  // 往mr_table中写入指针值
-    uc_mem_write(uc, mr_screen_h, &h, 4);     // 写入实际的数据
-}
-
-static void br_mr_screen_w_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
-    uint32_t w = SCREEN_WIDTH;
-    mr_screen_w = allocMem(4);
-    uc_mem_write(uc, addr, &mr_screen_w, 4);
-    uc_mem_write(uc, mr_screen_w, &w, 4);
-}
-
-static void br_mr_screenBuf_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
-    mr_screenBuf = allocMem(4);                // 获取一个指针变量的内存
-    uc_mem_write(uc, addr, &mr_screenBuf, 4);  // 往mr_table中写入指针值
-
-    // 因为mr_screenBuf是二级指针，所以还要一块内存
-    uint32_t buf = allocMem(SCREEN_WIDTH * SCREEN_HEIGHT * 2);  // 获取一块屏幕缓存，每像素两字节
-    uc_mem_write(uc, mr_screenBuf, &buf, 4);                    // 指针变量存入缓存的地址
-    LOG("screenBuf: 0x%X[%u]\n", buf, buf);
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////
-// set_putchar addr:536060, pos:0x2df4[11764]
+// todo 调用 set_putchar 方法 偏移量在0x2df4 设置一个回调函数，这样才能真正实现mr_printf
 static void br_baseLib_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    uint32_t v = o->extraData + baseLib_cfunction_ext_mem + 8; // ext文件+8才是mr_c_function_load的地址，所有函数偏移量都是基于这个地址
+    uint32_t v = o->extraData + baseLib_cfunction_ext_mem + 8;  // ext文件+8才是mr_c_function_load的地址，所有函数偏移量都是基于这个地址
     LOG("br_baseLib_%s_init() addr:0x%X[%u] v:0x%X[%u]\n", o->name, addr, addr, v, v);
     uc_mem_write(uc, addr, &v, 4);
 }
@@ -406,7 +430,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x70, 0x4, MAP_FUNC, mr_mem_free, NULL, NULL),
     BRIDGE_FUNC_MAP(0x74, 0x4, MAP_FUNC, mr_drawBitmap, NULL, br_mr_drawBitmap),
     BRIDGE_FUNC_MAP(0x78, 0x4, MAP_FUNC, mr_getCharBitmap, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x7C, 0x4, MAP_FUNC, g_mr_timerStart, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x7C, 0x4, MAP_FUNC, g_mr_timerStart, NULL, NULL),  // todo 在mrp初始化时会修改这个值，目前没有实现对mrp读写的hook
     BRIDGE_FUNC_MAP(0x80, 0x4, MAP_FUNC, g_mr_timerStop, NULL, NULL),
     BRIDGE_FUNC_MAP(0x84, 0x4, MAP_FUNC, mr_getTime, NULL, NULL),
     BRIDGE_FUNC_MAP(0x88, 0x4, MAP_FUNC, mr_getDatetime, NULL, NULL),
@@ -494,7 +518,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x1D0, 0x4, MAP_FUNC, _mr_load_sms_cfg, NULL, NULL),
     BRIDGE_FUNC_MAP(0x1D4, 0x4, MAP_FUNC, _mr_save_sms_cfg, NULL, NULL),
     BRIDGE_FUNC_MAP(0x1D8, 0x4, MAP_FUNC, _DispUpEx, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x1DC, 0x4, MAP_FUNC, _DrawPoint, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x1DC, 0x4, MAP_FUNC, _DrawPoint, NULL, br__DrawPoint),
     BRIDGE_FUNC_MAP(0x1E0, 0x4, MAP_FUNC, _DrawBitmap, NULL, NULL),
     BRIDGE_FUNC_MAP(0x1E4, 0x4, MAP_FUNC, _DrawBitmapEx, NULL, NULL),
     BRIDGE_FUNC_MAP(0x1E8, 0x4, MAP_FUNC, DrawRect, NULL, br_DrawRect),

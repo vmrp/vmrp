@@ -52,5 +52,4 @@ int32 mr_unzip(uint8 *inputbuf, int32 inputlen, uint8 **outputbuf, int32 *output
 uint32 mrc_updcrc(uint8 *s, uint32 n);
 void *mr_readFile(const char *filename, int *filelen, int lookfor);
 
-int clip_rect(int *x0, int *y0, int *x1, int *y1, int r, int b);
 #endif
