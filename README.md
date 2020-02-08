@@ -50,6 +50,9 @@ mrpoid是安卓上的mrp模拟器，c语言开发的mrp是编译后的arm指令�
 
 vmrp实现原理与mrpoid基本相同，参考了mrpoid早期的实现原理，不同的地方是vmrp借助unicorn engine实现真正的模拟器，并不依赖arm cpu，由于unicorn完全是一颗模拟的cpu，并且unicorn仍存在许多bug，基于unicorn开发需要对arm汇编有比较多的了解。
 
+# 下载地址
+https://github.com/zengming00/vmrp/releases/tag/1.0.0
+
 # 编译方法
 
 可能需要安装zlib，我是直接从官网下载源码安装的
