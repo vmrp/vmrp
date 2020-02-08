@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "./header/dsm.h"
 
 // clang-format off
@@ -1293,15 +1295,12 @@ const unsigned char *GBCodeToUnicode(unsigned char *gbCode) {
     return (void *)0;
 }
 
-/* 说明
- * 参数： gbCode：待转换的gb字符串
- *		   gbLen：gb字符串字节长度
- *		   unicode：保存转换后的unicode缓冲区（该内存自己申请）
- *
- * 返回： 成功：转换后unicode长度
- *		   失败：-1
- */
-int gbToUCS2BE(unsigned char *gbCode, unsigned char *unicode, int bufSize) {
+char *gbToUCS2BE(uint8_t *gbCode, uint32_t *outSize) {
+    int bufSize = strlen((char*)gbCode) * 2 + 2;
+    char *unicode = malloc(bufSize);
+
+    if (outSize) *outSize = bufSize;
+
     int i = 0, j = 0;
 
     while (gbCode[i] && j < bufSize - 2) {
@@ -1324,5 +1323,5 @@ int gbToUCS2BE(unsigned char *gbCode, unsigned char *unicode, int bufSize) {
     }
     unicode[j] = 0;
     unicode[j + 1] = 0;
-    return j;
+    return unicode;
 }

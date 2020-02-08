@@ -6,6 +6,7 @@
 #include "./header/mr_helper.h"
 #include "./header/mrporting.h"
 #include "./header/tsf_font.h"
+#include "./header/utils.h"
 
 #define TSF_LOG LOGI
 
@@ -26,15 +27,10 @@ typedef struct fontPoint {
 
 #define FONT_DES 128
 
-//特殊字符定义
-#define CHR_SPACE ' '      //空格
-#define CHR_TAB '	'  //制表符
-
 static T_FONT_INFO g_nowUse;  //当前使用的字库
 static uint8 Buf[FONT_DES];   //字体点阵信息缓存
-
-static uint16 *pscn;      //屏幕缓冲区地址
-static int32 scnw, scnh;  //屏幕尺寸
+static uint32 scnw, scnh;     //屏幕尺寸
+static setPixelFunc_t setPixelFunc;
 
 static const unsigned char masks[] = {
     0x80,  // 1000 0000
@@ -98,7 +94,7 @@ uint8 *tsf_getCharBitmap(uint16 ch) {
 }
 
 //单行绘制
-int32 tsf_drawText(uint8 *chr, int16 x, int16 y, mr_colourSt colorst) {
+int32 tsf_drawText(uint8 *chr, int16 x, int16 y, uint16 color, void *userData) {
     if (!chr) {
         return -1;
     }
@@ -109,7 +105,6 @@ int32 tsf_drawText(uint8 *chr, int16 x, int16 y, mr_colourSt colorst) {
     const uint8 *current_bitmap;
     uint8 *p = chr;
     uint8 temp = 0;
-    uint16 color = MAKERGB(colorst.r, colorst.g, colorst.b);
     int32 fw, fh = g_nowUse.fontHeight, flen;
     int32 tx, ty;
 
@@ -123,12 +118,12 @@ int32 tsf_drawText(uint8 *chr, int16 x, int16 y, mr_colourSt colorst) {
 
         if ((ch == '\r') || (ch == '\n')) {  //换行直接返回
             return 1;
-        } else if (ch == CHR_SPACE) {  //空格则空格
+        } else if (ch == ' ') {  //空格则空格
             chx += g_nowUse.AsciiWidth;
             //超出屏幕范围检查
             if ((chx) > scnw) return 1;
             goto next;
-        } else if (ch == CHR_TAB) {
+        } else if (ch == '\t') {
             chx += 4 * g_nowUse.AsciiWidth;
             //超出屏幕范围检查
             if ((chx) > scnw) return 1;
@@ -157,7 +152,7 @@ int32 tsf_drawText(uint8 *chr, int16 x, int16 y, mr_colourSt colorst) {
 
                 if (tx < 0 || ty < 0 || tx > scnw - 1 || ty > scnh - 1) {
                 } else if (temp & masks[index_J]) {
-                    *(pscn + (chy + Y1) * scnw + (chx + X1)) = color;
+                    setPixelFunc(chx + X1, chy + Y1, color, userData);
                 }
                 X1++;
                 if ((totalIndex % fw) == 0) {
@@ -177,8 +172,7 @@ int32 tsf_drawText(uint8 *chr, int16 x, int16 y, mr_colourSt colorst) {
 }
 
 //从左往右换行绘制
-int32 tsf_drawTextLeft(uint8 *pcText, int16 x, int16 y, mr_screenRectSt rect,
-                       mr_colourSt colorst, uint16 flag) {
+int32 tsf_drawTextLeft(uint8 *pcText, int16 x, int16 y, mr_screenRectSt rect, uint16 color, uint16 flag, void *userData) {
     if (!pcText || rect.w == 0 || rect.h == 0) {
         return -1;
     }
@@ -190,7 +184,6 @@ int32 tsf_drawTextLeft(uint8 *pcText, int16 x, int16 y, mr_screenRectSt rect,
         int16 chx = x, chy = y;
         int32 totalIndex, totalPoint, X1, Y1, index_I, index_J;
         uint8 temp = 0;
-        uint16 color = MAKERGB(colorst.r, colorst.g, colorst.b);
         int32 right = rect.x + rect.w, btm = rect.y + rect.h;
         int32 fw, fh = g_nowUse.fontHeight, flen;
         int32 lines = 0;
@@ -212,9 +205,9 @@ int32 tsf_drawTextLeft(uint8 *pcText, int16 x, int16 y, mr_screenRectSt rect,
                 }
 
                 goto next;
-            } else if (ch == CHR_SPACE || ch == CHR_TAB) {  //空格、制表符 处理
-                chx += (ch == CHR_SPACE ? g_nowUse.AsciiWidth
-                                        : 4 * g_nowUse.AsciiWidth);
+            } else if (ch == ' ' || ch == '\t') {  //空格、制表符 处理
+                chx += (ch == ' ' ? g_nowUse.AsciiWidth
+                                  : 4 * g_nowUse.AsciiWidth);
 
                 if ((chx > right)) {  //自动换行属性
                     if ((TSF_AUTONEWLINE & flag)) {
@@ -271,7 +264,7 @@ int32 tsf_drawTextLeft(uint8 *pcText, int16 x, int16 y, mr_screenRectSt rect,
                             ty > btm) {
                             //
                         } else if (temp & masks[index_J]) {  //屏幕绘点
-                            *(pscn + ty * scnw + tx) = color;
+                            setPixelFunc(tx, ty, color, userData);
                         }
                         X1++;
                         if ((totalIndex % fw) == 0) {  //点阵换行
@@ -315,12 +308,12 @@ int32 tsf_textWidthHeightLines(uint8 *pcText, uint16 showWidth, int32 *width,
     chU = (uint16)((*tempChr << 8) + *(tempChr + 1));
 
     while (chU) {
-        if (chU == CHR_SPACE)  //空格
+        if (chU == ' ')  //空格
         {
             tempAdd = g_nowUse.AsciiWidth;
 
             goto LineCheck;
-        } else if (chU == CHR_TAB) {
+        } else if (chU == '\t') {
             tempAdd = 4 * g_nowUse.AsciiWidth;
 
             goto LineCheck;
@@ -376,10 +369,9 @@ int32 tsf_textWidthHeight(uint8 *pcText, int32 *width, int32 *height) {
 
     chU = (uint16)((*p << 8) + *(p + 1));
     while (chU) {
-        if (chU == CHR_SPACE)  //空格	//|| (chU == 0x0a) || (chU == 0x0d)
-        {
+        if (chU == ' ') {  //空格	//|| (chU == 0x0a) || (chU == 0x0d)
             w += g_nowUse.AsciiWidth;
-        } else if (chU == CHR_TAB) {  //制表符 4空格代替
+        } else if (chU == '\t') {  //制表符 4空格代替
             w += 4 * g_nowUse.AsciiWidth;
         } else {
             bmpPoint = (uint8 *)tsf_getCharBitmap(chU);
@@ -397,39 +389,14 @@ int32 tsf_textWidthHeight(uint8 *pcText, int32 *width, int32 *height) {
     return MR_SUCCESS;
 }
 
-static void printScreen(char *filename, uint16_t *buf, uint32_t size) {
-    // clang-format off
-    unsigned char bmpHeader[70] =
-    {
-        0x42, 0x4D, 0x48, 0x58, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46, 0x00, 0x00, 0x00, 0x38, 0x00, 
-        0x00, 0x00, 0xF0, 0x00, 0x00, 0x00, 0xC0, 0xFE, 0xFF, 0xFF, 0x01, 0x00, 0x10, 0x00, 0x03, 0x00, 
-        0x00, 0x00, 0x02, 0x58, 0x02, 0x00, 0x12, 0x0B, 0x00, 0x00, 0x12, 0x0B, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x00, 0x00, 0xE0, 0x07, 0x00, 0x00, 0x1F, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    } ;
-    // clang-format on
-
-    int fh = mr_open(filename, MR_FILE_CREATE | MR_FILE_RDWR);
-
-    mr_write(fh, bmpHeader, sizeof(bmpHeader));
-
-    mr_write(fh, buf, size);
-
-    uint16_t end = 0;
-    mr_write(fh, &end, sizeof(end));
-
-    mr_close(fh);
-}
-
 //初始化字库
-int32 tsf_init(void) {
+int32 tsf_init(uint32 scrW, uint32 scrH, setPixelFunc_t fn) {
     extern unsigned char font16_st[399063];
     uint8 *head = font16_st;
 
-    scnw = 240;
-    scnh = 320;
-    pscn = malloc(scnw * scnh * 2);
-    memset(pscn, 0, scnw * scnh * 2);
+    scnw = scrW;
+    scnh = scrH;
+    setPixelFunc = fn;
 
     //读取unicode索引表信息
     g_nowUse.uIndexOff = *(int32 *)(head + 12);
@@ -446,20 +413,40 @@ int32 tsf_init(void) {
     g_nowUse.AsciiWidth = head[29];
     g_nowUse.fontHeight = head[30];
 
-    mr_colourSt c;
-    c.r = 255, c.g = 255, c.b = 0;
+    return MR_SUCCESS;
+}
 
-    uint8 *out = (uint8 *)mr_c2u("hello", NULL, NULL);
-    tsf_drawText(out, 0, 0, c);
-    mr_free(out, 0);
+/////////////////////////////////////////////////////////////////////////
+
+#define SCREEN_WIDTH 240
+#define SCREEN_HEIGHT 320
+#define SCREEN_BUF_LEN (SCREEN_WIDTH * SCREEN_HEIGHT * 2)
+
+static uint16_t *screenBuf;
+
+static void mySetPixelFunc(int32 x, int32 y, uint16 color, void *userData) {
+    if (x < 0 || y < 0 || x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
+        return;
+    }
+    *(screenBuf + (x + SCREEN_WIDTH * y)) = color;
+}
+
+void tsf_test() {
+    tsf_init(SCREEN_WIDTH, SCREEN_HEIGHT, mySetPixelFunc);
+
+    screenBuf = malloc(SCREEN_BUF_LEN);
+    memset(screenBuf, 0, SCREEN_BUF_LEN);
+
+    uint16 color = MAKERGB(255, 255, 0);
+
+    // uint8 *out = (uint8 *)mr_c2u("hello", NULL, NULL);
+    // tsf_drawText(out, 0, 0, c);
+    // mr_free(out, 0);
 
     // 中国
-    // char *str = "\x4e\x2d\x56\xfd\x00\x00";
+    char *str = "\x4e\x2d\x56\xfd\x00\x00";
     // helloworld
     // char *str = "\x0\x68\x0\x65\x0\x6c\x0\x6c\x0\x6f\x0\x77\x0\x6f\x0\x72\x0\x6c\x0\x64\x0\x0";
-    // tsf_drawText((uint8 *)str, 0, 0, c);
-
-    // printScreen("1.bmp", pscn, scnw * scnh * 2);
-
-    return MR_SUCCESS;
+    tsf_drawText((uint8 *)str, 0, 0, color, NULL);
+    printScreen("tsf_test.bmp", screenBuf);
 }

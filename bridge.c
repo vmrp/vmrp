@@ -4,8 +4,10 @@
 #include <string.h>
 
 #include "./header/bridge.h"
+#include "./header/dsm.h"
 #include "./header/main.h"
 #include "./header/memory.h"
+#include "./header/tsf_font.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////
 #ifdef LOG
@@ -35,10 +37,9 @@ static uint32_t mr_c_event_st_mem;  // 用于mrc_event参数传递的内存
 static uint32_t baseLib_cfunction_ext_mem;
 
 // data ////////////////////////////////////////////////////////////////////////////////////////
-static uint32_t mr_screen_h;       // 只是一个地址值
-static uint32_t mr_screen_w;       // 只是一个地址值
-static uint32_t mr_screenBuf;      // 只是一个地址值
-static uint32_t mr_screenBuf_mem;  // 只是一个地址值
+static uint32_t mr_screen_h;   // 只是一个地址值
+static uint32_t mr_screen_w;   // 只是一个地址值
+static uint32_t mr_screenBuf;  // 只是一个地址值
 
 static void br_mr_screen_h_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
     LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
@@ -61,10 +62,9 @@ static void br_mr_screenBuf_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
     mr_screenBuf = allocMem(4);                // 获取一个指针变量的内存
     uc_mem_write(uc, addr, &mr_screenBuf, 4);  // 往mr_table中写入指针值
 
-    // 因为mr_screenBuf是二级指针，所以还要一块内存
-    mr_screenBuf_mem = allocMem(SCREEN_WIDTH * SCREEN_HEIGHT * 2);  // 获取一块屏幕缓存，每像素两字节
-    uc_mem_write(uc, mr_screenBuf, &mr_screenBuf_mem, 4);           // 指针变量存入缓存的地址
-    LOG("screenBuf: 0x%X[%u]\n", mr_screenBuf_mem, mr_screenBuf_mem);
+    addr = SCREEN_BUF_ADDRESS;
+    uc_mem_write(uc, mr_screenBuf, &addr, 4);  // 指针变量存入缓存的地址
+    LOG("screenBuf: 0x%X[%u]\n", addr, addr);
 }
 // func ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -79,6 +79,7 @@ static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R0, &p_f);
     uc_reg_read(uc, UC_ARM_REG_R1, &p_len);
     LOG("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p_f, p_f, p_len, p_len);
+    dumpREG(uc);
     mr_helper_addr = p_f;
     SET_RET_V(MR_SUCCESS);
     RET();
@@ -90,7 +91,6 @@ static void br_mr_malloc(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R0, &p_len);
 
     LOG("ext call %s(0x%X[%u])\n", o->name, p_len, p_len);
-    dumpREG(uc);
 
     ret = (uint32_t)allocMem((size_t)p_len);
     LOG("ext call %s(0x%X[%u]) ret=0x%X[%u]\n", o->name, p_len, p_len, ret, ret);
@@ -105,7 +105,6 @@ static void br_mr_free(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R1, &len);
 
     LOG("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p, p, len, len);
-    dumpREG(uc);
 
     freeMem((size_t)p);
     RET();
@@ -120,7 +119,6 @@ static void br_mr_free(BridgeMap *o, uc_engine *uc) {
 //     uc_reg_read(uc, UC_ARM_REG_R2, &p_size);
 
 //     LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_src, p_src, p_size, p_size);
-//     dumpREG(uc);
 
 //     ret = p_dst;
 //     uint32_t b;
@@ -142,7 +140,6 @@ static void br_mr_free(BridgeMap *o, uc_engine *uc) {
 //     uc_reg_read(uc, UC_ARM_REG_R2, &p_size);
 
 //     LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_val, p_val, p_size, p_size);
-//     dumpREG(uc);
 
 //     ret = p_dst;
 //     for (size_t i = 0; i < p_size; i++) {
@@ -162,7 +159,6 @@ static void br_mr_free(BridgeMap *o, uc_engine *uc) {
 
 //     char *str = getStrFromUc(uc, s);
 //     LOG("ext call %s(0x%X[%u]---{%s}%d---)\n", o->name, s, s, str, (int)strlen(str));
-//     dumpREG(uc);
 //     ret = strlen(str);
 //     free(str);
 
@@ -179,16 +175,16 @@ static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R2, &input1);
 
     LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, L, L, input0, input0, input1, input1);
-    dumpREG(uc);
 
     SET_RET_V(MR_SUCCESS);
     RET();
 }
 
-static inline void setPixel(uc_engine *uc, uint32_t x, uint32_t y, uint32_t color) {
-    if (x < SCREEN_WIDTH || y < SCREEN_HEIGHT) {
-        uc_mem_write(uc, mr_screenBuf_mem + (x + SCREEN_WIDTH * y) * 2, &color, 2);
+static inline void setPixel(int32_t x, int32_t y, uint16_t color, void *userData) {
+    if (x < 0 || y < 0 || x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
+        return;
     }
+    uc_mem_write(userData, SCREEN_BUF_ADDRESS + (x + SCREEN_WIDTH * y) * 2, &color, 2);
 }
 
 static void br__DrawPoint(BridgeMap *o, uc_engine *uc) {
@@ -201,8 +197,7 @@ static void br__DrawPoint(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, x, y, nativecolor);
     LOG("ext call %s([%u], [%u], [%u])\n", o->name, x, y, nativecolor);
-    dumpREG(uc);
-    setPixel(uc, x, y, nativecolor);
+    setPixel(x, y, nativecolor, uc);
     RET();
 }
 
@@ -225,8 +220,13 @@ static void br_DrawRect(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, x, y, w, h, r, g, b);
     LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, x, y, w, h, r, g, b);
-    dumpREG(uc);
     uint16_t color = MAKERGB(r, g, b);
+
+    for (uint32_t i = 0; i < w; i++) {
+        for (uint32_t j = 0; j < h; j++) {
+            setPixel(x + i, y + j, color, uc);
+        }
+    }
 
     RET();
 }
@@ -247,24 +247,19 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
     uc_mem_read(uc, sp + 8, &is_unicode, 4);
     uc_mem_read(uc, sp + 12, &font, 4);
 
-    uint32_t addr = pcText;
-    uint8_t v;
-    uint8_t i = 0;
-    char buf[255];
-    do {
-        uc_mem_read(uc, addr, &v, 1);
-        buf[i] = v;
-        addr++;
-        i++;
-    } while (v && i < 254);
-    buf[i] = '\0';
+    char *str = getStrFromUc(uc, pcText);
 
-    LOG("ext call %s(0x%X[\"%s\"], 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, pcText, buf, x, y, r, g, b, is_unicode, font);
-    LOG("ext call %s([%u][\"%s\"], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, buf, x, y, r, g, b, is_unicode, font);
-    dumpREG(uc);
+    LOG("ext call %s(0x%X[\"%s\"], 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, pcText, str, x, y, r, g, b, is_unicode, font);
+    LOG("ext call %s([%u][\"%s\"], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, str, x, y, r, g, b, is_unicode, font);
 
-    // todo 实现
-
+    if (is_unicode) {
+        tsf_drawText((uint8_t *)str, x, y, MAKERGB(r, g, b), uc);
+    } else {
+        uint8_t *out = (uint8_t *)mr_c2u(str, NULL, NULL);
+        tsf_drawText(out, x, y, MAKERGB(r, g, b), uc);
+        free(out);
+    }
+    free(str);
     SET_RET_V(MR_SUCCESS);
     RET();
 }
@@ -298,7 +293,6 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
 
 //     LOG("ext call %s(0x%X, 0x%X[\"%s\"])\n", o->name, s, fmt, buf);
 
-//     dumpREG(uc);
 //     RET();
 // }
 
@@ -318,7 +312,6 @@ static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, bmp, x, y, w, h);
     LOG("ext call %s([%u], [%u], [%u], [%u], [%u])\n", o->name, bmp, x, y, w, h);
-    dumpREG(uc);
 
     // todo 实现
 
@@ -335,7 +328,6 @@ static void br_mr_open(BridgeMap *o, uc_engine *uc) {
     char *filenameStr = getStrFromUc(uc, filename);
     LOG("ext call %s(0x%X[%s], 0x%X)\n", o->name, filename, filenameStr, mode);
     LOG("ext call %s([%u], [%u])\n", o->name, filename, mode);
-    dumpREG(uc);
 
     int32_t ret = mr_open(filenameStr, mode);
     free(filenameStr);
@@ -354,7 +346,6 @@ static void br_mr_close(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(0x%X)\n", o->name, f);
     LOG("ext call %s([%u])\n", o->name, f);
-    dumpREG(uc);
 
     ret = mr_close(f);
     LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
@@ -373,7 +364,6 @@ static void br_mr_write(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, f, p, l);
     LOG("ext call %s([%u], [%u], [%u])\n", o->name, f, p, l);
-    dumpREG(uc);
 
     char *buf = malloc(l);
     uc_mem_read(uc, p, buf, l);
@@ -655,6 +645,7 @@ uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress) {
 
     // 事件参数传递用的内存
     mr_c_event_st_mem = allocMem(20);
+    tsf_init(SCREEN_WIDTH, SCREEN_HEIGHT, setPixel);
 
     return UC_ERR_OK;
 }

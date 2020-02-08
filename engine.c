@@ -324,8 +324,6 @@ void engine_init() {
     cfunction_table.mrc_extChunk = &extChunk_table;
     cfunction_table.ext_type = 1;
 
-    //其他组件
-    tsf_init();
 
     LOG("engine init scnbuf:0x%08x", (uint)*func_table.mr_screenBuf);
 }

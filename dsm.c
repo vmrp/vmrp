@@ -21,17 +21,19 @@
 
 #include "./header/tsf_font.h"
 
-extern int gbToUCS2BE(unsigned char *gbCode, unsigned char *unicode,
-                      int bufSize);
 static int32 dsmSwitchPath(uint8 *input, int32 input_len, uint8 **output,
                            int32 *output_len);
 
 int showApiLog = TRUE;
 
 /////////////// 类C库 ///////////////////////
-void *mr_malloc(uint32 len) { return malloc(len); }
+void *mr_malloc(uint32 len) {
+    return malloc(len);
+}
 
-void mr_free(void *p, uint32 len) { free(p); }
+void mr_free(void *p, uint32 len) {
+    free(p);
+}
 
 void *mr_realloc(void *p, uint32 oldlen, uint32 newlen) {
     return realloc(p, newlen);
@@ -45,13 +47,17 @@ void *mr_memmove(void *dst, const void *src, int len) {
     return memmove(dst, src, (size_t)len);
 }
 
-char *mr_strcpy(char *dst, const char *src) { return strcpy(dst, src); }
+char *mr_strcpy(char *dst, const char *src) {
+    return strcpy(dst, src);
+}
 
 char *mr_strncpy(char *dst, const char *src, int len) {
     return strncpy(dst, src, (size_t)len);
 }
 
-char *mr_strcat(char *dst, const char *src) { return strcat(dst, src); }
+char *mr_strcat(char *dst, const char *src) {
+    return strcat(dst, src);
+}
 
 char *mr_strncat(char *dst, const char *src, int len) {
     return strncat(dst, src, (size_t)len);
@@ -61,23 +67,33 @@ int mr_memcmp(const void *dst, const void *src, int len) {
     return memcmp(dst, src, (size_t)len);
 }
 
-int mr_strcmp(const char *dst, const char *src) { return strcmp(dst, src); }
+int mr_strcmp(const char *dst, const char *src) {
+    return strcmp(dst, src);
+}
 
 int mr_strncmp(const char *dst, const char *src, int len) {
     return strncmp(dst, src, (size_t)len);
 }
 
-int mr_strcoll(const char *dst, const char *src) { return strcoll(dst, src); }
+int mr_strcoll(const char *dst, const char *src) {
+    return strcoll(dst, src);
+}
 
 void *mr_memchr(const void *s, int c, int len) {
     return memchr(s, c, (size_t)len);
 }
 
-void *mr_memset(void *s, int c, int len) { return memset(s, c, (size_t)len); }
+void *mr_memset(void *s, int c, int len) {
+    return memset(s, c, (size_t)len);
+}
 
-int mr_strlen(const char *s) { return strlen(s); }
+int mr_strlen(const char *s) {
+    return strlen(s);
+}
 
-char *mr_strstr(const char *s1, const char *s2) { return strstr(s1, s2); }
+char *mr_strstr(const char *s1, const char *s2) {
+    return strstr(s1, s2);
+}
 
 int mr_sprintf(char *buf, const char *fmt, ...) {
     va_list vars;
@@ -90,15 +106,21 @@ int mr_sprintf(char *buf, const char *fmt, ...) {
     return ret;
 }
 
-int mr_atoi(const char *s) { return atoi(s); }
+int mr_atoi(const char *s) {
+    return atoi(s);
+}
 
 unsigned long mr_strtoul(const char *nptr, char **endptr, int base) {
     return strtoul(nptr, endptr, base);
 }
 
-void mr_sand(uint32 seed) { return srand(seed); }
+void mr_sand(uint32 seed) {
+    return srand(seed);
+}
 
-int mr_rand(void) { return rand(); }
+int mr_rand(void) {
+    return rand();
+}
 
 void mr_printf(const char *format, ...) {
     va_list params;
@@ -125,7 +147,7 @@ static void sigroutine(int signo) {
  返  回:MR_SUCCESS,MR_FAILED
  ****************************************************************************/
 int32 mr_timerStart(uint16 t) {
-#ifndef _WIN32
+#if 0
     struct itimerval tick;
 
     /*当setitimer()所执行的timer时间到了会呼叫SIGALRM signal，
@@ -157,7 +179,9 @@ int32 mr_timerStart(uint16 t) {
 }
 
 /*停止定时器。*/
-int32 mr_timerStop(void) { return MR_SUCCESS; }
+int32 mr_timerStop(void) {
+    return MR_SUCCESS;
+}
 
 /*取得时间，单位ms*/
 uint32 mr_getTime(void) {
@@ -433,7 +457,9 @@ static void SetDsmWorkPath(char *path) {
     memcpy(dsmWorkPath, path, strlen(path) + 1);
 }
 
-char *GetDsmWorkPath(void) { return dsmWorkPath; }
+char *GetDsmWorkPath(void) {
+    return dsmWorkPath;
+}
 
 /****************************************************************************
  函数名:static void dsmRestoreRootDir(void)
@@ -873,7 +899,9 @@ int32 mr_findStop(MR_SEARCH_HANDLE search_handle) {
  参  数:无
  返  回:MR_SUCCESS,MR_FAILED
  ****************************************************************************/
-int32 mr_ferrno(void) { return (int32)MR_FAILED; }
+int32 mr_ferrno(void) {
+    return (int32)MR_FAILED;
+}
 
 /****************************************************************************
  函数名:int32 mr_getLen(const char* filename)
@@ -911,11 +939,14 @@ int32 mr_exit(void) {
 }
 
 // 2012/9/11
-void mr_md5_init(md5_state_t *pms) {}
+void mr_md5_init(md5_state_t *pms) {
+}
 
-void mr_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes) {}
+void mr_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes) {
+}
 
-void mr_md5_finish(md5_state_t *pms, md5_byte_t digest[16]) {}
+void mr_md5_finish(md5_state_t *pms, md5_byte_t digest[16]) {
+}
 
 int32 mr_load_sms_cfg(void) {
     if (showApiLog) LOG("mr_load_sms_cfg");
@@ -945,7 +976,9 @@ const char *mr_getCharBitmap(uint16 ch, uint16 fontSize, int *width,
     return (char *)(tsf_getCharBitmap(ch) + 2);
 }
 
-int32 mr_DispUpEx(int16 x, int16 y, uint16 w, uint16 h) { return MR_SUCCESS; }
+int32 mr_DispUpEx(int16 x, int16 y, uint16 w, uint16 h) {
+    return MR_SUCCESS;
+}
 
 void mr_DrawPoint(int16 x, int16 y, uint16 nativecolor) {
     uint16 *p = w_getScreenBuffer();
@@ -957,10 +990,12 @@ void mr_DrawPoint(int16 x, int16 y, uint16 nativecolor) {
 }
 
 void mr_DrawBitmap(uint16 *p, int16 x, int16 y, uint16 w, uint16 h, uint16 rop,
-                   uint16 transcoler, int16 sx, int16 sy, int16 mw) {}
+                   uint16 transcoler, int16 sx, int16 sy, int16 mw) {
+}
 
 void mr_DrawBitmapEx(mr_bitmapDrawSt *srcbmp, mr_bitmapDrawSt *dstbmp, uint16 w,
-                     uint16 h, mr_transMatrixSt *pTrans, uint16 transcoler) {}
+                     uint16 h, mr_transMatrixSt *pTrans, uint16 transcoler) {
+}
 
 void mr_DrawRect(int16 sx, int16 sy, int16 w, int16 h, uint8 cr, uint8 cg,
                  uint8 cb) {
@@ -968,15 +1003,12 @@ void mr_DrawRect(int16 sx, int16 sy, int16 w, int16 h, uint8 cr, uint8 cg,
 
 int32 mr_DrawText(char *pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b,
                   int is_unicode, uint16 font) {
-    mr_colourSt c;
-
-    c.r = r, c.g = g, c.b = b;
     if (!is_unicode) {
         uint8 *out = (uint8 *)mr_c2u(pcText, NULL, NULL);
-        tsf_drawText(out, x, y, c);
+        tsf_drawText(out, x, y, MAKERGB(r, g, b), NULL);
         mr_free(out, 0);
     } else {
-        tsf_drawText((uint8 *)pcText, x, y, c);
+        tsf_drawText((uint8 *)pcText, x, y, MAKERGB(r, g, b), NULL);
     }
 
     // if(showApiLog) printf("mr_DrawText(text:%s, x:%d, y:%d, )",
@@ -1010,10 +1042,10 @@ int32 mr_DrawTextEx(char *pcText, int16 x, int16 y, mr_screenRectSt rect,
         f |= TSF_AUTONEWLINE | TSF_CRLFNEWLINE;
 
     if (flag & DRAW_TEXT_EX_IS_UNICODE) {
-        tsf_drawTextLeft((uint8 *)pcText, x, y, rect, colorst, f);
+        tsf_drawTextLeft((uint8 *)pcText, x, y, rect, MAKERGB(colorst.r, colorst.g, colorst.b), f, NULL);
     } else {
         uint8 *out = (uint8 *)mr_c2u(pcText, NULL, NULL);
-        tsf_drawTextLeft((uint8 *)out, x, y, rect, colorst, f);
+        tsf_drawTextLeft((uint8 *)out, x, y, rect, MAKERGB(colorst.r, colorst.g, colorst.b), f, NULL);
         mr_free(out, 0);
     }
 
@@ -1037,16 +1069,17 @@ int32 mr_TestCom1(int32 L, int input0, char *input1, int32 len) {
 }
 
 uint16 *mr_c2u(char *cp, int32 *err, int32 *size) {
-    int l = strlen(cp) * 2 + 2;
-    char *out = malloc(l);
-    l = gbToUCS2BE((unsigned char *)cp, (unsigned char *)out, l);
-    if (size) *size = l;
-    return (uint16 *)out;
+    extern char *gbToUCS2BE(uint8_t * gbCode, uint32_t * outSize);
+    return (uint16 *)gbToUCS2BE((uint8_t *)cp, (uint32_t *)size);
 }
 
-int32 mr_div(int32 a, int32 b) { return a / b; }
+int32 mr_div(int32 a, int32 b) {
+    return a / b;
+}
 
-int32 mr_mod(int32 a, int32 b) { return a % b; }
+int32 mr_mod(int32 a, int32 b) {
+    return a % b;
+}
 
 int32 mr_unzip(uint8 *inputbuf, int32 inputlen, uint8 **outputbuf,
                int32 *outputlen) {
@@ -1075,7 +1108,9 @@ int32 mr_unzip(uint8 *inputbuf, int32 inputlen, uint8 **outputbuf,
     return MR_FAILED;
 }
 
-uint32 mrc_updcrc(uint8 *s, uint32 n) { return 0; }
+uint32 mrc_updcrc(uint8 *s, uint32 n) {
+    return 0;
+}
 
 void *mr_readFile(const char *filename, int *filelen, int lookfor) {
     int32 len;
@@ -1084,30 +1119,52 @@ void *mr_readFile(const char *filename, int *filelen, int lookfor) {
     return (void *)data;
 }
 
-int32 mr_startShake(int32 ms) { return MR_FAILED; }
-int32 mr_stopShake() { return MR_FAILED; }
+int32 mr_startShake(int32 ms) {
+    return MR_FAILED;
+}
+int32 mr_stopShake() {
+    return MR_FAILED;
+}
 int32 mr_playSound(int type, const void *data, uint32 dataLen, int32 loop) {
     return MR_FAILED;
 }
-int32 mr_stopSound(int type) { return MR_FAILED; }
+int32 mr_stopSound(int type) {
+    return MR_FAILED;
+}
 int32 mr_sendSms(char *pNumber, char *pContent, int32 encode) {
     return MR_FAILED;
 }
-void mr_call(char *number) {}
-int32 mr_getNetworkID(void) { return MR_FAILED; }
-void mr_connectWAP(char *wap) {}
-int32 mr_menuCreate(const char *title, int16 num) { return MR_FAILED; }
+void mr_call(char *number) {
+}
+int32 mr_getNetworkID(void) {
+    return MR_FAILED;
+}
+void mr_connectWAP(char *wap) {
+}
+int32 mr_menuCreate(const char *title, int16 num) {
+    return MR_FAILED;
+}
 int32 mr_menuSetItem(int32 menu, const char *text, int32 index) {
     return MR_FAILED;
 }
-int32 mr_menuShow(int32 menu) { return MR_FAILED; }
-int32 mr_menuSetFocus(int32 menu, int32 index) { return MR_FAILED; }
-int32 mr_menuRelease(int32 menu) { return MR_FAILED; }
-int32 mr_menuRefresh(int32 menu) { return MR_FAILED; }
+int32 mr_menuShow(int32 menu) {
+    return MR_FAILED;
+}
+int32 mr_menuSetFocus(int32 menu, int32 index) {
+    return MR_FAILED;
+}
+int32 mr_menuRelease(int32 menu) {
+    return MR_FAILED;
+}
+int32 mr_menuRefresh(int32 menu) {
+    return MR_FAILED;
+}
 int32 mr_dialogCreate(const char *title, const char *text, int32 type) {
     return MR_FAILED;
 }
-int32 mr_dialogRelease(int32 dialog) { return MR_FAILED; }
+int32 mr_dialogRelease(int32 dialog) {
+    return MR_FAILED;
+}
 int32 mr_dialogRefresh(int32 dialog, const char *title, const char *text,
                        int32 type) {
     return MR_FAILED;
@@ -1116,7 +1173,9 @@ int32 mr_dialogRefresh(int32 dialog, const char *title, const char *text,
 int32 mr_textCreate(const char *title, const char *text, int32 type) {
     return MR_FAILED;
 }
-int32 mr_textRelease(int32 text) { return MR_FAILED; }
+int32 mr_textRelease(int32 text) {
+    return MR_FAILED;
+}
 int32 mr_textRefresh(int32 handle, const char *title, const char *text) {
     return MR_FAILED;
 }
@@ -1125,28 +1184,46 @@ int32 mr_editCreate(const char *title, const char *text, int32 type,
                     int32 max_size) {
     return MR_FAILED;
 }
-int32 mr_editRelease(int32 edit) { return MR_FAILED; }
-const char *mr_editGetText(int32 edit) { return NULL; }
-int32 mr_winCreate(void) { return MR_FAILED; }
-int32 mr_winRelease(int32 win) { return MR_FAILED; }
+int32 mr_editRelease(int32 edit) {
+    return MR_FAILED;
+}
+const char *mr_editGetText(int32 edit) {
+    return NULL;
+}
+int32 mr_winCreate(void) {
+    return MR_FAILED;
+}
+int32 mr_winRelease(int32 win) {
+    return MR_FAILED;
+}
 
 int32 mr_initNetwork(MR_INIT_NETWORK_CB cb, const char *mode) {
     return MR_FAILED;
 }
-int32 mr_closeNetwork(void) { return MR_FAILED; }
+int32 mr_closeNetwork(void) {
+    return MR_FAILED;
+}
 int32 mr_getHostByName(const char *name, MR_GET_HOST_CB cb) {
     return MR_FAILED;
 }
-int32 mr_socket(int32 type, int32 protocol) { return MR_FAILED; }
+int32 mr_socket(int32 type, int32 protocol) {
+    return MR_FAILED;
+}
 int32 mr_connect(int32 s, int32 ip, uint16 port, int32 type) {
     return MR_FAILED;
 }
-int32 mr_closeSocket(int32 s) { return MR_FAILED; }
-int32 mr_recv(int32 s, char *buf, int len) { return MR_FAILED; }
+int32 mr_closeSocket(int32 s) {
+    return MR_FAILED;
+}
+int32 mr_recv(int32 s, char *buf, int len) {
+    return MR_FAILED;
+}
 int32 mr_recvfrom(int32 s, char *buf, int len, int32 *ip, uint16 *port) {
     return MR_FAILED;
 }
-int32 mr_send(int32 s, const char *buf, int len) { return MR_FAILED; }
+int32 mr_send(int32 s, const char *buf, int len) {
+    return MR_FAILED;
+}
 int32 mr_sendto(int32 s, const char *buf, int len, int32 ip, uint16 port) {
     return MR_FAILED;
 }

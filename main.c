@@ -48,6 +48,8 @@ int extractFile() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+static uc_engine *uc;
+static uint16_t *screenBuf;
 
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
 #if TRACE
@@ -130,12 +132,17 @@ static bool mem_init(uc_engine *uc) {
         return err;
     }
 
+    err = uc_mem_map_ptr(uc, SCREEN_BUF_ADDRESS, SCREEN_BUF_SIZE, UC_PROT_ALL, screenBuf);
+    if (err) {
+        printf("Failed mem map SCREEN_BUF_ADDRESS: %u (%s)\n", err, uc_strerror(err));
+        return err;
+    }
+
     return true;
 }
 
-static uc_engine *uc;
-
 int freeVmrp() {
+    free(screenBuf);
     uc_close(uc);
     return 0;
 }
@@ -144,8 +151,7 @@ int initVmrp() {
     uc_err err;
     uc_hook trace;
 
-    tsf_init();
-
+    screenBuf = malloc(SCREEN_BUF_SIZE);
     printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, BRIDGE_TABLE_ADDRESS:0x%X\n", CODE_ADDRESS, STACK_ADDRESS, BRIDGE_TABLE_ADDRESS);
 
     err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &uc);
@@ -187,12 +193,17 @@ int main() {
     }
 
     bridge_mr_init(uc);
+    printScreen("init.bmp", screenBuf);
+
     bridge_mr_event(uc, MR_MOUSE_DOWN, 100, 123);
+    printScreen("event.bmp", screenBuf);
+
     bridge_mr_pauseApp(uc);
     bridge_mr_resumeApp(uc);
 
     // mrc_exitApp() 可能由MR_EVENT_EXIT event之后自动调用
     bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
+
     freeVmrp();
     printf("exit.\n");
     return 0;
