@@ -1,7 +1,7 @@
 #include "gui.h"
-#include "../header/bridge.h"
-#include "../header/fileLib.h"
-#include "../header/vmrp.h"
+#include "../../header/bridge.h"
+#include "../../header/fileLib.h"
+#include "../../header/vmrp.h"
 
 void guiSetPixel(int32_t x, int32_t y, uint16_t color) {
     setPixel(x, y, PIXEL565R(color), PIXEL565G(color), PIXEL565B(color));

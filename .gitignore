@@ -6,6 +6,7 @@ emu
 *.ext
 *.exe
 mythroad/*.bmp
+GUI/libvmrp.a
 
 
 
