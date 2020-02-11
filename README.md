@@ -62,7 +62,7 @@ make命令：在windows下用mingw32-make.exe，在linux下直接make
 
 编译图形化测试程序： 由于直接用mingw64编译mfc没有成功，所以改用了go语言，使用的版本是go1.12.7
 1. make lib
-2. cd gui
+2. cd GUI/golang/
 3. go build
 
 
