@@ -9,11 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include "../windows/include/unicorn/unicorn.h"
-#else
-#include <unicorn/unicorn.h>
-#endif
+#include "utils.h"
 
 #define HEAP_ALIGNMENT 4
 

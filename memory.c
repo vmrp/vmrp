@@ -1,4 +1,5 @@
 #include "./header/memory.h"
+#include "./header/utils.h"
 
 /*
 实现在模拟器中对malloc()和free()调用的管理功能，管理的是模拟器地址，因此本机代码为了方便开发仍然使用了原生的malloc()和free()
@@ -20,9 +21,9 @@ static Block *usedList;  // 无序单向链表
 static void printList(Block *list) {
     printf("==================\n");
     while (list != NULL) {
-        printf("[addr:%I64d, size:%I64d", list->addr, list->size);
-        printf(", prev:%I64d", list->prev ? list->prev->addr : 0);
-        printf(", next:%I64d]\n", list->next ? list->next->addr : 0);
+        printf("[addr:%"PRId", size:%"PRId"", list->addr, list->size);
+        printf(", prev:%"PRId"", list->prev ? list->prev->addr : 0);
+        printf(", next:%"PRId"]\n", list->next ? list->next->addr : 0);
         list = list->next;
     }
     printf("==================\n\n");
@@ -40,7 +41,7 @@ static Block *newBlock(size_t addr, size_t size) {
 static void insertFreeBlock(Block *block) {
     Block *ptr = freeList;
     if (ptr == NULL) {
-        // printf("%I64d insert to head\n", block->addr);
+        // printf("%"PRId" insert to head\n", block->addr);
         block->prev = NULL;
         block->next = NULL;
         freeList = block;
@@ -49,7 +50,7 @@ static void insertFreeBlock(Block *block) {
     Block *prev = NULL;
     do {
         if (block->addr <= ptr->addr) {  // 按从小到大的顺序插入
-            // printf("%I64d insert before %I64d\n", block->addr, ptr->addr);
+            // printf("%"PRId" insert before %"PRId"\n", block->addr, ptr->addr);
             if (ptr->prev != NULL) {
                 ptr->prev->next = block;
             } else {
@@ -64,7 +65,7 @@ static void insertFreeBlock(Block *block) {
         ptr = ptr->next;
     } while (ptr != NULL);
 
-    // printf("%I64d add to tail\n", block->addr);
+    // printf("%"PRId" add to tail\n", block->addr);
     prev->next = block;
     block->prev = prev;
     block->next = NULL;
@@ -107,20 +108,20 @@ static void compact() {
         prev = ptr;
         scan = ptr->next;
         while (scan != NULL && prev->addr + prev->size == scan->addr) {
-            // printf("merge %I64d\n", scan->addr);
+            // printf("merge %"PRId"\n", scan->addr);
             prev = scan;
             scan = scan->next;
         }
         if (prev != ptr) {
             size_t new_size = prev->addr - ptr->addr + prev->size;
-            // printf("new size %I64d\n", new_size);
+            // printf("new size %"PRId"\n", new_size);
             ptr->size = new_size;
             Block *next = prev->next;
 
             Block *tmp = ptr->next;
             Block *tmp_next;
             while (tmp != prev->next) {
-                // printf("compact-> %I64d\n", tmp->addr);
+                // printf("compact-> %"PRId"\n", tmp->addr);
                 tmp_next = tmp->next;
                 free(tmp);
                 tmp = tmp_next;
@@ -177,7 +178,7 @@ static size_t alloc(size_t num) {
     }
 
     if (min >= HEAP_ALIGNMENT) {
-        // printf("allocMem: %I64d %I64d\n", num, min);
+        // printf("allocMem: %"PRId" %"PRId"\n", num, min);
         insertFreeBlock(newBlock(ptr->addr + num, min));
         ptr->size = num;
     }
@@ -206,7 +207,7 @@ static size_t countBlocks(Block *ptr) {
 void initMemoryManager(size_t baseAddress, size_t len) {
     insertFreeBlock(newBlock(baseAddress, len));
     // printList(freeList);
-    printf("initMemoryManager: baseAddress:0x%I64X len: 0x%I64X\n", baseAddress, len);
+    printf("initMemoryManager: baseAddress:0x%"PRIX" len: 0x%"PRIX"\n", baseAddress, len);
 }
 
 void memory_test() {
@@ -233,43 +234,43 @@ void memory_test() {
     // printList(freeList);
     printf("======================================\n");
 
-    printf("freeList: %I64d\n", countBlocks(freeList));
-    printf("usedList: %I64d\n", countBlocks(usedList));
+    printf("freeList: %"PRId"\n", countBlocks(freeList));
+    printf("usedList: %"PRId"\n", countBlocks(usedList));
 
-    printf("%I64d\n", allocMem(12));
-    printf("%I64d\n", allocMem(12));
-    printf("%I64d\n", allocMem(4));
-    printf("%I64d\n", allocMem(8));
-    printf("%I64d\n", allocMem(8));
-    printf("%I64d\n", allocMem(12));
-    printf("%I64d\n", allocMem(48));
-    printf("%I64d\n", allocMem(48));
+    printf("%"PRId"\n", allocMem(12));
+    printf("%"PRId"\n", allocMem(12));
+    printf("%"PRId"\n", allocMem(4));
+    printf("%"PRId"\n", allocMem(8));
+    printf("%"PRId"\n", allocMem(8));
+    printf("%"PRId"\n", allocMem(12));
+    printf("%"PRId"\n", allocMem(48));
+    printf("%"PRId"\n", allocMem(48));
 
     // [addr:10024, size:12, prev:0, next:10048]
     // [addr:10048, size:4, prev:10024, next:0]
-    printf("alloc 0: %I64d\n", allocMem(0));
-    printf("alloc 4: %I64d\n", allocMem(4));
-    printf("alloc 6: %I64d\n", allocMem(6));
-    printf("alloc 9: %I64d\n", allocMem(9));
-    printf("alloc 4: %I64d\n", allocMem(4));
-    printf("alloc 4: %I64d\n", allocMem(4));
+    printf("alloc 0: %"PRId"\n", allocMem(0));
+    printf("alloc 4: %"PRId"\n", allocMem(4));
+    printf("alloc 6: %"PRId"\n", allocMem(6));
+    printf("alloc 9: %"PRId"\n", allocMem(9));
+    printf("alloc 4: %"PRId"\n", allocMem(4));
+    printf("alloc 4: %"PRId"\n", allocMem(4));
 
     printList(freeList);
-    printf("freeList: %I64d\n", countBlocks(freeList));
-    printf("usedList: %I64d\n", countBlocks(usedList));
+    printf("freeList: %"PRId"\n", countBlocks(freeList));
+    printf("usedList: %"PRId"\n", countBlocks(usedList));
     printList(usedList);
 
     freeMem(10036);
     printList(usedList);
 
     printList(freeList);
-    printf("freeList: %I64d\n", countBlocks(freeList));
-    printf("usedList: %I64d\n", countBlocks(usedList));
+    printf("freeList: %"PRId"\n", countBlocks(freeList));
+    printf("usedList: %"PRId"\n", countBlocks(usedList));
 
     printf("\nfreeAllMem(): -----------------------------\n");
     freeAllMem();
     compact();
     printList(freeList);
-    printf("freeList: %I64d\n", countBlocks(freeList));
-    printf("usedList: %I64d\n", countBlocks(usedList));
+    printf("freeList: %"PRId"\n", countBlocks(freeList));
+    printf("usedList: %"PRId"\n", countBlocks(usedList));
 }

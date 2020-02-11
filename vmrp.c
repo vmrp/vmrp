@@ -3,12 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include "./windows/include/unicorn/unicorn.h"
-#else
-#include <unicorn/unicorn.h>
-#endif
-
 #include "./header/bridge.h"
 #include "./header/debug.h"
 #include "./header/fileLib.h"

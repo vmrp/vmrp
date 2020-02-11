@@ -1,6 +1,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../../header/bridge.h"
+#include "../../header/fileLib.h"
+#include "../../header/vmrp.h"
 
 #ifdef __x86_64__
 #include "../lib/SDL2-2.0.10/x86_64-w64-mingw32/include/SDL2/SDL.h"
@@ -8,16 +11,62 @@
 #include "../lib/SDL2-2.0.10/i686-w64-mingw32/include/SDL2/SDL.h"
 #endif
 
+#define MOUSE_DOWN 2
+#define MOUSE_UP 3
+#define MOUSE_MOVE 12
+
 // http://wiki.libsdl.org/Tutorials
 // http://lazyfoo.net/tutorials/SDL/index.php
 
-const int SCREEN_WIDTH = 240;
-const int SCREEN_HEIGHT = 320;
+static SDL_Renderer *renderer;
+static uc_engine *uc;
 
-void setPixel(SDL_Renderer *renderer, int x, int y) {
-    SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
+void guiSetPixel(int32_t x, int32_t y, uint16_t color) {
+    SDL_SetRenderDrawColor(renderer, PIXEL565R(color), PIXEL565G(color), PIXEL565B(color), 0xFF);
     SDL_RenderDrawPoint(renderer, x, y);
+}
+
+void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h) {
     SDL_RenderPresent(renderer);
+}
+
+static int init() {
+    listMrpFiles("asm.mrp");
+
+    uc = initVmrp();
+    if (uc == NULL) {
+        printf("initVmrp() fail.\n");
+        return 1;
+    }
+
+    bridge_mr_init(uc);
+
+    // bridge_mr_pauseApp(uc);
+    // bridge_mr_resumeApp(uc);
+
+    // mrc_exitApp() 可能由MR_EVENT_EXIT event之后自动调用
+    // bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
+
+    // freeVmrp(uc);
+    // printf("exit.\n");
+    return 0;
+}
+
+static void eventFunc(int code, int p1, int p2) {
+    if (uc) {
+        bridge_mr_event(uc, code, p1, p2);
+    }
+    // switch (code) {
+    //     case MOUSE_DOWN:
+    //         printf("MOUSE_DOWN x:%d y:%d\n", p1, p2);
+    //         break;
+    //     case MOUSE_UP:
+    //         printf("MOUSE_UP x:%d y:%d\n", p1, p2);
+    //         break;
+    //     case MOUSE_MOVE:
+    //         printf("MOUSE_MOVE x:%d y:%d\n", p1, p2);
+    //         break;
+    // }
 }
 
 int main(int argc, char *args[]) {
@@ -37,7 +86,7 @@ int main(int argc, char *args[]) {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return -1;
     }
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
         printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
         return -1;
@@ -51,6 +100,8 @@ int main(int argc, char *args[]) {
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
+    init();
+
     SDL_Event event;
     bool isLoop = true;
     bool isDown = false;
@@ -63,18 +114,15 @@ int main(int argc, char *args[]) {
                 printf("key:%d\n", event.key.keysym.sym);
             } else if (event.type == SDL_MOUSEMOTION) {
                 if (isDown) {
-                    printf("SDL_MOUSEMOTION x:%d,y:%d\n", event.motion.x, event.motion.y);
-                    setPixel(renderer, event.motion.x, event.motion.y);
+                    eventFunc(MOUSE_MOVE, event.motion.x, event.motion.y);
                 }
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 isDown = true;
-                printf("SDL_MOUSEBUTTONDOWN x:%d,y:%d\n", event.motion.x, event.motion.y);
-                setPixel(renderer, event.motion.x, event.motion.y);
+                eventFunc(MOUSE_DOWN, event.motion.x, event.motion.y);
 
             } else if (event.type == SDL_MOUSEBUTTONUP) {
                 isDown = false;
-                printf("SDL_MOUSEBUTTONUP x:%d,y:%d\n", event.motion.x, event.motion.y);
-                setPixel(renderer, event.motion.x, event.motion.y);
+                eventFunc(MOUSE_UP, event.motion.x, event.motion.y);
             }
         }
     }

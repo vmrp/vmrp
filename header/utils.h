@@ -7,8 +7,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include "../windows/include/unicorn/unicorn.h"
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+#ifdef _WIN64
+#include "../windows/unicorn-1.0.1-win64/include/unicorn/unicorn.h"
+#else
+#include "../windows/unicorn-1.0.1-win32/include/unicorn/unicorn.h"
+#endif
 #else
 #include <unicorn/unicorn.h>
 #endif
@@ -24,6 +28,14 @@
 #endif
 #ifndef countof
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
+#ifdef __x86_64__
+#define PRId "I64d"
+#define PRIX "I64X"
+#elif __i386__
+#define PRId "d"
+#define PRIX "X"
 #endif
 
 // 字节对齐

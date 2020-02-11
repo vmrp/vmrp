@@ -2,7 +2,7 @@ package main
 
 /*
 #cgo windows CFLAGS: -Wno-pointer-to-int-cast
-#cgo windows LDFLAGS: -L.. -lvmrp ${SRCDIR}/../../windows/unicorn.a -lpthread -lm -lz
+#cgo windows LDFLAGS: -L.. -lvmrp ${SRCDIR}/../../windows/unicorn-1.0.1-win64/unicorn.a -lpthread -lm -lz
 
 #include "gui.h"
 */

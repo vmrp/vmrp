@@ -7,12 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include "../windows/include/unicorn/unicorn.h"
-#else
-#include <unicorn/unicorn.h>
-#endif
-
 #include "mr_helper.h"
 #include "utils.h"
 

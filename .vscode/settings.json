@@ -32,6 +32,7 @@
         "iconv.h": "c",
         "vmrp.h": "c",
         "zlib.h": "c",
-        "gui.h": "c"
+        "gui.h": "c",
+        "inttypes.h": "c"
     }
 }

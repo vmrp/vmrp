@@ -7,11 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include "../windows/include/unicorn/unicorn.h"
-#else
-#include <unicorn/unicorn.h>
-#endif
+#include "utils.h"
 
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320

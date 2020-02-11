@@ -7,11 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include "../windows/include/unicorn/unicorn.h"
-#else
-#include <unicorn/unicorn.h>
-#endif
+#include "utils.h"
 
 void hook_code_debug(uc_engine *uc, uint64_t address);
 
