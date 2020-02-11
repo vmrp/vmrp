@@ -59,13 +59,27 @@ https://github.com/zengming00/vmrp/releases/tag/1.0.0
 
 可能需要安装zlib，我是直接从官网下载源码安装的
 
-需要安装unicorn (windows下载预编译文件unicorn-1.0.1，只需要头文件和unicorn.a放到./windows文件夹内，在windows下用mingw64(mingw32-make.exe)编译，我的是x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0版本)
+需要安装unicorn (windows下载预编译文件unicorn-1.0.1，解压到./windows文件夹内，在windows下用mingw64(mingw32-make.exe)编译，我的是x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0版本)
+```
+$ ls ./windows/ -l
+total 8
+drwxr-xr-x 1 zengming 197121 0 2月  11 17:10 unicorn-1.0.1-win32
+drwxr-xr-x 1 zengming 197121 0 2月  11 17:09 unicorn-1.0.1-win64
+```
 
 make命令：在windows下用mingw32-make.exe，在linux下直接make
 
 编译命令行测试程序: 直接输入make
 
-编译图形化测试程序： 由于直接用mingw64编译mfc没有成功，所以改用了go语言，使用的版本是go1.12.7
+编译SDL版本的图形化程序：
+1. make lib
+2. 下载解压SDL2到./GUI/lib/（我使用的版本是SDL2-2.0.10）
+3. cd GUI/SDL
+4. make 或 make win32
+注意如果是make win32则在make lib时必需确保生成的libvmrp.a是32位版本，在64位系统下编译时gcc需要加 -m32 标志
+
+编译go语言版本的图形化程序： 由于直接用mingw64编译mfc没有成功，所以改用了go语言，使用的版本是go1.12.7
+
 1. make lib
 2. cd GUI/golang/
 3. go build
