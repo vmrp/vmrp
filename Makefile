@@ -7,11 +7,11 @@ OBJS = dsm.o engine.o fileLib.o font16_st.o gb2unicode.o vmrp.o tsf_font.o utils
 
 UNICORN = -lunicorn
 ifeq ($(OS),Windows_NT)
-	UNICORN = ./windows/unicorn.a
+	UNICORN = ./windows/unicorn-1.0.1-win64/unicorn.a
 endif
 
 main: $(OBJS)
-	$(CC) $^ main.c -o $@ $(UNICORN) -lz -lpthread -lm
+	$(CC) $(CFLAGS) $^ main.c -o $@ $(UNICORN) -lz -lpthread -lm
 
 lib: $(OBJS)
 	$(AR) crv ./gui/libvmrp.a $^
