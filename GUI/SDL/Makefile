@@ -2,6 +2,7 @@
 # -Wl,-subsystem,windows gets rid of the console window
 # gcc  -o main.exe main.c -lmingw32 -Wl,-subsystem,windows -L./lib -lSDL2main -lSDL2
 
+ifeq ($(OS),Windows_NT)
 win64:
 	gcc -Wall -Wno-pointer-to-int-cast -o main_win64.exe main.c \
 		-L../ -lvmrp \
@@ -19,5 +20,13 @@ win32:
 .PHONY: clean
 clean:
 	-rm ./*.exe ./SDL2.dll
+else
 
+main:
+	gcc -Wall -Wno-pointer-to-int-cast -o main main.c \
+		-L../ -lvmrp \
+		-lunicorn -lpthread -lm -lz \
+		-lSDL2
+
+endif
 

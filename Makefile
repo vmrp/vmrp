@@ -14,7 +14,7 @@ main: $(OBJS)
 	$(CC) $(CFLAGS) $^ main.c -o $@ $(UNICORN) -lz -lpthread -lm
 
 lib: $(OBJS)
-	$(AR) crv ./gui/libvmrp.a $^
+	$(AR) crv ./GUI/libvmrp.a $^
 
 %.o:%.c
 	# $(CC) $(CFLAGS) -m32 -c $^ # build 32bit version

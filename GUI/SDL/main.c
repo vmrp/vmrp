@@ -5,10 +5,14 @@
 #include "../../header/fileLib.h"
 #include "../../header/vmrp.h"
 
+#ifdef _WIN32
 #ifdef __x86_64__
 #include "../lib/SDL2-2.0.10/x86_64-w64-mingw32/include/SDL2/SDL.h"
 #elif __i386__
 #include "../lib/SDL2-2.0.10/i686-w64-mingw32/include/SDL2/SDL.h"
+#endif
+#else
+#include <SDL2/SDL.h>
 #endif
 
 #define MOUSE_DOWN 2

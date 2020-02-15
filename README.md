@@ -84,6 +84,10 @@ make命令：在windows下用mingw32-make.exe，在linux下直接make
 2. cd GUI/golang/
 3. go build
 
+linux编译：
+```
+sudo apt install libsdl2-dev
+```
 
 # 参考资料
 十六进制方式查看文件
