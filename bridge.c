@@ -390,6 +390,126 @@ static void br_mr_write(BridgeMap *o, uc_engine *uc) {
     RET();
 }
 
+static void br_mr_read(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_read)(int32 f,void *p,uint32 l);
+    uint32_t f, p, l, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &f);
+    uc_reg_read(uc, UC_ARM_REG_R1, &p);
+    uc_reg_read(uc, UC_ARM_REG_R2, &l);
+
+    LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, f, p, l);
+    LOG("ext call %s([%u], [%u], [%u])\n", o->name, f, p, l);
+
+    char *buf = malloc(l);
+    ret = mr_read(f, buf, l);
+    uc_mem_write(uc, p, buf, l);
+    free(buf);
+
+    SET_RET_V(ret);
+    RET();
+}
+
+static void br_mr_seek(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_seek)(int32 f, int32 pos, int method);
+    uint32_t f, pos, method, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &f);
+    uc_reg_read(uc, UC_ARM_REG_R1, &pos);
+    uc_reg_read(uc, UC_ARM_REG_R2, &method);
+
+    LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, f, pos, method);
+    LOG("ext call %s([%u], [%u], [%u])\n", o->name, f, pos, method);
+
+    ret = mr_seek(f, pos, method);
+
+    SET_RET_V(ret);
+    RET();
+}
+
+static void br_mr_getLen(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_getLen)(const char* filename);
+    uint32_t filename, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &filename);
+    char *filenameStr = getStrFromUc(uc, filename);
+
+    LOG("ext call %s(%s)\n", o->name, filenameStr);
+
+    ret = mr_getLen(filenameStr);
+    free(filenameStr);
+
+    SET_RET_V(ret);
+    RET();
+}
+
+static void br_mr_remove(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_remove)(const char* filename);
+    uint32_t filename, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &filename);
+    char *filenameStr = getStrFromUc(uc, filename);
+
+    LOG("ext call %s(%s)\n", o->name, filenameStr);
+
+    ret = mr_remove(filenameStr);
+    free(filenameStr);
+
+    SET_RET_V(ret);
+    RET();
+}
+
+static void br_mr_rename(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_rename)(const char* oldname, const char* newname);
+    uint32_t oldname, newname, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &oldname);
+    uc_reg_read(uc, UC_ARM_REG_R1, &newname);
+    char *oldnameStr = getStrFromUc(uc, oldname);
+    char *newnameStr = getStrFromUc(uc, newname);
+
+    LOG("ext call %s(%s, %s)\n", o->name, oldnameStr, newnameStr);
+
+    ret = mr_rename(oldnameStr, newnameStr);
+    free(oldnameStr);
+    free(newnameStr);
+
+    SET_RET_V(ret);
+    RET();
+}
+
+static void br_mr_mkDir(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_mkDir)(const char* name);
+    uint32_t name, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &name);
+    char *nameStr = getStrFromUc(uc, name);
+
+    LOG("ext call %s(%s)\n", o->name, nameStr);
+
+    ret = mr_mkDir(nameStr);
+    free(nameStr);
+
+    SET_RET_V(ret);
+    RET();
+}
+
+static void br_mr_rmDir(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_rmDir)(const char* name);
+    uint32_t name, ret;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &name);
+    char *nameStr = getStrFromUc(uc, name);
+
+    LOG("ext call %s(%s)\n", o->name, nameStr);
+
+    ret = mr_rmDir(nameStr);
+    free(nameStr);
+
+    SET_RET_V(ret);
+    RET();
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // todo 调用 set_putchar 方法 偏移量在0x2df4 设置一个回调函数，这样才能真正实现mr_printf
 static void br_baseLib_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
@@ -449,13 +569,13 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0xA4, 0x4, MAP_FUNC, mr_close, NULL, br_mr_close),
     BRIDGE_FUNC_MAP(0xA8, 0x4, MAP_FUNC, mr_info, NULL, NULL),
     BRIDGE_FUNC_MAP(0xAC, 0x4, MAP_FUNC, mr_write, NULL, br_mr_write),
-    BRIDGE_FUNC_MAP(0xB0, 0x4, MAP_FUNC, mr_read, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xB4, 0x4, MAP_FUNC, mr_seek, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xB8, 0x4, MAP_FUNC, mr_getLen, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xBC, 0x4, MAP_FUNC, mr_remove, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xC0, 0x4, MAP_FUNC, mr_rename, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xC4, 0x4, MAP_FUNC, mr_mkDir, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xC8, 0x4, MAP_FUNC, mr_rmDir, NULL, NULL),
+    BRIDGE_FUNC_MAP(0xB0, 0x4, MAP_FUNC, mr_read, NULL, br_mr_read),
+    BRIDGE_FUNC_MAP(0xB4, 0x4, MAP_FUNC, mr_seek, NULL, br_mr_seek),
+    BRIDGE_FUNC_MAP(0xB8, 0x4, MAP_FUNC, mr_getLen, NULL, br_mr_getLen),
+    BRIDGE_FUNC_MAP(0xBC, 0x4, MAP_FUNC, mr_remove, NULL, br_mr_remove),
+    BRIDGE_FUNC_MAP(0xC0, 0x4, MAP_FUNC, mr_rename, NULL, br_mr_rename),
+    BRIDGE_FUNC_MAP(0xC4, 0x4, MAP_FUNC, mr_mkDir, NULL, br_mr_mkDir),
+    BRIDGE_FUNC_MAP(0xC8, 0x4, MAP_FUNC, mr_rmDir, NULL, br_mr_rmDir),
     BRIDGE_FUNC_MAP(0xCC, 0x4, MAP_FUNC, mr_findStart, NULL, NULL),
     BRIDGE_FUNC_MAP(0xD0, 0x4, MAP_FUNC, mr_findGetNext, NULL, NULL),
     BRIDGE_FUNC_MAP(0xD4, 0x4, MAP_FUNC, mr_findStop, NULL, NULL),

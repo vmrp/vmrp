@@ -17,8 +17,8 @@ lib: $(OBJS)
 	$(AR) crv ./GUI/libvmrp.a $^
 
 %.o:%.c
-	# $(CC) $(CFLAGS) -m32 -c $^ # build 32bit version
-	$(CC) $(CFLAGS) -c $^
+	$(CC) $(CFLAGS) -m32 -c $^ # build 32bit version
+	# $(CC) $(CFLAGS) -c $^
 
 .PHONY: clean
 clean:
