@@ -12,8 +12,11 @@
 #include "./header/utils.h"
 #include "./header/vmrp.h"
 
+#ifdef DEBUG
+#define TRACE 1
+#else
 #define TRACE 0
-#define DEBUG 0
+#endif
 
 // #define MRPFILE "mr.mrp"
 #define MRPFILE "asm.mrp"
@@ -51,8 +54,8 @@ static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *use
 }
 
 static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
-#if DEBUG
-    hook_code_debug(uc, address);
+#ifdef DEBUG
+    hook_code_debug(uc, address, size);
 #endif
     if (address >= BRIDGE_TABLE_ADDRESS && address <= BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE) {
         bridge(uc, UC_MEM_FETCH, address);
@@ -148,6 +151,10 @@ uc_engine *initVmrp() {
     uc_engine *uc;
     uc_err err;
     uc_hook trace;
+
+#ifdef DEBUG
+    hook_code_debug_open();
+#endif
 
     screenBuf = malloc(SCREEN_BUF_SIZE);
     printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, BRIDGE_TABLE_ADDRESS:0x%X\n", CODE_ADDRESS, STACK_ADDRESS, BRIDGE_TABLE_ADDRESS);

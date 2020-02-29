@@ -13,8 +13,12 @@
 #ifdef LOG
 #undef LOG
 #endif
-// #define LOG(format, ...) printf("   -> bridge: " format, ##__VA_ARGS__)
+
+#ifdef DEBUG
+#define LOG(format, ...) printf("   -> bridge: " format, ##__VA_ARGS__)
+#else
 #define LOG(format, ...)
+#endif
 
 #define RET()                                 \
     {                                         \

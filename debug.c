@@ -1,7 +1,9 @@
+#ifdef DEBUG
 #include "./header/debug.h"
 #include "./header/fileLib.h"
 #include "./header/mr_helper.h"
 #include "./header/utils.h"
+#include "./windows/capstone-4.0.1-win32/include/capstone/capstone.h"
 
 // 获取等号左边的内容，限制长最大长度为maxLen个字符,
 // outBuf的容量应该至少maxLen+1字节
@@ -45,8 +47,20 @@ static uint32_t toUint32(const char *str) {
 
 static uint32_t brkAddress = 0;
 static bool run = false;
+static csh handle;
 
-void hook_code_debug(uc_engine *uc, uint64_t address) {
+void hook_code_debug_open() {
+    if (cs_open(CS_ARCH_ARM, CS_MODE_ARM, &handle) != CS_ERR_OK) {
+        printf("hook_code_debug_open() fail.");
+        exit(1);
+    }
+}
+
+void hook_code_debug_close() {
+    cs_close(&handle);
+}
+
+void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
     char str[30];
     char *ptr;
     int eqPos;
@@ -60,7 +74,27 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
 
         uint32_t pc;
         uc_reg_read(uc, UC_ARM_REG_PC, &pc);
-        printf("debug[PC:0x%X, mem:0x%" PRIX64 "] > ", pc, address);
+
+        if (size == 4) {
+            cs_insn *insn;
+            uint32_t binary;
+            size_t count;
+
+            uc_mem_read(uc, address, &binary, 4);
+            count = cs_disasm(handle, (uint8_t *)&binary, 4, address, 1, &insn);
+            if (count > 0) {
+                for (size_t j = 0; j < count; j++) {
+                    printf("debug[PC:0x%X\t%s %s\tmem:0x%" PRIX64 "] > ", pc, insn[j].mnemonic, insn[j].op_str, address);
+                }
+                cs_free(insn, count);
+            } else {
+                goto defPrompt;
+            }
+        } else {
+        defPrompt:
+            printf("debug[PC:0x%X, mem:0x%" PRIX64 ", size:%d] > ", pc, address, size);
+        }
+
         ptr = fgets(str, sizeof(str), stdin);
         if (ptr == NULL) {
             break;
@@ -199,3 +233,5 @@ void hook_code_debug(uc_engine *uc, uint64_t address) {
         }
     }  // while
 }
+
+#endif

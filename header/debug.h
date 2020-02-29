@@ -9,6 +9,8 @@
 
 #include "utils.h"
 
-void hook_code_debug(uc_engine *uc, uint64_t address);
+void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size);
+void hook_code_debug_open();
+void hook_code_debug_close();
 
 #endif
