@@ -1,9 +1,10 @@
+#include "./header/bridge.h"
+
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "./header/bridge.h"
 #include "./header/dsm.h"
 #include "./header/memory.h"
 #include "./header/tsf_font.h"
@@ -514,6 +515,31 @@ static void br_mr_rmDir(BridgeMap *o, uc_engine *uc) {
     RET();
 }
 
+static void br_atoi(BridgeMap *o, uc_engine *uc) {
+    // typedef int (*T_atoi)(const char * nptr);
+    uint32_t nptr;
+
+    uc_reg_read(uc, UC_ARM_REG_R0, &nptr);
+
+    char *str = getStrFromUc(uc, nptr);
+    LOG("ext call %s(0x%X[%s])\n", o->name, nptr, str);
+
+    int32_t ret = atoi(str);
+    free(str);
+
+    LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
+
+    SET_RET_V(ret);
+    RET();
+}
+
+static void br_mr_exit(BridgeMap *o, uc_engine *uc) {
+    // typedef int32 (*T_mr_exit)(void);
+    LOG("##### ext call %s()\n", o->name);
+    SET_RET_V(MR_SUCCESS);
+    RET();
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // todo 调用 set_putchar 方法 偏移量在0x2df4 设置一个回调函数，这样才能真正实现mr_printf
 static void br_baseLib_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
@@ -547,7 +573,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP_FULL(0x40, 0x4, MAP_FUNC, strstr, br_baseLib_init, NULL, 0x2fa8),
     // BRIDGE_FUNC_MAP(0x44, 0x4, MAP_FUNC, sprintf, NULL, br_sprintf),
     BRIDGE_FUNC_MAP_FULL(0x44, 0x4, MAP_FUNC, sprintf, br_baseLib_init, NULL, 0x2e08),
-    BRIDGE_FUNC_MAP(0x48, 0x4, MAP_FUNC, atoi, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x48, 0x4, MAP_FUNC, atoi, NULL, br_atoi),
     BRIDGE_FUNC_MAP(0x4C, 0x4, MAP_FUNC, strtoul, NULL, NULL),
     BRIDGE_FUNC_MAP(0x50, 0x4, MAP_FUNC, rand, NULL, NULL),
     BRIDGE_FUNC_MAP(0x54, 0x4, MAP_DATA, reserve0, NULL, NULL),
@@ -583,7 +609,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0xCC, 0x4, MAP_FUNC, mr_findStart, NULL, NULL),
     BRIDGE_FUNC_MAP(0xD0, 0x4, MAP_FUNC, mr_findGetNext, NULL, NULL),
     BRIDGE_FUNC_MAP(0xD4, 0x4, MAP_FUNC, mr_findStop, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xD8, 0x4, MAP_FUNC, mr_exit, NULL, NULL),
+    BRIDGE_FUNC_MAP(0xD8, 0x4, MAP_FUNC, mr_exit, NULL, br_mr_exit),
     BRIDGE_FUNC_MAP(0xDC, 0x4, MAP_FUNC, mr_startShake, NULL, NULL),
     BRIDGE_FUNC_MAP(0xE0, 0x4, MAP_FUNC, mr_stopShake, NULL, NULL),
     BRIDGE_FUNC_MAP(0xE4, 0x4, MAP_FUNC, mr_playSound, NULL, NULL),
