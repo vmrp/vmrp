@@ -64,6 +64,16 @@ https://github.com/zengming00/vmrp/releases/tag/1.0.0
 
 # 编译方法
 
+目前使用到的工具和库：
+
+https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/sjlj/x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0.7z
+
+https://github.com/aquynh/capstone/releases/download/4.0.1/capstone-4.0.1-win32.zip
+
+https://github.com/unicorn-engine/unicorn/releases/download/1.0.1/unicorn-1.0.1-win32.zip
+
+https://www.libsdl.org/release/SDL2-devel-2.0.10-mingw.tar.gz
+
 可能需要安装zlib，我是直接从官网下载源码安装的
 
 需要安装unicorn (windows下载预编译文件unicorn-1.0.1，解压到./windows文件夹内，在windows下用mingw64(mingw32-make.exe)编译，我的是x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0版本)
