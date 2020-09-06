@@ -107,7 +107,9 @@ sudo apt install libsdl2-dev
 ```
 
 # 参考资料
-十六进制方式查看文件
+mrp编辑器:  [Mrpeditor.exe](tool/Mrpeditor.exe)
+
+十六进制方式查看文件:
 ```shell
 hd mythroad/arm.mrp -n 100
 ```
@@ -118,16 +120,14 @@ https://github.com/alphaSeclab/awesome-reverse-engineering
 
 https://github.com/nationalsecurityagency/ghidra
 
-反汇编：
-
+反汇编: 
 ```
 arm-linux-gnueabi-objdump -b binary --start-address=0x8 -m arm -D game.ext
-```
-
-或radare2
-```
+# 或者用radare2
 r2 -a arm -b 32 -s 8 game.ext
 ```
+（推荐）这是我自己写的反汇编工具：[de.c](tool/de.c)
+
 
 arm汇编学习工具:
 
