@@ -10,7 +10,7 @@
 
 第二阶段目标完成图形化界面，可以借助原来的mrp开发环境打造windows模拟器，如果可行的话难度会大大降低，如果不可行，则要另外想办法做，有可能做成动态库提供API的形式供其它容易做图形化的语言调用(图形化界面已用go语言实现,mingw64编译mfc有些图形api没有实现)
 
-目前已经达成了上面两个阶段的目标，暂时停止继续开发
+目前已经达成了上面两个阶段的目标，因为有不少人用模拟器做刷量牟利，因此我并不打算将这个模拟器完善，能跑helloworld就是我的目的，现在**停止继续开发**
 
 目前已经实现三个事件： MOUSE_DOWN, MOUSE_UP, MOUSE_MOVE
 
@@ -143,6 +143,82 @@ arm平台函数传递参数，反汇编实例分析:
 https://blog.csdn.net/ayu_ag/article/details/50734282
 
 https://blog.csdn.net/gooogleman/article/details/3538033
+
+# mrp中ext的实现原理
+
+最早的mrp实际是由mr文件组成的，mr文件其实就是编译后的lua，后来的mrp则用c语言开发，于是会至少一有个ext文件。
+
+因为mrp标准开发环境是xp系统+ads+vs2005+skysdk，我用的虚拟机都有8G那么大，在了解mrp实现原理后我原本想用TCC编译器做一个可以精简到几M的开发环境，可惜TCC编译器并不支持arm版本的位置无关代码的生成（TCC正式发布的版本目前不支持，可能开发版已经有支持）
+
+```c
+// 定义函数指针类型
+typedef void (*MRC_DRAWRECT)(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b);
+typedef int32 (*MRC_DRAWTEXT)(char *pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int is_unicode, uint16 font);
+typedef void (*MRC_REFRESHSCREEN)(int16 x, int16 y, uint16 w, uint16 h);
+
+// 定义一个函数表，通过调用ext中的第一个函数时用参数把这个表传递进去，使得ext能够调用到系统函数
+typedef struct funcTable
+{
+    MRC_DRAWRECT mrc_drawRect;
+    MRC_DRAWTEXT mrc_drawText;
+    MRC_REFRESHSCREEN mrc_refreshScreen;
+} funcTable;
+
+// 事件框架的函数指针类型
+typedef int32 (*MRC_INIT)(void);
+typedef int32 (*MRC_EVENT)(int32 code, int32 param0, int32 param1);
+
+// 事件框架的函数表，使系统能够调用到我们的事件函数
+typedef struct cbTable
+{
+    MRC_INIT init;
+    MRC_EVENT event;
+} cbTable;
+
+// 全局的函数变量
+MRC_DRAWRECT mrc_drawRect;
+MRC_DRAWTEXT mrc_drawText;
+MRC_REFRESHSCREEN mrc_refreshScreen;
+
+/*
+实际上mrp中的ext就是一种类似dll的东西，只不过是由斯凯特殊定制的，
+ext的第8个字节开始就是第一个函数，相当于我这个_start()函数，
+前8个字节实际上是两个结构体的内存地址，因为是32位cpu，所以是8字节，会在加载ext后由系统进行修改，相当于我这里写的p和ret参数，
+事实上我们除了知道第8字节后是第一个函数外，我们根本不知道其它函数在什么地方，因为ext中只有指令和数据，没有其它任何信息，
+因为ext是类似dll的东西，所以ext必需完全是位置无关的（参考gcc -fPIC编译参数）
+*/
+int32 _start(funcTable *p, cbTable *ret)
+{
+    // 将系统传过来的函数表复制到本地，供我们的代码使用
+    mrc_drawRect = p->mrc_drawRect;
+    mrc_drawText = p->mrc_drawText;
+    mrc_refreshScreen = p->mrc_refreshScreen;
+
+    // 因为C语言需要先声明才能使用，这里是下面两个函数的声明
+    int32 mrc_init(void);
+    int32 mrc_event(int32 code, int32 param0, int32 param1);
+
+    // 将我们的事件函数地址传递给系统，当发生按键、触屏之类的事件时系统才知道要调用谁
+    ret->init = mrc_init;
+    ret->event = mrc_event;
+    return 0;
+}
+
+/////////////////////////////////////////// 以下就是正常的mrp开发代码了 //////////////////////////////////////////////////////////}
+
+int32 mrc_init(void)
+{
+    mrc_drawRect(0, 0, 240, 320, 255, 255, 0);
+    mrc_drawText("hello mrp!", 0, 0, 0, 0, 0, 0, 1);
+    mrc_refreshScreen(0, 0, 240, 320);
+    return 0;
+}
+
+int32 mrc_event(int32 code, int32 param0, int32 param1)
+{
+    return 0;
+}
+```
 
 # License
 
