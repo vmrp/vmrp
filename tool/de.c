@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#include "./capstone-4.0.1-win32/include/capstone/capstone.h"
+#include "../windows/capstone-4.0.1-win32/include/capstone/capstone.h"
 
 static char *strToLower(char *str) {
     char *ptr = str;
