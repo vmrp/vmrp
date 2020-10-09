@@ -8,11 +8,11 @@
 #include <string.h>
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-#ifdef _WIN64
-#include "../windows/unicorn-1.0.1-win64/include/unicorn/unicorn.h"
-#else
+// #ifdef _WIN64
+// #include "../windows/unicorn-1.0.1-win64/include/unicorn/unicorn.h"
+// #else
 #include "../windows/unicorn-1.0.1-win32/include/unicorn/unicorn.h"
-#endif
+// #endif
 #else
 #include <unicorn/unicorn.h>
 #endif
