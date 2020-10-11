@@ -25,7 +25,7 @@
 #define SCREEN_BUF_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT * 2)  //屏幕缓存大小，每像素两字节
 
 int vmrp_test();
-uc_engine *initVmrp();
+uc_engine *initVmrp(char *filename);
 int freeVmrp();
 uint16_t *getScreenBuf();
 

@@ -4,7 +4,14 @@
 #ifndef _TS_FONT_H_
 #define _TS_FONT_H_
 
-#include "mr_types.h"
+#include "types.h"
+
+typedef struct {
+    uint16 x;
+    uint16 y;
+    uint16 w;
+    uint16 h;
+} mr_screenRectSt;
 
 //字体绘制样式
 #define TS_FT_NORMAL 0x0000   //常规（倘若用户填0就代表普通绘制）

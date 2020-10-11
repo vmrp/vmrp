@@ -1,3 +1,5 @@
+#include "./header/vmrp.h"
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -7,10 +9,8 @@
 #include "./header/debug.h"
 #include "./header/fileLib.h"
 #include "./header/memory.h"
-#include "./header/mr_helper.h"
 #include "./header/tsf_font.h"
 #include "./header/utils.h"
-#include "./header/vmrp.h"
 
 #ifdef DEBUG
 #define TRACE 1
@@ -18,25 +18,20 @@
 #define TRACE 0
 #endif
 
-// #define MRPFILE "mr.mrp"
-#define MRPFILE "asm.mrp"
-
 static void writeFile(const char *filename, void *data, uint32 length) {
-    int fh = mr_open(filename, MR_FILE_CREATE | MR_FILE_RDWR);
-    mr_write(fh, data, length);
-    mr_close(fh);
+    int fh = my_open(filename, MR_FILE_CREATE | MR_FILE_RDWR);
+    my_write(fh, data, length);
+    my_close(fh);
 }
 
-int extractFile() {
-    // char *filename = "start.mr";
-    char *filename = "cfunction.ext";
-    // char *filename = "game.ext";
+int extractFile(char *filename) {
+    char *writeFilename = "cfunction.ext";
     int32 offset, length;
     uint8 *data;
-    int32 ret = readMrpFileEx(MRPFILE, filename, &offset, &length, &data);
+    int32 ret = readMrpFileEx(filename, writeFilename, &offset, &length, &data);
     if (ret == MR_SUCCESS) {
         LOG("red suc: offset:%d, length:%d", offset, length);
-        writeFile(filename, data, length);
+        writeFile(writeFilename, data, length);
     } else {
         LOG("red failed");
     }
@@ -75,30 +70,30 @@ static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, 
     return false;
 }
 
-static int32_t loadCode(uc_engine *uc) {
-    char *filename = "cfunction.ext";
+static int32_t loadCode(uc_engine *uc, char *filename) {
+    char *extFilename = "cfunction.ext";
     uint32_t value, length;
     uint8_t *code;
-    int32_t ret = readMrpFileEx(MRPFILE, filename, (int32 *)&value, (int32 *)&length, &code);
+    int32_t ret = readMrpFileEx(filename, extFilename, (int32 *)&value, (int32 *)&length, &code);
     if (ret == MR_FAILED) {
-        LOG("load %s failed", filename);
+        LOG("load %s failed", extFilename);
         return ret;
     }
-    LOG("load %s suc: offset:%d, length:%d", filename, value, length);
+    LOG("load %s suc: offset:%d, length:%d", extFilename, value, length);
 
     uc_mem_write(uc, CODE_ADDRESS, code, length);
     free(code);
     return ret;
 }
 
-static bool mem_init(uc_engine *uc) {
+static bool mem_init(uc_engine *uc, char *filename) {
     uc_err err = uc_mem_map(uc, CODE_ADDRESS, CODE_SIZE, UC_PROT_ALL);
     if (err) {
         printf("Failed mem map CODE_ADDRESS: %u (%s)\n", err, uc_strerror(err));
         return false;
     }
 
-    if (loadCode(uc) == MR_FAILED) {
+    if (loadCode(uc, filename) == MR_FAILED) {
         return false;
     }
 
@@ -147,7 +142,7 @@ int freeVmrp(uc_engine *uc) {
     return 0;
 }
 
-uc_engine *initVmrp() {
+uc_engine *initVmrp(char *filename) {
     uc_engine *uc;
     uc_err err;
     uc_hook trace;
@@ -164,7 +159,7 @@ uc_engine *initVmrp() {
         printf("Failed on uc_open() with error returned: %u (%s)\n", err, uc_strerror(err));
         return NULL;
     }
-    if (!mem_init(uc)) {
+    if (!mem_init(uc, filename)) {
         printf("mem_init() fail\n");
         goto end;
     }
@@ -190,9 +185,9 @@ end:
 
 int vmrp_test() {
     // extractFile();
-    listMrpFiles(MRPFILE);
+    // listMrpFiles(MRPFILE);
 
-    uc_engine *uc = initVmrp();
+    uc_engine *uc = initVmrp("asm.mrp");
     if (uc == NULL) {
         printf("initVmrp() fail.\n");
         return 1;
@@ -201,14 +196,16 @@ int vmrp_test() {
     bridge_mr_init(uc);
     printScreen("init.bmp", screenBuf);
 
-    bridge_mr_event(uc, MR_MOUSE_DOWN, 100, 123);
-    printScreen("event.bmp", screenBuf);
+    // #define MR_MOUSE_DOWN 2
+    // #define MR_EVENT_EXIT 8
+    // bridge_mr_event(uc, MR_MOUSE_DOWN, 100, 123);
+    // printScreen("event.bmp", screenBuf);
 
     bridge_mr_pauseApp(uc);
     bridge_mr_resumeApp(uc);
 
     // mrc_exitApp() 可能由MR_EVENT_EXIT event之后自动调用
-    bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
+    // bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
 
     freeVmrp(uc);
     printf("exit.\n");

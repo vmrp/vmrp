@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "./header/dsm.h"
+#include "./header/gb2unicode.h"
 
 // clang-format off
 // 编码表

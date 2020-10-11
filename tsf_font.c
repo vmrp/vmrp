@@ -2,9 +2,6 @@
 #include <string.h>
 
 // TSF点阵字库模块 [4/30/2012 JianbinZhu]
-#include "./header/engine.h"
-#include "./header/mr_helper.h"
-#include "./header/mrporting.h"
 #include "./header/tsf_font.h"
 #include "./header/utils.h"
 

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "./header/bridge.h"
 #include "./header/fileLib.h"
 #include "./header/vmrp.h"
@@ -34,10 +35,10 @@ void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h) {
     SDL_RenderPresent(renderer);
 }
 
-static int init() {
-    listMrpFiles("asm.mrp");
+static int startMrp(char *filename) {
+    fileLib_init();
 
-    uc = initVmrp();
+    uc = initVmrp(filename);
     if (uc == NULL) {
         printf("initVmrp() fail.\n");
         return 1;
@@ -91,7 +92,7 @@ int main(int argc, char *args[]) {
         return -1;
     }
     // renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE); // windows xp
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);  // windows xp
     if (renderer == NULL) {
         printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
         return -1;
@@ -105,7 +106,12 @@ int main(int argc, char *args[]) {
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
-    init();
+    if (argc == 1) {
+        // startMrp("dsm_gm.mrp");
+        startMrp("asm.mrp");
+    } else {
+        startMrp(args[1]);
+    }
 
     SDL_Event event;
     bool isLoop = true;

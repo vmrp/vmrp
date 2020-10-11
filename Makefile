@@ -3,8 +3,8 @@ AR := ar
 # CFLAGS := -Wall -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast
 CFLAGS := -g -Wall -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast -DDEBUG
 
-OBJS = dsm.o engine.o fileLib.o font16_st.o gb2unicode.o vmrp.o tsf_font.o utils.o debug.o \
-	rbtree.o bridge.o memory.o baseLib_cfunction.ext.o
+OBJS = fileLib.o font16_st.o gb2unicode.o vmrp.o tsf_font.o utils.o debug.o \
+	rbtree.o bridge.o memory.o baseLib_cfunction.ext.o main.o
 
 UNICORN = -lunicorn
 CAPSTONE = -lcapstone
@@ -18,10 +18,10 @@ SDL2 = ./windows/SDL2-2.0.10/i686-w64-mingw32/bin/SDL2.dll
 # -Wl,-subsystem,windows gets rid of the console window
 # gcc  -o main.exe main.c -lmingw32 -Wl,-subsystem,windows -L./lib -lSDL2main -lSDL2
 main: $(OBJS)
-	$(CC) $(CFLAGS) -m32  -o $@ $^ main.c $(UNICORN) $(CAPSTONE) -lpthread -lm -lz \
+	$(CC) $(CFLAGS) -m32  -o ./mythroad/$@ $^ $(UNICORN) $(CAPSTONE) -lpthread -lm -lz \
 		-lmingw32  -L./windows/SDL2-2.0.10/i686-w64-mingw32/lib/ -lSDL2main -lSDL2
-	cp $(SDL2) ./
-	cp $(CAPSTONE) ./
+	cp $(SDL2) ./mythroad/
+	cp $(CAPSTONE) ./mythroad/
 
 
 lib: $(OBJS)
@@ -32,7 +32,7 @@ lib: $(OBJS)
 
 .PHONY: clean
 clean:
-	-rm $(OBJS) main.o main *.exe
+	-rm *.o
 
 
 

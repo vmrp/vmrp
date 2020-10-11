@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "mr_helper.h"
 #include "utils.h"
 
 #define MR_TABLE_SIZE 0x248

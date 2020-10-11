@@ -5,7 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "./header/dsm.h"
+#include "./header/fileLib.h"
+#include "./header/gb2unicode.h"
 #include "./header/memory.h"
 #include "./header/tsf_font.h"
 #include "./header/vmrp.h"
@@ -264,7 +265,7 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
     if (is_unicode) {
         tsf_drawText((uint8_t *)str, x, y, MAKERGB565(r, g, b), uc);
     } else {
-        uint8_t *out = (uint8_t *)mr_c2u(str, NULL, NULL);
+        uint8_t *out = (uint8_t *)gbToUCS2BE((uint8_t *)str, NULL);
         tsf_drawText(out, x, y, MAKERGB565(r, g, b), uc);
         free(out);
     }
@@ -350,7 +351,7 @@ static void br_mr_open(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X[%s], 0x%X)\n", o->name, filename, filenameStr, mode);
     LOG("ext call %s([%u], [%u])\n", o->name, filename, mode);
 
-    int32_t ret = mr_open(filenameStr, mode);
+    int32_t ret = my_open(filenameStr, mode);
     free(filenameStr);
 
     LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
@@ -368,7 +369,7 @@ static void br_mr_close(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X)\n", o->name, f);
     LOG("ext call %s([%u])\n", o->name, f);
 
-    ret = mr_close(f);
+    ret = my_close(f);
     LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
 
     SET_RET_V(ret);
@@ -388,7 +389,7 @@ static void br_mr_write(BridgeMap *o, uc_engine *uc) {
 
     char *buf = malloc(l);
     uc_mem_read(uc, p, buf, l);
-    ret = mr_write(f, buf, l);
+    ret = my_write(f, buf, l);
     free(buf);
 
     SET_RET_V(ret);
@@ -407,7 +408,7 @@ static void br_mr_read(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s([%u], [%u], [%u])\n", o->name, f, p, l);
 
     char *buf = malloc(l);
-    ret = mr_read(f, buf, l);
+    ret = my_read(f, buf, l);
     uc_mem_write(uc, p, buf, l);
     free(buf);
 
@@ -426,7 +427,7 @@ static void br_mr_seek(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, f, pos, method);
     LOG("ext call %s([%u], [%u], [%u])\n", o->name, f, pos, method);
 
-    ret = mr_seek(f, pos, method);
+    ret = my_seek(f, pos, method);
 
     SET_RET_V(ret);
     RET();
@@ -441,7 +442,7 @@ static void br_mr_getLen(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(%s)\n", o->name, filenameStr);
 
-    ret = mr_getLen(filenameStr);
+    ret = my_getLen(filenameStr);
     free(filenameStr);
 
     SET_RET_V(ret);
@@ -457,7 +458,7 @@ static void br_mr_remove(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(%s)\n", o->name, filenameStr);
 
-    ret = mr_remove(filenameStr);
+    ret = my_remove(filenameStr);
     free(filenameStr);
 
     SET_RET_V(ret);
@@ -475,7 +476,7 @@ static void br_mr_rename(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(%s, %s)\n", o->name, oldnameStr, newnameStr);
 
-    ret = mr_rename(oldnameStr, newnameStr);
+    ret = my_rename(oldnameStr, newnameStr);
     free(oldnameStr);
     free(newnameStr);
 
@@ -492,7 +493,7 @@ static void br_mr_mkDir(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(%s)\n", o->name, nameStr);
 
-    ret = mr_mkDir(nameStr);
+    ret = my_mkDir(nameStr);
     free(nameStr);
 
     SET_RET_V(ret);
@@ -508,7 +509,7 @@ static void br_mr_rmDir(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s(%s)\n", o->name, nameStr);
 
-    ret = mr_rmDir(nameStr);
+    ret = my_rmDir(nameStr);
     free(nameStr);
 
     SET_RET_V(ret);

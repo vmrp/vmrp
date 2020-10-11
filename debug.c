@@ -1,7 +1,6 @@
 #ifdef DEBUG
 #include "./header/debug.h"
 #include "./header/fileLib.h"
-#include "./header/mr_helper.h"
 #include "./header/utils.h"
 #include "./windows/capstone-4.0.1-win32/include/capstone/capstone.h"
 

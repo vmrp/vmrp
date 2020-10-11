@@ -29,10 +29,10 @@
             "name": "debug win",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/main.exe",
+            "program": "${workspaceFolder}/mythroad/main.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/mythroad/",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -44,7 +44,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "make",
+            // "preLaunchTask": "make",
         },
         {
             "name": "debug linux",
