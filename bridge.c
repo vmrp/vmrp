@@ -138,8 +138,7 @@ static inline void setPixel(int32_t x, int32_t y, uint16_t color, void *userData
     }
     // uc_mem_write(userData, SCREEN_BUF_ADDRESS + (x + SCREEN_WIDTH * y) * 2, &color, 2);
     // 直接操作屏幕缓存提高效率
-    uint16_t *buf = getScreenBuf();
-    *(buf + (x + SCREEN_WIDTH * y)) = color;
+    *(screenBuf + (x + SCREEN_WIDTH * y)) = color;
 }
 
 static void br__DrawPoint(BridgeMap *o, uc_engine *uc) {
@@ -689,9 +688,9 @@ static int init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t start
     return 0;
 }
 
-uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress) {
+uc_err bridge_init(uc_engine *uc) {
     uc_err err;
-    mr_table_startAddress = startAddress;
+    mr_table_startAddress = BRIDGE_TABLE_ADDRESS;
     mr_c_function_startAddress = mr_table_startAddress + MR_TABLE_SIZE;
     mrc_extChunk_startAddress = mr_c_function_startAddress + MR_C_FUNCTION_SIZE;
     endAddress = mrc_extChunk_startAddress + MRC_EXTCHUNK_SIZE;
@@ -704,19 +703,19 @@ uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress) {
 
     err = init(uc, mr_table_funcMap, countof(mr_table_funcMap), mr_table_startAddress);
     if (err) return err;
-    err = uc_mem_write(uc, codeAddress, &mr_table_startAddress, 4);
+    err = uc_mem_write(uc, CODE_ADDRESS, &mr_table_startAddress, 4);
     if (err) return err;
 
     err = init(uc, mr_c_function_funcMap, countof(mr_c_function_funcMap), mr_c_function_startAddress);
     if (err) return err;
-    err = uc_mem_write(uc, codeAddress + 4, &mr_c_function_startAddress, 4);
+    err = uc_mem_write(uc, CODE_ADDRESS + 4, &mr_c_function_startAddress, 4);
     if (err) return err;
 
     err = init(uc, mrc_extChunk_funcMap, countof(mrc_extChunk_funcMap), mrc_extChunk_startAddress);
     if (err) return err;
 
-    uint32_t size = endAddress - startAddress;
-    LOG("startAddr: 0x%X, endAddr: 0x%X, size: 0x%X\n", startAddress, endAddress, size);
+    uint32_t size = endAddress - BRIDGE_TABLE_ADDRESS;
+    LOG("startAddr: 0x%X, endAddr: 0x%X, size: 0x%X\n", BRIDGE_TABLE_ADDRESS, endAddress, size);
     LOG("mr_table_startAddress: 0x%X\n", mr_table_startAddress);
     LOG("mr_c_function_startAddress: 0x%X\n", mr_c_function_startAddress);
     LOG("mrc_extChunk_startAddress: 0x%X\n", mrc_extChunk_startAddress);
@@ -753,7 +752,7 @@ static int32_t bridge_mr_helper(uc_engine *uc, uint32_t code, uint32_t input, ui
     uc_mem_write(uc, addr, &v, 4);  // output
     uc_reg_write(uc, UC_ARM_REG_SP, &addr);
 
-    runCode(uc, mr_helper_addr, STOP_ADDRESS, false);
+    runCode(uc, mr_helper_addr, CODE_ADDRESS, false);
 
     uc_reg_write(uc, UC_ARM_REG_SP, &sp);
 

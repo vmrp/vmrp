@@ -98,7 +98,7 @@ void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb)
     }
 }
 
-#define BUF_LEN (1024 * 1024)  // 1M内存
+#define BUF_LEN (1024 * 4)
 char *getStrFromUc(uc_engine *uc, uint32_t addr) {
     char *buf = malloc(BUF_LEN);
     uint8_t v;

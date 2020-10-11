@@ -370,6 +370,27 @@ void listMrpFiles(const char *path) {
     my_close(fd);
 }
 
+static void writeFile(const char *filename, void *data, uint32 length) {
+    int fh = my_open(filename, MR_FILE_CREATE | MR_FILE_RDWR);
+    my_write(fh, data, length);
+    my_close(fh);
+}
+
+int extractFile(char *filename) {
+    char *writeFilename = "cfunction.ext";
+    int32 offset, length;
+    uint8 *data;
+    int32 ret = readMrpFileEx(filename, writeFilename, &offset, &length, &data);
+    if (ret == MR_SUCCESS) {
+        LOG("red suc: offset:%d, length:%d", offset, length);
+        writeFile(writeFilename, data, length);
+    } else {
+        LOG("red failed");
+    }
+
+    return 0;
+}
+
 void fileLib_init() {
     handleInit();
 }

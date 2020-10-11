@@ -40,7 +40,7 @@ typedef struct BridgeMap {
     { #field, offset, size, mapType, init, func, extraData }
 
 void bridge(uc_engine *uc, uc_mem_type type, uint64_t address);
-uc_err bridge_init(uc_engine *uc, uint32_t codeAddress, uint32_t startAddress);
+uc_err bridge_init(uc_engine *uc);
 
 // 对应mrp中的几个入口函数
 int32_t bridge_mr_init(uc_engine *uc);

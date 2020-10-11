@@ -1,6 +1,6 @@
 CC := gcc
 AR := ar
-CFLAGS := -Wall -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast
+CFLAGS := -Wall
 # CFLAGS := -g -Wall -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast -DDEBUG
 
 OBJS = fileLib.o font16_st.o gb2unicode.o vmrp.o tsf_font.o utils.o debug.o \

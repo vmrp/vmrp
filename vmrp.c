@@ -12,30 +12,8 @@
 #include "./header/tsf_font.h"
 #include "./header/utils.h"
 
-
-static void writeFile(const char *filename, void *data, uint32 length) {
-    int fh = my_open(filename, MR_FILE_CREATE | MR_FILE_RDWR);
-    my_write(fh, data, length);
-    my_close(fh);
-}
-
-int extractFile(char *filename) {
-    char *writeFilename = "cfunction.ext";
-    int32 offset, length;
-    uint8 *data;
-    int32 ret = readMrpFileEx(filename, writeFilename, &offset, &length, &data);
-    if (ret == MR_SUCCESS) {
-        LOG("red suc: offset:%d, length:%d", offset, length);
-        writeFile(writeFilename, data, length);
-    } else {
-        LOG("red failed");
-    }
-
-    return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-static uint16_t *screenBuf;
+uint16_t *screenBuf;
+uint8_t *mrpMem;
 
 #ifdef DEBUG
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
@@ -79,9 +57,13 @@ static int32_t loadCode(uc_engine *uc, char *filename) {
 }
 
 static bool mem_init(uc_engine *uc, char *filename) {
-    uc_err err = uc_mem_map(uc, CODE_ADDRESS, CODE_SIZE, UC_PROT_ALL);
+    mrpMem = malloc(TOTAL_MEMORY);
+    screenBuf = (uint16_t *)(mrpMem + (SCREEN_BUF_ADDRESS - START_ADDRESS));
+
+    // unicorn存在BUG，UC_HOOK_MEM_INVALID只能拦截第一次UC_MEM_FETCH_PROT，所以干脆设置成可执行，统一在UC_HOOK_CODE事件中处理
+    uc_err err = uc_mem_map_ptr(uc, START_ADDRESS, TOTAL_MEMORY, UC_PROT_ALL, mrpMem);
     if (err) {
-        printf("Failed mem map CODE_ADDRESS: %u (%s)\n", err, uc_strerror(err));
+        printf("Failed mem map: %u (%s)\n", err, uc_strerror(err));
         return false;
     }
 
@@ -89,47 +71,18 @@ static bool mem_init(uc_engine *uc, char *filename) {
         return false;
     }
 
-    err = uc_mem_map(uc, STACK_ADDRESS, STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE);
-    if (err) {
-        printf("Failed mem map STACK_ADDRESS: %u (%s)\n", err, uc_strerror(err));
-        return false;
-    }
-
-    err = uc_mem_map(uc, MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE, UC_PROT_ALL);
-    if (err) {
-        printf("Failed mem map MEMORY_MANAGER_ADDRESS: %u (%s)\n", err, uc_strerror(err));
-        return err;
-    }
     initMemoryManager(MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE);
 
-    // unicorn存在BUG，UC_HOOK_MEM_INVALID只能拦截第一次UC_MEM_FETCH_PROT，所以干脆设置成可执行，统一在UC_HOOK_CODE事件中处理
-    // err = uc_mem_map(uc, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_SIZE, UC_PROT_READ | UC_PROT_WRITE);
-    err = uc_mem_map(uc, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_SIZE, UC_PROT_ALL);
-    if (err) {
-        printf("Failed mem map BRIDGE_TABLE_ADDRESS: %u (%s)\n", err, uc_strerror(err));
-        return err;
-    }
-    err = bridge_init(uc, CODE_ADDRESS, BRIDGE_TABLE_ADDRESS);
+    err = bridge_init(uc);
     if (err) {
         printf("Failed bridge_init(): %u (%s)\n", err, uc_strerror(err));
-        return err;
+        return false;
     }
-
-    err = uc_mem_map_ptr(uc, SCREEN_BUF_ADDRESS, SCREEN_BUF_SIZE, UC_PROT_ALL, screenBuf);
-    if (err) {
-        printf("Failed mem map SCREEN_BUF_ADDRESS: %u (%s)\n", err, uc_strerror(err));
-        return err;
-    }
-
     return true;
 }
 
-uint16_t *getScreenBuf() {
-    return screenBuf;
-}
-
 int freeVmrp(uc_engine *uc) {
-    free(screenBuf);
+    free(mrpMem);
     uc_close(uc);
     return 0;
 }
@@ -143,18 +96,17 @@ uc_engine *initVmrp(char *filename) {
     hook_code_debug_open();
 #endif
 
-    screenBuf = malloc(SCREEN_BUF_SIZE);
-    printf(">>> CODE_ADDRESS:0x%X, STACK_ADDRESS:0x%X, BRIDGE_TABLE_ADDRESS:0x%X\n", CODE_ADDRESS, STACK_ADDRESS, BRIDGE_TABLE_ADDRESS);
-
     err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &uc);
     if (err) {
         printf("Failed on uc_open() with error returned: %u (%s)\n", err, uc_strerror(err));
         return NULL;
     }
+
     if (!mem_init(uc, filename)) {
         printf("mem_init() fail\n");
         goto end;
     }
+
 #ifdef DEBUG
     uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
     uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
@@ -162,12 +114,14 @@ uc_engine *initVmrp(char *filename) {
     uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
     uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
 
+    // 设置栈
     uint32_t value = STACK_ADDRESS + STACK_SIZE;  // 满递减
     uc_reg_write(uc, UC_ARM_REG_SP, &value);
 
+    // 调用第一个函数
     value = 1;
     uc_reg_write(uc, UC_ARM_REG_R0, &value);  // 传参数值1
-    runCode(uc, CODE_ADDRESS + 8, STOP_ADDRESS, false);
+    runCode(uc, CODE_ADDRESS + 8, CODE_ADDRESS, false);
 
     printf("\n ----------------------------init done.--------------------------------------- \n");
     return uc;
@@ -176,31 +130,3 @@ end:
     return NULL;
 }
 
-int vmrp_test() {
-    // extractFile();
-    // listMrpFiles(MRPFILE);
-
-    uc_engine *uc = initVmrp("asm.mrp");
-    if (uc == NULL) {
-        printf("initVmrp() fail.\n");
-        return 1;
-    }
-
-    bridge_mr_init(uc);
-    printScreen("init.bmp", screenBuf);
-
-    // #define MR_MOUSE_DOWN 2
-    // #define MR_EVENT_EXIT 8
-    // bridge_mr_event(uc, MR_MOUSE_DOWN, 100, 123);
-    // printScreen("event.bmp", screenBuf);
-
-    bridge_mr_pauseApp(uc);
-    bridge_mr_resumeApp(uc);
-
-    // mrc_exitApp() 可能由MR_EVENT_EXIT event之后自动调用
-    // bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
-
-    freeVmrp(uc);
-    printf("exit.\n");
-    return 0;
-}
