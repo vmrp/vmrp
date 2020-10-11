@@ -117,61 +117,6 @@ static void br_mr_free(BridgeMap *o, uc_engine *uc) {
     RET();
 }
 
-// 已采用直接执行arm机器码的方式优化
-// static void br_memcpy(BridgeMap *o, uc_engine *uc) {
-//     // typedef void *(*T_memcpy)(void * s1, const void * s2, int n);
-//     uint32_t p_dst, p_src, p_size, ret;
-//     uc_reg_read(uc, UC_ARM_REG_R0, &p_dst);
-//     uc_reg_read(uc, UC_ARM_REG_R1, &p_src);
-//     uc_reg_read(uc, UC_ARM_REG_R2, &p_size);
-
-//     LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_src, p_src, p_size, p_size);
-
-//     ret = p_dst;
-//     uint32_t b;
-//     for (size_t i = 0; i < p_size; i++) {
-//         uc_mem_read(uc, p_src + i, &b, 1);
-//         uc_mem_write(uc, p_dst + i, &b, 1);
-//     }
-//     SET_RET_V(ret);
-//     RET();
-// }
-
-// 已采用直接执行arm机器码的方式优化
-// static void br_memset(BridgeMap *o, uc_engine *uc) {
-//     // typedef void *(*T_memset)(void * s, int c, int n);
-//     uint32_t p_dst, p_val, p_size, ret;
-
-//     uc_reg_read(uc, UC_ARM_REG_R0, &p_dst);
-//     uc_reg_read(uc, UC_ARM_REG_R1, &p_val);
-//     uc_reg_read(uc, UC_ARM_REG_R2, &p_size);
-
-//     LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, p_dst, p_dst, p_val, p_val, p_size, p_size);
-
-//     ret = p_dst;
-//     for (size_t i = 0; i < p_size; i++) {
-//         uc_mem_write(uc, p_dst + i, &p_val, 1);
-//     }
-
-//     SET_RET_V(ret);
-//     RET();
-// }
-
-// 已采用直接执行arm机器码的方式优化
-// static void br_strlen(BridgeMap *o, uc_engine *uc) {
-//     // typedef int (*T_strlen)(const char * s);
-//     uint32_t s, ret;
-
-//     uc_reg_read(uc, UC_ARM_REG_R0, &s);
-
-//     char *str = getStrFromUc(uc, s);
-//     LOG("ext call %s(0x%X[%u]---{%s}%d---)\n", o->name, s, s, str, (int)strlen(str));
-//     ret = strlen(str);
-//     free(str);
-
-//     SET_RET_V(ret);
-//     RET();
-// }
 
 static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T__mr_TestCom)(int32 L, int input0, int input1);
@@ -274,37 +219,6 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
     RET();
 }
 
-// 已采用直接执行arm机器码的方式优化
-// static void br_sprintf(BridgeMap *o, uc_engine *uc) {
-//     // typedef int (*T_sprintf)(char * s, const char * format, ...);
-//     uint32_t s, fmt;
-
-//     uc_reg_read(uc, UC_ARM_REG_R0, &s);
-//     uc_reg_read(uc, UC_ARM_REG_R1, &fmt);
-
-//     // uint32_t sp;
-//     // uc_reg_read(uc, UC_ARM_REG_SP, &sp);
-//     // uc_mem_read(uc, sp, &g, 4);
-//     // uc_mem_read(uc, sp + 4, &b, 4);
-//     // uc_mem_read(uc, sp + 8, &is_unicode, 4);
-//     // uc_mem_read(uc, sp + 12, &font, 4);
-
-//     uint32_t addr = fmt;
-//     uint8_t v;
-//     uint8_t i = 0;
-//     char buf[255];
-//     do {
-//         uc_mem_read(uc, addr, &v, 1);
-//         buf[i] = v;
-//         addr++;
-//         i++;
-//     } while (v && i < 254);
-//     buf[i] = '\0';
-
-//     LOG("ext call %s(0x%X, 0x%X[\"%s\"])\n", o->name, s, fmt, buf);
-
-//     RET();
-// }
 
 // 实际上mrc_refreshScreen()是调用的这个方法
 static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {

@@ -415,6 +415,8 @@ int32 tsf_init(uint32 scrW, uint32 scrH, setPixelFunc_t fn) {
 
 /////////////////////////////////////////////////////////////////////////
 
+#if 0
+
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
 #define SCREEN_BUF_LEN (SCREEN_WIDTH * SCREEN_HEIGHT * 2)
@@ -447,3 +449,5 @@ void tsf_test() {
     tsf_drawText((uint8 *)str, 0, 0, color, NULL);
     printScreen("tsf_test.bmp", screenBuf);
 }
+
+#endif

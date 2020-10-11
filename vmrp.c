@@ -12,11 +12,6 @@
 #include "./header/tsf_font.h"
 #include "./header/utils.h"
 
-#ifdef DEBUG
-#define TRACE 1
-#else
-#define TRACE 0
-#endif
 
 static void writeFile(const char *filename, void *data, uint32 length) {
     int fh = my_open(filename, MR_FILE_CREATE | MR_FILE_RDWR);
@@ -42,11 +37,15 @@ int extractFile(char *filename) {
 //////////////////////////////////////////////////////////////////////////////////////
 static uint16_t *screenBuf;
 
+#ifdef DEBUG
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
-#if TRACE
     printf(">>> Tracing basic block at 0x%" PRIx64 ", block size = 0x%x\n", address, size);
-#endif
 }
+static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    printf(">>> Tracing mem_valid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
+           memTypeStr(type), address, size, value);
+}
+#endif
 
 static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
 #ifdef DEBUG
@@ -55,13 +54,6 @@ static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
     if (address >= BRIDGE_TABLE_ADDRESS && address <= BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE) {
         bridge(uc, UC_MEM_FETCH, address);
     }
-}
-
-static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
-#if TRACE
-    printf(">>> Tracing mem_valid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
-           memTypeStr(type), address, size, value);
-#endif
 }
 
 static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
@@ -163,11 +155,12 @@ uc_engine *initVmrp(char *filename) {
         printf("mem_init() fail\n");
         goto end;
     }
-
+#ifdef DEBUG
     uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
+    uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
+#endif
     uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
     uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
-    uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
 
     uint32_t value = STACK_ADDRESS + STACK_SIZE;  // 满递减
     uc_reg_write(uc, UC_ARM_REG_SP, &value);
