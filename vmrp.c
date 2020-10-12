@@ -81,12 +81,6 @@ static bool mem_init(uc_engine *uc, char *filename) {
     }
 
     initMemoryManager(MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE);
-
-    err = bridge_init(uc);
-    if (err) {
-        printf("Failed bridge_init(): %u (%s)\n", err, uc_strerror(err));
-        return false;
-    }
     return true;
 }
 
@@ -113,6 +107,12 @@ uc_engine *initVmrp(char *filename) {
 
     if (!mem_init(uc, filename)) {
         printf("mem_init() fail\n");
+        goto end;
+    }
+
+    err = bridge_init(uc);
+    if (err) {
+        printf("Failed bridge_init(): %u (%s)\n", err, uc_strerror(err));
         goto end;
     }
 

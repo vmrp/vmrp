@@ -2,17 +2,15 @@
 #define _DSM_H
 
 #include "types.h"
-
-#define VMRP_VER 20201011
-
-
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
+
+#define VMRP_VER 20201012
 
 // 需要平台实现的函数
 typedef struct {
     void (*panic)(char *msg);
-    void (*log)(char *msg);
+    void (*log)(char *msg);  // msg末尾不带\n
     void (*exit)(void);
     void (*srand)(uint32 seed);
     int32 (*rand)(void);
@@ -20,7 +18,7 @@ typedef struct {
     int32 (*mem_free)(char *mem, uint32 mem_len);
     int32 (*timerStart)(uint16 t);
     int32 (*timerStop)(void);
-    int64 (*get_time_ms)(void);
+    uint32 (*get_uptime_ms)(void);
     int32 (*getDatetime)(mr_datetime *datetime);
     int32 (*sleep)(uint32 ms);
     int32 (*open)(const char *filename, uint32 mode);

@@ -47,7 +47,12 @@ static int startMrp(char *filename) {
     int32_t ret = bridge_mr_init(uc);
     if (ret > CODE_ADDRESS) {
         printf("bridge_mr_init:0x%X try vmrp loader\n", ret);
-        bridge_dsm_init(uc, ret);
+
+        if (bridge_dsm_init(uc, ret) == MR_SUCCESS) {
+            // bridge_dsm_mr_start_dsm(uc, "dsm_gm.mrp");
+            ret = bridge_dsm_mr_start_dsm(uc, "mr.mrp");
+            printf("bridge_dsm_mr_start_dsm(): 0x%X\n", ret);
+        }
     }
 
     // bridge_mr_pauseApp(uc);

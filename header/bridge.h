@@ -45,6 +45,6 @@ int32_t bridge_mr_pauseApp(uc_engine *uc);
 int32_t bridge_mr_event(uc_engine *uc, int32_t code, int32_t param1, int32_t param2);
 
 int32_t bridge_dsm_init(uc_engine *uc, uint32_t addr);
-
+int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, const char *entry);
 
 #endif

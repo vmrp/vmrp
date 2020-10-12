@@ -64,4 +64,7 @@ char *getStrFromUc(uc_engine *uc, uint32_t addr);
 
 void printScreen(char *filename, uint16_t *buf);
 
+int64_t get_uptime_ms(void);
+int64_t get_time_ms(void);
+
 #endif

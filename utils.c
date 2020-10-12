@@ -1,4 +1,7 @@
 #include "./header/utils.h"
+
+#include <sys/time.h>
+
 #include "./header/fileLib.h"
 
 // 只支持240*320大小
@@ -18,7 +21,7 @@ void printScreen(char *filename, uint16_t *buf) {
 
     my_write(fh, bmpHeader, sizeof(bmpHeader));
 
-    my_write(fh, buf, 240*320*2);
+    my_write(fh, buf, 240 * 320 * 2);
 
     uint16_t end = 0;
     my_write(fh, &end, sizeof(end));
@@ -111,6 +114,20 @@ char *getStrFromUc(uc_engine *uc, uint32_t addr) {
     } while (v && i < BUF_LEN - 1);
     buf[i] = '\0';
     return buf;
+}
+
+int64_t get_uptime_ms(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (int64_t)ts.tv_sec * 1000 + (ts.tv_nsec / 1000000);
+}
+
+int64_t get_time_ms(void) {
+    struct timeval tv;
+    if (-1 == gettimeofday(&tv, NULL)) {
+        return -1;
+    }
+    return (int64_t)tv.tv_sec * 1000 + (tv.tv_usec / 1000);
 }
 
 //////////////////////////////////////////////////////////////////////////////
