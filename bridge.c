@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "./header/dsm.h"
 #include "./header/fileLib.h"
 #include "./header/gb2unicode.h"
 #include "./header/memory.h"
@@ -35,11 +36,7 @@
         uc_reg_write(uc, UC_ARM_REG_R0, &v); \
     }
 
-static uint32_t mr_helper_addr;
-static uint32_t mr_table_startAddress;
-static uint32_t mr_c_function_startAddress;
-static uint32_t mrc_extChunk_startAddress;
-static uint32_t endAddress;
+static uint32_t mr_helper_addr;     //mrc_extHelper()函数的地址
 static uint32_t mr_c_event_st_mem;  // 用于mrc_event参数传递的内存
 static uint32_t baseLib_cfunction_ext_mem;
 
@@ -75,11 +72,6 @@ static void br_mr_screenBuf_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
 }
 // func ////////////////////////////////////////////////////////////////////////////////////////
 
-// 默认的函数初始化，初始化为地址值，当pc执行到该地址时拦截下来进入我们的回调函数
-static void br_defaultInit(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    uc_mem_write(uc, addr, &addr, 4);
-}
-
 static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T__mr_c_function_new)(MR_C_FUNCTION f, int32 len);
     uint32_t p_f, p_len;
@@ -88,6 +80,7 @@ static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p_f, p_f, p_len, p_len);
     dumpREG(uc);
     mr_helper_addr = p_f;
+    printf("mrc_extHelper() addr:0x%X\n", mr_helper_addr);
     SET_RET_V(MR_SUCCESS);
     RET();
 }
@@ -116,7 +109,6 @@ static void br_mr_free(BridgeMap *o, uc_engine *uc) {
     freeMem((size_t)p);
     RET();
 }
-
 
 static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T__mr_TestCom)(int32 L, int input0, int input1);
@@ -217,7 +209,6 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(MR_SUCCESS);
     RET();
 }
-
 
 // 实际上mrc_refreshScreen()是调用的这个方法
 static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
@@ -464,11 +455,11 @@ static void br_baseLib_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
 //////////////////////////////////////////////////////////////////////////////////////////
 
 // 偏移量由./mrc/[x]_offsets.c直接从mrp中导出
+#define MR_TABLE_SIZE 0x248
 static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x0, 0x4, MAP_FUNC, mr_malloc, NULL, br_mr_malloc),  // 0x280000
     BRIDGE_FUNC_MAP(0x4, 0x4, MAP_FUNC, mr_free, NULL, br_mr_free),
     BRIDGE_FUNC_MAP(0x8, 0x4, MAP_FUNC, mr_realloc, NULL, NULL),
-    // BRIDGE_FUNC_MAP(0xC, 0x4, MAP_FUNC, memcpy, NULL, br_memcpy),
     BRIDGE_FUNC_MAP_FULL(0xC, 0x4, MAP_FUNC, memcpy, br_baseLib_init, NULL, 0x1b90),
     BRIDGE_FUNC_MAP_FULL(0x10, 0x4, MAP_FUNC, memmove, br_baseLib_init, NULL, 0x1bb0),
     BRIDGE_FUNC_MAP_FULL(0x14, 0x4, MAP_FUNC, strcpy, br_baseLib_init, NULL, 0x2eac),
@@ -480,12 +471,9 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP_FULL(0x2C, 0x4, MAP_FUNC, strncmp, br_baseLib_init, NULL, 0x2f40),
     BRIDGE_FUNC_MAP(0x30, 0x4, MAP_FUNC, strcoll, NULL, NULL),
     BRIDGE_FUNC_MAP_FULL(0x34, 0x4, MAP_FUNC, memchr, br_baseLib_init, NULL, 0x1b30),
-    // BRIDGE_FUNC_MAP(0x38, 0x4, MAP_FUNC, memset, NULL, br_memset),
     BRIDGE_FUNC_MAP_FULL(0x38, 0x4, MAP_FUNC, memset, br_baseLib_init, NULL, 0x1c00),
-    // BRIDGE_FUNC_MAP(0x3C, 0x4, MAP_FUNC, strlen, NULL, br_strlen),
     BRIDGE_FUNC_MAP_FULL(0x3C, 0x4, MAP_FUNC, strlen, br_baseLib_init, NULL, 0x2ec8),
     BRIDGE_FUNC_MAP_FULL(0x40, 0x4, MAP_FUNC, strstr, br_baseLib_init, NULL, 0x2fa8),
-    // BRIDGE_FUNC_MAP(0x44, 0x4, MAP_FUNC, sprintf, NULL, br_sprintf),
     BRIDGE_FUNC_MAP_FULL(0x44, 0x4, MAP_FUNC, sprintf, br_baseLib_init, NULL, 0x2e08),
     BRIDGE_FUNC_MAP(0x48, 0x4, MAP_FUNC, atoi, NULL, br_atoi),
     BRIDGE_FUNC_MAP(0x4C, 0x4, MAP_FUNC, strtoul, NULL, NULL),
@@ -500,8 +488,8 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x70, 0x4, MAP_FUNC, mr_mem_free, NULL, NULL),
     BRIDGE_FUNC_MAP(0x74, 0x4, MAP_FUNC, mr_drawBitmap, NULL, br_mr_drawBitmap),
     BRIDGE_FUNC_MAP(0x78, 0x4, MAP_FUNC, mr_getCharBitmap, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x7C, 0x4, MAP_FUNC, g_mr_timerStart, NULL, NULL),  // todo 在mrp初始化时会修改这个值，目前没有实现对mrp读写的hook
-    BRIDGE_FUNC_MAP(0x80, 0x4, MAP_FUNC, g_mr_timerStop, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x7C, 0x4, MAP_FUNC, g_mr_timerStart, NULL, NULL),  // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStart函数地址），目前没有实现对mrp读写的hook
+    BRIDGE_FUNC_MAP(0x80, 0x4, MAP_FUNC, g_mr_timerStop, NULL, NULL),   // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStop函数地址），目前没有实现对mrp读写的hook
     BRIDGE_FUNC_MAP(0x84, 0x4, MAP_FUNC, mr_getTime, NULL, NULL),
     BRIDGE_FUNC_MAP(0x88, 0x4, MAP_FUNC, mr_getDatetime, NULL, NULL),
     BRIDGE_FUNC_MAP(0x8C, 0x4, MAP_FUNC, mr_getUserInfo, NULL, NULL),
@@ -617,30 +605,72 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x244, 0x4, MAP_FUNC, mr_platDrawChar, NULL, NULL),
 };
 
+#define MR_C_FUNCTION_SIZE 0x14
 static BridgeMap mr_c_function_funcMap[] = {
     BRIDGE_FUNC_MAP(0x0, 0x4, MAP_DATA, start_of_ER_RW, NULL, NULL),  // 0x280248
-    BRIDGE_FUNC_MAP(0x4, 0x4, MAP_DATA, ER_RW_Length, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x4, 0x4, MAP_DATA, ER_RW_Length, NULL, NULL),    // 调用ext内的mrc_malloc()时会加4
     BRIDGE_FUNC_MAP(0x8, 0x4, MAP_DATA, ext_type, NULL, NULL),
     BRIDGE_FUNC_MAP(0xC, 0x4, MAP_DATA, mrc_extChunk, NULL, NULL),  // 0x280254
     BRIDGE_FUNC_MAP(0x10, 0x4, MAP_DATA, stack, NULL, NULL),
 };
 
-static BridgeMap mrc_extChunk_funcMap[] = {
-    BRIDGE_FUNC_MAP(0x0, 0x4, MAP_DATA, check, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x4, 0x4, MAP_FUNC, init_func, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x8, 0x4, MAP_FUNC, event, NULL, NULL),
-    BRIDGE_FUNC_MAP(0xC, 0x4, MAP_DATA, code_buf, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x10, 0x4, MAP_DATA, code_len, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x14, 0x4, MAP_DATA, var_buf, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x18, 0x4, MAP_DATA, var_len, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x1C, 0x4, MAP_DATA, global_p_buf, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x20, 0x4, MAP_DATA, global_p_len, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x24, 0x4, MAP_DATA, timer, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x28, 0x4, MAP_FUNC, sendAppEvent, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x2C, 0x4, MAP_DATA, extMrTable, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x30, 0x4, MAP_DATA, isPause, NULL, NULL),
+#define DSM_REQUIRE_FUNCS_SIZE 0x6c
+static BridgeMap dsm_require_funcs_funcMap[] = {
+    // void (*panic)(char *msg);
+    BRIDGE_FUNC_MAP_FULL(0x0, 0x4, MAP_FUNC, panic, NULL, NULL, 0),
+    // void (*log)(char *msg);
+    BRIDGE_FUNC_MAP_FULL(0x4, 0x4, MAP_FUNC, log, NULL, NULL, 0),
+    // void (*exit)(void);
+    BRIDGE_FUNC_MAP_FULL(0x8, 0x4, MAP_FUNC, exit, NULL, NULL, 0),
+    // void (*srand)(uint32 seed);
+    BRIDGE_FUNC_MAP_FULL(0xc, 0x4, MAP_FUNC, srand, NULL, NULL, 0),
+    // int32 (*rand)(void);
+    BRIDGE_FUNC_MAP_FULL(0x10, 0x4, MAP_FUNC, rand, NULL, NULL, 0),
+    // int32 (*mem_get)(char **mem_base, uint32 *mem_len);
+    BRIDGE_FUNC_MAP_FULL(0x14, 0x4, MAP_FUNC, mem_get, NULL, NULL, 0),
+    // int32 (*mem_free)(char *mem, uint32 mem_len);
+    BRIDGE_FUNC_MAP_FULL(0x18, 0x4, MAP_FUNC, mem_free, NULL, NULL, 0),
+    // int32 (*timerStart)(uint16 t);
+    BRIDGE_FUNC_MAP_FULL(0x1c, 0x4, MAP_FUNC, timerStart, NULL, NULL, 0),
+    // int32 (*timerStop)(void);
+    BRIDGE_FUNC_MAP_FULL(0x20, 0x4, MAP_FUNC, timerStop, NULL, NULL, 0),
+    // int64 (*get_time_ms)(void);
+    BRIDGE_FUNC_MAP_FULL(0x24, 0x4, MAP_FUNC, get_time_ms, NULL, NULL, 0),
+    // int32 (*getDatetime)(mr_datetime *datetime);
+    BRIDGE_FUNC_MAP_FULL(0x28, 0x4, MAP_FUNC, getDatetime, NULL, NULL, 0),
+    // int32 (*sleep)(uint32 ms);
+    BRIDGE_FUNC_MAP_FULL(0x2c, 0x4, MAP_FUNC, sleep, NULL, NULL, 0),
+    // int32 (*open)(const char *filename, uint32 mode);
+    BRIDGE_FUNC_MAP_FULL(0x30, 0x4, MAP_FUNC, open, NULL, NULL, 0),
+    // int32 (*close)(int32 f);
+    BRIDGE_FUNC_MAP_FULL(0x34, 0x4, MAP_FUNC, close, NULL, NULL, 0),
+    // int32 (*read)(int32 f, void *p, uint32 l);
+    BRIDGE_FUNC_MAP_FULL(0x38, 0x4, MAP_FUNC, read, NULL, NULL, 0),
+    // int32 (*write)(int32 f, void *p, uint32 l);
+    BRIDGE_FUNC_MAP_FULL(0x3c, 0x4, MAP_FUNC, write, NULL, NULL, 0),
+    // int32 (*seek)(int32 f, int32 pos, int method);
+    BRIDGE_FUNC_MAP_FULL(0x40, 0x4, MAP_FUNC, seek, NULL, NULL, 0),
+    // int32 (*info)(const char *filename);
+    BRIDGE_FUNC_MAP_FULL(0x44, 0x4, MAP_FUNC, info, NULL, NULL, 0),
+    // int32 (*remove)(const char *filename);
+    BRIDGE_FUNC_MAP_FULL(0x48, 0x4, MAP_FUNC, remove, NULL, NULL, 0),
+    // int32 (*rename)(const char *oldname, const char *newname);
+    BRIDGE_FUNC_MAP_FULL(0x4c, 0x4, MAP_FUNC, rename, NULL, NULL, 0),
+    // int32 (*mkDir)(const char *path);
+    BRIDGE_FUNC_MAP_FULL(0x50, 0x4, MAP_FUNC, mkDir, NULL, NULL, 0),
+    // int32 (*rmDir)(const char *path);
+    BRIDGE_FUNC_MAP_FULL(0x54, 0x4, MAP_FUNC, rmDir, NULL, NULL, 0),
+    // int32 (*opendir)(const char *name);
+    BRIDGE_FUNC_MAP_FULL(0x58, 0x4, MAP_FUNC, opendir, NULL, NULL, 0),
+    // char *(*readdir)(int32 f);
+    BRIDGE_FUNC_MAP_FULL(0x5c, 0x4, MAP_FUNC, readdir, NULL, NULL, 0),
+    // int32 (*closedir)(int32 f);
+    BRIDGE_FUNC_MAP_FULL(0x60, 0x4, MAP_FUNC, closedir, NULL, NULL, 0),
+    // int32 (*getLen)(const char *filename);
+    BRIDGE_FUNC_MAP_FULL(0x64, 0x4, MAP_FUNC, getLen, NULL, NULL, 0),
+    // void (*drawBitmap)(uint16 *bmp, int16 x, int16 y, uint16 w, uint16 h);
+    BRIDGE_FUNC_MAP_FULL(0x68, 0x4, MAP_FUNC, drawBitmap, NULL, NULL, 0),
 };
-
 //////////////////////////////////////////////////////////////////////////////////////////
 
 static struct rb_root root = RB_ROOT;
@@ -662,7 +692,7 @@ void bridge(uc_engine *uc, uc_mem_type type, uint64_t address) {
     }
 }
 
-static int init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t startAddress) {
+static int hooks_init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t startAddress) {
     BridgeMap *obj;
     uIntMap *mobj;
     uint32_t addr;
@@ -674,7 +704,8 @@ static int init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t start
             obj->initFn(obj, uc, addr);
         } else {
             if (obj->type == MAP_FUNC) {
-                br_defaultInit(obj, uc, addr);
+                // 默认的函数初始化，初始化为地址值，当PC寄存器执行到该地址时拦截下来进入我们的回调函数
+                uc_mem_write(uc, addr, &addr, 4);
             }
         }
         mobj = malloc(sizeof(uIntMap));
@@ -682,18 +713,33 @@ static int init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t start
         mobj->data = obj;
         if (uIntMap_insert(&root, mobj)) {
             printf("uIntMap_insert() failed %d exists.\n", addr);
+            exit(1);
             return -1;
         }
     }
     return 0;
 }
 
+// 必需是在BRIDGE_TABLE_ADDRESS开始，长度为BRIDGE_TABLE_SIZE的内存中分配地址
+// clang-format off
+#define MR_TABLE_ADDRESS            BRIDGE_TABLE_ADDRESS
+#define MR_C_FUNCTION_ADDRESS       (MR_TABLE_ADDRESS + MR_TABLE_SIZE)
+#define DSM_REQUIRE_FUNCS_ADDRESS   (MR_C_FUNCTION_ADDRESS + MR_C_FUNCTION_SIZE)
+#define END_ADDRESS                 (DSM_REQUIRE_FUNCS_ADDRESS + DSM_REQUIRE_FUNCS_SIZE)
+// clang-format on
+
 uc_err bridge_init(uc_engine *uc) {
     uc_err err;
-    mr_table_startAddress = BRIDGE_TABLE_ADDRESS;
-    mr_c_function_startAddress = mr_table_startAddress + MR_TABLE_SIZE;
-    mrc_extChunk_startAddress = mr_c_function_startAddress + MR_C_FUNCTION_SIZE;
-    endAddress = mrc_extChunk_startAddress + MRC_EXTCHUNK_SIZE;
+    uint32_t size = END_ADDRESS - BRIDGE_TABLE_ADDRESS;
+
+    LOG("[bridge_init]startAddr: 0x%X, endAddr: 0x%X, size: 0x%X\n", BRIDGE_TABLE_ADDRESS, END_ADDRESS, size);
+    LOG("[bridge_init]MR_TABLE_ADDRESS: 0x%X\n", MR_TABLE_ADDRESS);
+    LOG("[bridge_init]MR_C_FUNCTION_ADDRESS: 0x%X\n", MR_C_FUNCTION_ADDRESS);
+    LOG("[bridge_init]DSM_REQUIRE_FUNCS_ADDRESS: 0x%X\n", DSM_REQUIRE_FUNCS_ADDRESS);
+    if (size > BRIDGE_TABLE_SIZE) {
+        printf("error: size[%d] > BRIDGE_TABLE_SIZE[%d]\n", size, BRIDGE_TABLE_SIZE);
+        exit(1);
+    }
 
     // 加载预编译的包含有纯C语言实现函数的机器码指令数据，由mrc/baseLib项目生成的mrp中提取
     extern unsigned char baseLib_cfunction_ext[18524];
@@ -701,29 +747,18 @@ uc_err bridge_init(uc_engine *uc) {
     err = uc_mem_write(uc, baseLib_cfunction_ext_mem, baseLib_cfunction_ext, sizeof(baseLib_cfunction_ext));
     if (err) return err;
 
-    err = init(uc, mr_table_funcMap, countof(mr_table_funcMap), mr_table_startAddress);
-    if (err) return err;
-    err = uc_mem_write(uc, CODE_ADDRESS, &mr_table_startAddress, 4);
-    if (err) return err;
-
-    err = init(uc, mr_c_function_funcMap, countof(mr_c_function_funcMap), mr_c_function_startAddress);
-    if (err) return err;
-    err = uc_mem_write(uc, CODE_ADDRESS + 4, &mr_c_function_startAddress, 4);
+    uint32_t v = MR_TABLE_ADDRESS;
+    hooks_init(uc, mr_table_funcMap, countof(mr_table_funcMap), MR_TABLE_ADDRESS);
+    err = uc_mem_write(uc, CODE_ADDRESS, &v, 4);
     if (err) return err;
 
-    err = init(uc, mrc_extChunk_funcMap, countof(mrc_extChunk_funcMap), mrc_extChunk_startAddress);
+    v = MR_C_FUNCTION_ADDRESS;
+    hooks_init(uc, mr_c_function_funcMap, countof(mr_c_function_funcMap), MR_C_FUNCTION_ADDRESS);
+    err = uc_mem_write(uc, CODE_ADDRESS + 4, &v, 4);
     if (err) return err;
 
-    uint32_t size = endAddress - BRIDGE_TABLE_ADDRESS;
-    LOG("startAddr: 0x%X, endAddr: 0x%X, size: 0x%X\n", BRIDGE_TABLE_ADDRESS, endAddress, size);
-    LOG("mr_table_startAddress: 0x%X\n", mr_table_startAddress);
-    LOG("mr_c_function_startAddress: 0x%X\n", mr_c_function_startAddress);
-    LOG("mrc_extChunk_startAddress: 0x%X\n", mrc_extChunk_startAddress);
-    if (size > BRIDGE_TABLE_SIZE) {
-        printf("error: size[%d] > BRIDGE_TABLE_SIZE[%d]\n", size, BRIDGE_TABLE_SIZE);
-    }
+    hooks_init(uc, dsm_require_funcs_funcMap, countof(dsm_require_funcs_funcMap), DSM_REQUIRE_FUNCS_ADDRESS);
 
-    // 事件参数传递用的内存
     mr_c_event_st_mem = allocMem(20);
     tsf_init(SCREEN_WIDTH, SCREEN_HEIGHT, setPixel);
 
@@ -733,7 +768,7 @@ uc_err bridge_init(uc_engine *uc) {
 static int32_t bridge_mr_helper(uc_engine *uc, uint32_t code, uint32_t input, uint32_t input_len) {
     // typedef int32 (*MR_C_FUNCTION)(void* P, int32 code, uint8* input, int32 input_len, uint8** output, int32* output_len);
 
-    uint32_t v = mr_c_function_startAddress;
+    uint32_t v = MR_C_FUNCTION_ADDRESS;
     uc_reg_write(uc, UC_ARM_REG_R0, &v);          // p
     uc_reg_write(uc, UC_ARM_REG_R1, &code);       // code
     uc_reg_write(uc, UC_ARM_REG_R2, &input);      // input
@@ -805,5 +840,39 @@ int32_t bridge_mr_init(uc_engine *uc) {
     // mr_helper(&cfunction_table, 0, NULL, 0, NULL, NULL);
     int32_t ret = bridge_mr_helper(uc, 0, 0, 0);
     LOG("bridge_mr_init() done.\n");
+    return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+// 以下是三个在ext中的函数实现原理，是在mr_helper_s.o反汇编得到，但是我没有在c源码中获得实际的值，可能是用法不对
+extern unsigned int Image$$ER_RW$$Length;
+extern unsigned int Image$$ER_ZI$$ZI$$Length;
+extern unsigned int Image$$ER_RO$$Length;
+unsigned int mr_helper_get_rw_len() {
+    return Image$$ER_RW$$Length + Image$$ER_ZI$$ZI$$Length;
+}
+unsigned int mr_helper_get_rw_lenOnly() {
+    return Image$$ER_RW$$Length;
+}
+unsigned int mr_helper_get_ro_len() {
+    return Image$$ER_RO$$Length;
+}
+*/
+
+int32_t bridge_dsm_init(uc_engine *uc, uint32_t addr) {
+    uint32_t v = DSM_REQUIRE_FUNCS_ADDRESS;
+    uc_reg_write(uc, UC_ARM_REG_R0, &v);
+
+    // mr_c_function.start_of_ER_RW 写入r9(SB)，指向的内存是用来存放全局变量的
+    v = *(uint32_t *)getMrpMemPtr(MR_C_FUNCTION_ADDRESS);
+    uc_reg_write(uc, UC_ARM_REG_SB, &v);
+
+    runCode(uc, addr, CODE_ADDRESS, false);
+
+    int32_t ret;
+    uc_reg_read(uc, UC_ARM_REG_R0, &ret);
+    printf("bridge_dsm_init:%X\n", ret);
     return ret;
 }

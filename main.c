@@ -44,7 +44,11 @@ static int startMrp(char *filename) {
         return 1;
     }
 
-    bridge_mr_init(uc);
+    int32_t ret = bridge_mr_init(uc);
+    if (ret > CODE_ADDRESS) {
+        printf("bridge_mr_init:0x%X try vmrp loader\n", ret);
+        bridge_dsm_init(uc, ret);
+    }
 
     // bridge_mr_pauseApp(uc);
     // bridge_mr_resumeApp(uc);
@@ -54,6 +58,7 @@ static int startMrp(char *filename) {
 
     // freeVmrp(uc);
     // printf("exit.\n");
+    SDL_RenderPresent(renderer);
     return 0;
 }
 
@@ -94,10 +99,10 @@ static void keyEvent(int16 type, SDL_Keycode code) {
             break;
         default:
             printf("key:%d\n", code);
+            SDL_RenderPresent(renderer);
             break;
     }
 }
-
 
 int main(int argc, char *args[]) {
 #ifdef __x86_64__

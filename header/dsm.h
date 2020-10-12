@@ -3,6 +3,9 @@
 
 #include "types.h"
 
+#define VMRP_VER 20201011
+
+
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
 

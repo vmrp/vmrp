@@ -32,7 +32,8 @@
 #define TOTAL_MEMORY (STOP_ADDRESS - START_ADDRESS)
 
 extern uint16_t *screenBuf;  // 屏幕缓冲区地址
-extern uint8_t *mrpMem;      // 模拟器的全部内存
+
+void *getMrpMemPtr(uint32_t addr);
 
 int vmrp_test();
 uc_engine *initVmrp(char *filename);

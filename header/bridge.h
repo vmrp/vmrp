@@ -9,10 +9,6 @@
 
 #include "utils.h"
 
-#define MR_TABLE_SIZE 0x248
-#define MR_C_FUNCTION_SIZE 0x14
-#define MRC_EXTCHUNK_SIZE 0x34
-
 typedef struct BridgeMap BridgeMap;
 
 typedef void (*BridgeCB)(struct BridgeMap *o, uc_engine *uc);
@@ -47,5 +43,8 @@ int32_t bridge_mr_init(uc_engine *uc);
 int32_t bridge_mr_resumeApp(uc_engine *uc);
 int32_t bridge_mr_pauseApp(uc_engine *uc);
 int32_t bridge_mr_event(uc_engine *uc, int32_t code, int32_t param1, int32_t param2);
+
+int32_t bridge_dsm_init(uc_engine *uc, uint32_t addr);
+
 
 #endif

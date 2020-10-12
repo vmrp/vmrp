@@ -13,7 +13,11 @@
 #include "./header/utils.h"
 
 uint16_t *screenBuf;
-uint8_t *mrpMem;
+uint8_t *mrpMem;  // 模拟器的全部内存
+
+void *getMrpMemPtr(uint32_t addr) {
+    return mrpMem + (addr - START_ADDRESS);
+}
 
 #ifdef DEBUG
 static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
@@ -22,6 +26,11 @@ static void hook_block(uc_engine *uc, uint64_t address, uint32_t size, void *use
 static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     printf(">>> Tracing mem_valid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
            memTypeStr(type), address, size, value);
+    if (type == UC_MEM_READ && size <= 4) {
+        uint32_t v;
+        uc_mem_read(uc, address, &v, size);
+        printf("read:0x%X\n", v);
+    }
 }
 #endif
 
@@ -58,7 +67,7 @@ static int32_t loadCode(uc_engine *uc, char *filename) {
 
 static bool mem_init(uc_engine *uc, char *filename) {
     mrpMem = malloc(TOTAL_MEMORY);
-    screenBuf = (uint16_t *)(mrpMem + (SCREEN_BUF_ADDRESS - START_ADDRESS));
+    screenBuf = getMrpMemPtr(SCREEN_BUF_ADDRESS);
 
     // unicorn存在BUG，UC_HOOK_MEM_INVALID只能拦截第一次UC_MEM_FETCH_PROT，所以干脆设置成可执行，统一在UC_HOOK_CODE事件中处理
     uc_err err = uc_mem_map_ptr(uc, START_ADDRESS, TOTAL_MEMORY, UC_PROT_ALL, mrpMem);
@@ -110,8 +119,10 @@ uc_engine *initVmrp(char *filename) {
 #ifdef DEBUG
     uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
     uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
-#endif
     uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
+#else
+    uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE);
+#endif
     uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
 
     // 设置栈
@@ -129,4 +140,3 @@ end:
     uc_close(uc);
     return NULL;
 }
-
