@@ -23,8 +23,10 @@
 // http://wiki.libsdl.org/Tutorials
 // http://lazyfoo.net/tutorials/SDL/index.php
 
+static SDL_TimerID timeId = 0;
 static SDL_Renderer *renderer;
 static uc_engine *uc;
+static void (*eventFunc)(int code, int p1, int p2);
 
 void guiSetPixel(int32_t x, int32_t y, uint16_t color) {
     SDL_SetRenderDrawColor(renderer, PIXEL565R(color), PIXEL565G(color), PIXEL565B(color), 0xFF);
@@ -35,8 +37,49 @@ void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h) {
     SDL_RenderPresent(renderer);
 }
 
+static void eventFuncV1(int code, int p1, int p2) {
+    if (uc) {
+        bridge_mr_event(uc, code, p1, p2);
+    }
+}
+
+static void eventFuncV2(int code, int p1, int p2) {
+    if (uc) {
+        bridge_dsm_mr_event(uc, code, p1, p2);
+    }
+}
+
+uint32_t th2(uint32_t interval, void *param) {
+    bridge_dsm_mr_timer(uc);
+    return 0;
+}
+
+int32_t timerStart(uint16_t t) {
+    printf("main_timerStart %d\n", t);
+    if (!timeId) {
+        timeId = SDL_AddTimer(t, th2, NULL);
+    } else {
+        printf("main_timerStart ignore %d======================================\n", t);
+        SDL_RemoveTimer(timeId);
+        timeId = SDL_AddTimer(t, th2, NULL);
+    }
+    return MR_SUCCESS;
+}
+
+int32_t timerStop() {
+    printf("main_timerStop\n");
+    if (timeId) {
+        SDL_RemoveTimer(timeId);
+        timeId = 0;
+    } else {
+        printf("main_timerStop ignore----------------------------------------------\n");
+    }
+    return MR_SUCCESS;
+}
+
 static int startMrp(char *filename) {
     fileLib_init();
+    eventFunc = eventFuncV1;
 
     uc = initVmrp(filename);
     if (uc == NULL) {
@@ -49,8 +92,15 @@ static int startMrp(char *filename) {
         printf("bridge_mr_init:0x%X try vmrp loader\n", ret);
 
         if (bridge_dsm_init(uc, ret) == MR_SUCCESS) {
-            // bridge_dsm_mr_start_dsm(uc, "dsm_gm.mrp");
-            ret = bridge_dsm_mr_start_dsm(uc, "mr.mrp");
+            eventFunc = eventFuncV2;
+            // ret = bridge_dsm_mr_start_dsm(uc, "dsm_gm.mrp");
+            ret = bridge_dsm_mr_start_dsm(uc, "txz.mrp");
+            // ret = bridge_dsm_mr_start_dsm(uc, "mr2.mrp");
+            // ret = bridge_dsm_mr_start_dsm(uc, "dxtp.mrp");
+            // ret = bridge_dsm_mr_start_dsm(uc, "mpc.mrp");
+            // ret = bridge_dsm_mr_start_dsm(uc, "ht.mrp");
+            // ret = bridge_dsm_mr_start_dsm(uc, "3d.mrp");
+            // ret = bridge_dsm_mr_start_dsm(uc, "info.mrp");
             printf("bridge_dsm_mr_start_dsm(): 0x%X\n", ret);
         }
     }
@@ -65,12 +115,6 @@ static int startMrp(char *filename) {
     // printf("exit.\n");
     SDL_RenderPresent(renderer);
     return 0;
-}
-
-static void eventFunc(int code, int p1, int p2) {
-    if (uc) {
-        bridge_mr_event(uc, code, p1, p2);
-    }
 }
 
 static void keyEvent(int16 type, SDL_Keycode code) {

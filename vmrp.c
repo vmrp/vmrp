@@ -15,6 +15,7 @@
 uint16_t *screenBuf;
 uint8_t *mrpMem;  // 模拟器的全部内存
 
+// 返回的内存禁止free
 void *getMrpMemPtr(uint32_t addr) {
     return mrpMem + (addr - START_ADDRESS);
 }

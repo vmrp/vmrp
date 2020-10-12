@@ -29,6 +29,10 @@ int32_t my_remove(const char *filename);
 int32_t my_getLen(const char *filename);
 int32_t my_mkDir(const char *name);
 int32_t my_rmDir(const char *name);
+int32_t my_info(const char *filename);
+int32_t my_opendir(const char *name);
+char *my_readdir(int32_t f);
+int32_t my_closedir(int32_t f);
 
 int32 getMrpFileInfo(const char *path, const char *name, int32 *offset, int32 *length);
 

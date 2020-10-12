@@ -1,5 +1,5 @@
-#ifndef __VMRP_MAIN_H__
-#define __VMRP_MAIN_H__
+#ifndef __VMRP__H__
+#define __VMRP__H__
 
 #include <ctype.h>
 #include <inttypes.h>
@@ -22,7 +22,7 @@
 #define BRIDGE_TABLE_SIZE 4096                             // 足够了，只是为了4k对齐
 
 #define MEMORY_MANAGER_ADDRESS (BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE)  // 由malloc和free管理的供mrp使用的内存
-#define MEMORY_MANAGER_SIZE 1024 * 1024 * 2
+#define MEMORY_MANAGER_SIZE 1024 * 1024 * 4
 
 #define SCREEN_BUF_ADDRESS (MEMORY_MANAGER_ADDRESS + MEMORY_MANAGER_SIZE)
 #define SCREEN_BUF_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT * 2)  //屏幕缓存大小，每像素两字节
@@ -42,5 +42,7 @@ int freeVmrp();
 // 需要外部实现的接口
 extern void guiSetPixel(int32_t x, int32_t y, uint16_t color);
 extern void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h);
+extern int32_t timerStart(uint16_t t);
+int32_t timerStop();
 
 #endif

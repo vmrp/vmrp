@@ -1,5 +1,6 @@
 #include "./header/fileLib.h"
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <malloc.h>
 #include <sys/stat.h>
@@ -148,6 +149,45 @@ int32_t my_rmDir(const char *name) {
     if (ret != 0) {
         return MR_FAILED;
     }
+    return MR_SUCCESS;
+}
+
+int32_t my_info(const char *filename) {
+    struct stat s1;
+    int ret = stat(filename, &s1);
+
+    if (ret != 0) {
+        return MR_IS_INVALID;
+    }
+    if (s1.st_mode & S_IFDIR) {
+        return MR_IS_DIR;
+    } else if (s1.st_mode & S_IFREG) {
+        return MR_IS_FILE;
+    }
+    return MR_IS_INVALID;
+}
+
+int32_t my_opendir(const char *name) {
+    DIR *pDir = opendir(name);
+    if (pDir != NULL) {
+        return handle2int32((uint32_t)pDir);
+    }
+    return MR_FAILED;
+}
+
+char *my_readdir(int32_t f) {
+    DIR *pDir = (DIR *)int32ToHandle(f);
+    struct dirent *pDt = readdir(pDir);
+    if (pDt != NULL) {
+        return pDt->d_name;
+    }
+    return NULL;
+}
+
+int32_t my_closedir(int32_t f) {
+    DIR *pDir = (DIR *)int32ToHandle(f);
+    closedir(pDir);
+    handleDel(f);
     return MR_SUCCESS;
 }
 
