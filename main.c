@@ -37,6 +37,20 @@ void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h) {
     SDL_RenderPresent(renderer);
 }
 
+static void runnn() {
+    // 9CC44
+    uint32_t ret;
+    ret = bridge_dsm_mr_start_dsm(uc, "dsm_gm.mrp");
+    // ret = bridge_dsm_mr_start_dsm(uc, "txz.mrp");
+    // ret = bridge_dsm_mr_start_dsm(uc, "mr2.mrp");
+    // ret = bridge_dsm_mr_start_dsm(uc, "dxtp.mrp");
+    // ret = bridge_dsm_mr_start_dsm(uc, "mpc.mrp");
+    // ret = bridge_dsm_mr_start_dsm(uc, "ht.mrp");
+    // ret = bridge_dsm_mr_start_dsm(uc, "3d.mrp");
+    // ret = bridge_dsm_mr_start_dsm(uc, "info.mrp");
+    printf("bridge_dsm_mr_start_dsm(): 0x%X\n", ret);
+}
+
 static void eventFuncV1(int code, int p1, int p2) {
     if (uc) {
         bridge_mr_event(uc, code, p1, p2);
@@ -93,15 +107,9 @@ static int startMrp(char *filename) {
 
         if (bridge_dsm_init(uc, ret) == MR_SUCCESS) {
             eventFunc = eventFuncV2;
-            // ret = bridge_dsm_mr_start_dsm(uc, "dsm_gm.mrp");
-            ret = bridge_dsm_mr_start_dsm(uc, "txz.mrp");
-            // ret = bridge_dsm_mr_start_dsm(uc, "mr2.mrp");
-            // ret = bridge_dsm_mr_start_dsm(uc, "dxtp.mrp");
-            // ret = bridge_dsm_mr_start_dsm(uc, "mpc.mrp");
-            // ret = bridge_dsm_mr_start_dsm(uc, "ht.mrp");
-            // ret = bridge_dsm_mr_start_dsm(uc, "3d.mrp");
-            // ret = bridge_dsm_mr_start_dsm(uc, "info.mrp");
-            printf("bridge_dsm_mr_start_dsm(): 0x%X\n", ret);
+            printf("bridge_dsm_init success\n");
+            dumpREG(uc);
+            runnn();
         }
     }
 
@@ -145,6 +153,9 @@ static void keyEvent(int16 type, SDL_Keycode code) {
         case SDLK_e:
         case SDLK_RIGHTBRACKET:
             eventFunc(type, MR_KEY_SOFTRIGHT, 0);
+            break;
+        case SDLK_HOME:
+            runnn();
             break;
         default:
             printf("key:%d\n", code);
@@ -195,7 +206,7 @@ int main(int argc, char *args[]) {
 
     if (argc == 1) {
         // startMrp("dsm_gm.mrp");
-        startMrp("asm.mrp");
+        startMrp("vmrp.mrp");
     } else {
         startMrp(args[1]);
     }

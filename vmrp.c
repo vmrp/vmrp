@@ -28,9 +28,10 @@ static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, in
     printf(">>> Tracing mem_valid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
            memTypeStr(type), address, size, value);
     if (type == UC_MEM_READ && size <= 4) {
-        uint32_t v;
+        uint32_t v, pc;
         uc_mem_read(uc, address, &v, size);
-        printf("read:0x%X\n", v);
+        uc_reg_read(uc, UC_ARM_REG_PC, &pc);
+        printf("PC:0x%X,read:0x%X\n", pc, v);
     }
 }
 #endif
