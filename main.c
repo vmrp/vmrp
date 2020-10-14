@@ -62,14 +62,19 @@ static void eventFuncV2(int code, int p1, int p2) {
         bridge_dsm_mr_event(uc, code, p1, p2);
     }
 }
+static int64_t ttt;
 
 uint32_t th2(uint32_t interval, void *param) {
-    bridge_dsm_mr_timer(uc);
+    int64_t now = get_time_ms();
+    printf("th2 %I64d, %I64d\n", now, now - ttt);
+    timeId = 0;
+    // bridge_dsm_mr_timer(uc);
     return 0;
 }
 
 int32_t timerStart(uint16_t t) {
-    printf("main_timerStart %d\n", t);
+    ttt = get_time_ms();
+    printf("main_timerStart %d, %I64d\n", t, ttt);
     if (!timeId) {
         timeId = SDL_AddTimer(t, th2, NULL);
     } else {
@@ -156,6 +161,9 @@ static void keyEvent(int16 type, SDL_Keycode code) {
             break;
         case SDLK_HOME:
             runnn();
+            break;
+        case SDLK_t:
+            bridge_dsm_mr_timer(uc);
             break;
         default:
             printf("key:%d\n", code);

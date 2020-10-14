@@ -1,6 +1,7 @@
 #include "./header/utils.h"
 
 #include <sys/time.h>
+#include <time.h>
 
 #include "./header/fileLib.h"
 
@@ -128,6 +129,26 @@ int64_t get_time_ms(void) {
         return -1;
     }
     return (int64_t)tv.tv_sec * 1000 + (tv.tv_usec / 1000);
+}
+
+int32_t getDatetime(mr_datetime *datetime) {
+    if (!datetime)
+        return MR_FAILED;
+
+    time_t now;
+    struct tm *t;
+
+    time(&now);
+    t = localtime(&now);
+
+    datetime->year = t->tm_year + 1900;
+    datetime->month = t->tm_mon + 1;
+    datetime->day = t->tm_mday;
+    datetime->hour = t->tm_hour;
+    datetime->minute = t->tm_min;
+    datetime->second = t->tm_sec;
+
+    return MR_SUCCESS;
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "./header/dsm.h"
 #include "./header/fileLib.h"
@@ -526,12 +527,10 @@ static void br_rand(BridgeMap *o, uc_engine *uc) {
 
 static void br_sleep(BridgeMap *o, uc_engine *uc) {
     // int32 (*sleep)(uint32 ms);
-    LOG("ext call %s()\n", o->name);
     uint32_t ms;
     uc_reg_read(uc, UC_ARM_REG_R0, &ms);
-    printf("br_sleep(%d)\n", ms);
-
-    // usleep(ms * 1000);  //注意 usleep 传的是 微秒 ，所以要 *1000
+    LOG("ext call %s(%d)\n", o->name, ms);
+    usleep(ms * 1000);  //注意 usleep 传的是 微秒 ，所以要 *1000
     SET_RET_V(MR_SUCCESS);
 }
 
@@ -566,8 +565,12 @@ static void br_readdir(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R0, &f);
 
     char *r = my_readdir(f);
-    strncpy(getMrpMemPtr(readdirSharedMem), r, READDIR_SHARED_MEM_SIZE);
-    SET_RET_V(readdirSharedMem);
+    if (r != NULL) {
+        strncpy(getMrpMemPtr(readdirSharedMem), r, READDIR_SHARED_MEM_SIZE);
+        SET_RET_V(readdirSharedMem);
+    } else {
+        SET_RET_V((uint32_t)NULL);
+    }
 }
 
 static void br_closedir(BridgeMap *o, uc_engine *uc) {
@@ -576,6 +579,14 @@ static void br_closedir(BridgeMap *o, uc_engine *uc) {
     int32_t f;
     uc_reg_read(uc, UC_ARM_REG_R0, &f);
     SET_RET_V(my_closedir(f));
+}
+
+static void br_getDatetime(BridgeMap *o, uc_engine *uc) {
+    // int32 (*getDatetime)(mr_datetime *datetime);
+    LOG("ext call %s()\n", o->name);
+    uint32_t datetime;
+    uc_reg_read(uc, UC_ARM_REG_R0, &datetime);
+    SET_RET_V(getDatetime(getMrpMemPtr(datetime)));
 }
 
 // 偏移量由./mrc/[x]_offsets.c直接从mrp中导出
@@ -615,9 +626,9 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x7C, 0x4, MAP_FUNC, g_mr_timerStart, NULL, NULL),  // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStart函数地址），目前没有实现对mrp读写的hook
     BRIDGE_FUNC_MAP(0x80, 0x4, MAP_FUNC, g_mr_timerStop, NULL, NULL),   // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStop函数地址），目前没有实现对mrp读写的hook
     BRIDGE_FUNC_MAP(0x84, 0x4, MAP_FUNC, mr_getTime, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x88, 0x4, MAP_FUNC, mr_getDatetime, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x88, 0x4, MAP_FUNC, mr_getDatetime, NULL, br_getDatetime),
     BRIDGE_FUNC_MAP(0x8C, 0x4, MAP_FUNC, mr_getUserInfo, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x90, 0x4, MAP_FUNC, mr_sleep, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x90, 0x4, MAP_FUNC, mr_sleep, NULL, br_sleep),
     BRIDGE_FUNC_MAP(0x94, 0x4, MAP_FUNC, mr_plat, NULL, NULL),
     BRIDGE_FUNC_MAP(0x98, 0x4, MAP_FUNC, mr_platEx, NULL, NULL),
     BRIDGE_FUNC_MAP(0x9C, 0x4, MAP_FUNC, mr_ferrno, NULL, NULL),
@@ -750,9 +761,8 @@ static BridgeMap dsm_require_funcs_funcMap[] = {
     BRIDGE_FUNC_MAP_FULL(0x1c, 0x4, MAP_FUNC, timerStart, NULL, br_timerStart, 0),
     BRIDGE_FUNC_MAP_FULL(0x20, 0x4, MAP_FUNC, timerStop, NULL, br_timerStop, 0),
     BRIDGE_FUNC_MAP_FULL(0x24, 0x4, MAP_FUNC, get_uptime_ms, br_get_uptime_ms_init, br_get_uptime_ms, 0),
-    // int32 (*getDatetime)(mr_datetime *datetime);
-    BRIDGE_FUNC_MAP_FULL(0x28, 0x4, MAP_FUNC, getDatetime, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP_FULL(0x2c, 0x4, MAP_FUNC, sleep, NULL, NULL, 0),
+    BRIDGE_FUNC_MAP_FULL(0x28, 0x4, MAP_FUNC, getDatetime, NULL, br_getDatetime, 0),
+    BRIDGE_FUNC_MAP_FULL(0x2c, 0x4, MAP_FUNC, sleep, NULL, br_sleep, 0),
     BRIDGE_FUNC_MAP_FULL(0x30, 0x4, MAP_FUNC, open, NULL, br_mr_open, 0),
     BRIDGE_FUNC_MAP_FULL(0x34, 0x4, MAP_FUNC, close, NULL, br_mr_close, 0),
     BRIDGE_FUNC_MAP_FULL(0x38, 0x4, MAP_FUNC, read, NULL, br_mr_read, 0),
@@ -976,7 +986,7 @@ int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, const char *entry) {
     uint32_t v = allocMem(strlen(entry));
     strcpy(getMrpMemPtr(v), entry);
 
-    printf("dsm_mr_start_dsm addr:0x%X\n",  addr);
+    printf("dsm_mr_start_dsm addr:0x%X\n", addr);
 
     uc_reg_write(uc, UC_ARM_REG_R0, &v);
     runCode(uc, addr, CODE_ADDRESS, false);

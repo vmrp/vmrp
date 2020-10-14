@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "types.h"
+
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 // #ifdef _WIN64
 // #include "../windows/unicorn-1.0.1-win64/include/unicorn/unicorn.h"
@@ -66,5 +68,6 @@ void printScreen(char *filename, uint16_t *buf);
 
 int64_t get_uptime_ms(void);
 int64_t get_time_ms(void);
+int32_t getDatetime(mr_datetime *datetime);
 
 #endif
