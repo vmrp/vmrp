@@ -174,7 +174,7 @@ mr_helper函数： 0x80550
      284:	00000100 	andeq	r0, r0, r0, lsl #2
      288:	0000270f 	andeq	r2, r0, pc, lsl #14
      28c:	0000270d 	andeq	r2, r0, sp, lsl #14
-     290:	e92d45fe 	push	{r1, r2, r3, r4, r5, r6, r7, r8, sl, lr}
+     290:	e92d45fe 	push	{r1, r2, r3, r4, r5, r6, r7, r8, sl, lr} //mrc_helper()
      294:	e1a06000 	mov	r6, r0
      298:	e5900000 	ldr	r0, [r0]
      29c:	e1a0a009 	mov	sl, r9
@@ -350,7 +350,7 @@ mr_helper函数： 0x80550
      544:	0000006c 	andeq	r0, r0, ip, rrx
      548:	e3a00000 	mov	r0, #0
      54c:	e12fff1e 	bx	lr
-     550:	e92d45fe 	push	{r1, r2, r3, r4, r5, r6, r7, r8, sl, lr} ; mr_init()函数
+     550:	e92d45fe 	push	{r1, r2, r3, r4, r5, r6, r7, r8, sl, lr} ; mrc_extHelper()函数
      554:	e1a05000 	mov	r5, r0
      558:	e5900000 	ldr	r0, [r0]
      55c:	e1a0a009 	mov	sl, r9

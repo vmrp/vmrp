@@ -23,6 +23,7 @@
 // http://wiki.libsdl.org/Tutorials
 // http://lazyfoo.net/tutorials/SDL/index.php
 
+static char *filename;
 static SDL_TimerID timeId = 0;
 static SDL_Renderer *renderer;
 static uc_engine *uc;
@@ -38,9 +39,9 @@ void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h) {
 }
 
 static void runnn() {
-    // 9CC44
     uint32_t ret;
-    ret = bridge_dsm_mr_start_dsm(uc, "dsm_gm.mrp");
+    // ret = bridge_dsm_mr_start_dsm(uc, "dsm_gm.mrp");
+    // ret = bridge_dsm_mr_start_dsm(uc, "datetime.mrp");
     // ret = bridge_dsm_mr_start_dsm(uc, "txz.mrp");
     // ret = bridge_dsm_mr_start_dsm(uc, "mr2.mrp");
     // ret = bridge_dsm_mr_start_dsm(uc, "dxtp.mrp");
@@ -48,7 +49,9 @@ static void runnn() {
     // ret = bridge_dsm_mr_start_dsm(uc, "ht.mrp");
     // ret = bridge_dsm_mr_start_dsm(uc, "3d.mrp");
     // ret = bridge_dsm_mr_start_dsm(uc, "info.mrp");
-    printf("bridge_dsm_mr_start_dsm(): 0x%X\n", ret);
+    ret = bridge_dsm_mr_start_dsm(uc, filename);
+    printf("bridge_dsm_mr_start_dsm('%s'): 0x%X\n", filename, ret);
+    SDL_RenderPresent(renderer);
 }
 
 static void eventFuncV1(int code, int p1, int p2) {
@@ -212,12 +215,12 @@ int main(int argc, char *args[]) {
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
-    if (argc == 1) {
-        // startMrp("dsm_gm.mrp");
-        startMrp("vmrp.mrp");
+    if (argc > 1) {
+        filename = args[1];
     } else {
-        startMrp(args[1]);
+        filename = "dsm_gm.mrp";
     }
+    startMrp("vmrp.mrp");
 
     SDL_Event event;
     bool isLoop = true;

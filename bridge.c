@@ -70,7 +70,7 @@ static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
     uint32_t p_f, p_len;
     uc_reg_read(uc, UC_ARM_REG_R0, &p_f);
     uc_reg_read(uc, UC_ARM_REG_R1, &p_len);
-    LOG("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p_f, p_f, p_len, p_len);
+    printf("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p_f, p_f, p_len, p_len);
     dumpREG(uc);
     mr_helper_addr = p_f;
     printf("mrc_extHelper() addr:0x%X\n", mr_helper_addr);
@@ -888,7 +888,10 @@ static int32_t bridge_mr_helper(uc_engine *uc, uint32_t code, uint32_t input, ui
 
     uint32_t sp, addr;
     uc_reg_read(uc, UC_ARM_REG_SP, &sp);
-    LOG("bridge_mr_helper() sp: 0x%X[%u]\n", sp, sp);
+
+    // mr_c_function.start_of_ER_RW 会被写入r9(SB)，指向的内存是用来存放全局变量的
+    v = *(uint32_t *)getMrpMemPtr(MR_C_FUNCTION_ADDRESS);
+    printf("bridge_mr_helper() sp: 0x%X[%u], sb(r9):0x%X\n", sp, sp, v);
 
     addr = sp;
     v = 0;  // 相当于传递 NULL
