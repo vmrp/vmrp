@@ -67,7 +67,12 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
             uint32_t binary;
             size_t count;
             csh handle;
-            cs_mode mode = size == 4 ? CS_MODE_ARM : CS_MODE_THUMB;
+            uint32_t cspr;
+            cs_mode mode;
+
+            uc_reg_read(uc, UC_ARM_REG_CPSR, &cspr);
+            mode = (cspr & (1 << 5)) ? CS_MODE_THUMB : CS_MODE_ARM;
+
             if (cs_open(CS_ARCH_ARM, mode, &handle) != CS_ERR_OK) {
                 printf("debug cs_open() fail.");
                 exit(1);
@@ -76,11 +81,11 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
             count = cs_disasm(handle, (uint8_t *)&binary, size, address, 1, &insn);
             if (count > 0) {
                 for (size_t j = 0; j < count; j++) {
-                    printf("debug[PC:0x%X\t%s %s\tmem:0x%" PRIX64 "] > ", pc, insn[j].mnemonic, insn[j].op_str, address);
+                    printf("[PC:0x%X  %d   %s %s   %s  mem:0x%" PRIX64 "]> ", pc, insn[j].size, insn[j].mnemonic, insn[j].op_str, (mode == CS_MODE_ARM ? "ARM" : "THUMB"), address);
                 }
                 cs_free(insn, count);
             } else {
-                printf("debug[PC:0x%X, mem:0x%" PRIX64 ", size:%d] > ", pc, address, size);
+                printf("[PC:0x%X, mem:0x%" PRIX64 ", size:%d]> ", pc, address, size);
             }
             cs_close(&handle);
         }
@@ -113,6 +118,10 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
         } else if (strncmp("run", str, 3) == 0) {  // 停止debug，不中断运行
             run = true;
             return;
+
+        } else if (strncmp("brklr", str, 5) == 0) {  // 执行到lr地址
+            uc_reg_read(uc, ARM_REG_LR, &brkAddress);
+            printf("-------------> brklr 0x%X\n", brkAddress);
 
         } else if (strncmp("brk", str, 3) == 0) {  // 执行到断点地址
             brkAddress = toUint32(str);
@@ -214,6 +223,7 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
                 "    reg                    - print all regs\n"
                 "    run                    - run\n"
                 "    brk 0x80030            - run code to 0x80030\n"
+                "    brklr                  - run code to lr\n"
                 "    SP=0x0027FFF0          - set SP register to 0x0027FFF0\n"
                 "    0x00080008             - print 0x00080008 memory content\n"
                 "    =0x80E34               - print 0x80E34 address string content\n"
