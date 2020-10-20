@@ -48,6 +48,7 @@ static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
 static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     printf(">>> Tracing mem_invalid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
            memTypeStr(type), address, size, value);
+    dumpREG(uc);
     return false;
 }
 
@@ -97,10 +98,6 @@ uc_engine *initVmrp(char *filename) {
     uc_err err;
     uc_hook trace;
 
-#ifdef DEBUG
-    hook_code_debug_open();
-#endif
-
     err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &uc);
     if (err) {
         printf("Failed on uc_open() with error returned: %u (%s)\n", err, uc_strerror(err));
@@ -119,8 +116,8 @@ uc_engine *initVmrp(char *filename) {
     }
 
 #ifdef DEBUG
-    uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
-    uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
+    // uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
+    // uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
     uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
     // uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE);
 #else

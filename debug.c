@@ -1,4 +1,5 @@
 #include "./header/debug.h"
+
 #include "./header/fileLib.h"
 #include "./header/utils.h"
 #include "./windows/capstone-4.0.1-win32/include/capstone/capstone.h"
@@ -45,18 +46,6 @@ static uint32_t toUint32(const char *str) {
 
 static uint32_t brkAddress = 0;
 static bool run = false;
-static csh handle;
-
-void hook_code_debug_open() {
-    if (cs_open(CS_ARCH_ARM, CS_MODE_ARM, &handle) != CS_ERR_OK) {
-        printf("hook_code_debug_open() fail.");
-        exit(1);
-    }
-}
-
-void hook_code_debug_close() {
-    cs_close(&handle);
-}
 
 void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
     char str[30];
@@ -73,24 +62,27 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
         uint32_t pc;
         uc_reg_read(uc, UC_ARM_REG_PC, &pc);
 
-        if (size == 4) {
+        if (size <= 4) {
             cs_insn *insn;
             uint32_t binary;
             size_t count;
-
-            uc_mem_read(uc, address, &binary, 4);
-            count = cs_disasm(handle, (uint8_t *)&binary, 4, address, 1, &insn);
+            csh handle;
+            cs_mode mode = size == 4 ? CS_MODE_ARM : CS_MODE_THUMB;
+            if (cs_open(CS_ARCH_ARM, mode, &handle) != CS_ERR_OK) {
+                printf("debug cs_open() fail.");
+                exit(1);
+            }
+            uc_mem_read(uc, address, &binary, size);
+            count = cs_disasm(handle, (uint8_t *)&binary, size, address, 1, &insn);
             if (count > 0) {
                 for (size_t j = 0; j < count; j++) {
                     printf("debug[PC:0x%X\t%s %s\tmem:0x%" PRIX64 "] > ", pc, insn[j].mnemonic, insn[j].op_str, address);
                 }
                 cs_free(insn, count);
             } else {
-                goto defPrompt;
+                printf("debug[PC:0x%X, mem:0x%" PRIX64 ", size:%d] > ", pc, address, size);
             }
-        } else {
-        defPrompt:
-            printf("debug[PC:0x%X, mem:0x%" PRIX64 ", size:%d] > ", pc, address, size);
+            cs_close(&handle);
         }
 
         ptr = fgets(str, sizeof(str), stdin);
