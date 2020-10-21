@@ -80,8 +80,11 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
             uc_mem_read(uc, address, &binary, size);
             count = cs_disasm(handle, (uint8_t *)&binary, size, address, 1, &insn);
             if (count > 0) {
+                char csprStr[5];
+                csprToStr(cspr, csprStr);
                 for (size_t j = 0; j < count; j++) {
-                    printf("[PC:0x%X  %d   %s %s   %s  mem:0x%" PRIX64 "]> ", pc, insn[j].size, insn[j].mnemonic, insn[j].op_str, (mode == CS_MODE_ARM ? "ARM" : "THUMB"), address);
+                    printf("[PC:0x%X  %s   %s %s   %s  mem:0x%" PRIX64 "]> ",
+                           pc, csprStr, insn[j].mnemonic, insn[j].op_str, (mode == CS_MODE_ARM ? "ARM" : "THUMB"), address);
                 }
                 cs_free(insn, count);
             } else {

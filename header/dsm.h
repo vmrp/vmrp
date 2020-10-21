@@ -2,10 +2,11 @@
 #define _DSM_H
 
 #include "types.h"
+
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
 
-#define VMRP_VER 20201012
+#define VMRP_VER 20201021
 
 // 需要平台实现的函数
 typedef struct {
@@ -42,7 +43,7 @@ typedef struct {
 // 平台可以调用的函数
 typedef struct {
     int32 version;
-    int32 (*mr_start_dsm)(const char *entry);
+    int32 (*mr_start_dsm)(char *filename, char *ext, char *entry);
     int32 (*mr_pauseApp)(void);
     int32 (*mr_resumeApp)(void);
     int32 (*mr_timer)(void);

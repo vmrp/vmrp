@@ -49,6 +49,14 @@ char *memTypeStr(uc_mem_type type) {
     return "<error type>";
 }
 
+void csprToStr(uint32_t v, char *out) {
+    out[0] = (v & (1 << 31)) ? 'N' : 'n';
+    out[1] = (v & (1 << 30)) ? 'Z' : 'z';
+    out[2] = (v & (1 << 29)) ? 'C' : 'c';
+    out[3] = (v & (1 << 28)) ? 'V' : 'v';
+    out[4] = '\0';
+}
+
 void dumpREG(uc_engine *uc) {
     uint32_t v;
 

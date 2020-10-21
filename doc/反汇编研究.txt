@@ -192,8 +192,6 @@ mrc_clearScreen(){
 
 
 
-(0x81c9c)
-0x85c08
 
 
 

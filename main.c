@@ -24,6 +24,7 @@
 // http://lazyfoo.net/tutorials/SDL/index.php
 
 static char *filename;
+static char *extName;
 static SDL_TimerID timeId = 0;
 static SDL_Renderer *renderer;
 static uc_engine *uc;
@@ -39,18 +40,8 @@ void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h) {
 }
 
 static void runnn() {
-    uint32_t ret;
-    // ret = bridge_dsm_mr_start_dsm(uc, "dsm_gm.mrp");
-    // ret = bridge_dsm_mr_start_dsm(uc, "datetime.mrp");
-    // ret = bridge_dsm_mr_start_dsm(uc, "txz.mrp");
-    // ret = bridge_dsm_mr_start_dsm(uc, "mr2.mrp");
-    // ret = bridge_dsm_mr_start_dsm(uc, "dxtp.mrp");
-    // ret = bridge_dsm_mr_start_dsm(uc, "mpc.mrp");
-    // ret = bridge_dsm_mr_start_dsm(uc, "ht.mrp");
-    // ret = bridge_dsm_mr_start_dsm(uc, "3d.mrp");
-    // ret = bridge_dsm_mr_start_dsm(uc, "info.mrp");
-    ret = bridge_dsm_mr_start_dsm(uc, filename);
-    printf("bridge_dsm_mr_start_dsm('%s'): 0x%X\n", filename, ret);
+    uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
+    printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
     SDL_RenderPresent(renderer);
 }
 
@@ -217,8 +208,10 @@ int main(int argc, char *args[]) {
 
     if (argc > 1) {
         filename = args[1];
+        extName = args[2];
     } else {
         filename = "dsm_gm.mrp";
+        extName = "start.mr";
     }
     startMrp("vmrp.mrp");
 
