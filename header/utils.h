@@ -48,7 +48,7 @@
 #define PIXEL565G(v) ((((uint32_t)v >> 5) << 2) & 0xff)
 #define PIXEL565B(v) (((uint32_t)v << 3) & 0xff)
 
-void csprToStr(uint32_t v, char *out);
+void cpsrToStr(uint32_t v, char *out);
 char *memTypeStr(uc_mem_type type);
 void dumpREG(uc_engine *uc);
 void dumpMemStr(void *ptr, size_t len);

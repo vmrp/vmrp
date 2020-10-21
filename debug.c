@@ -67,11 +67,11 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
             uint32_t binary;
             size_t count;
             csh handle;
-            uint32_t cspr;
+            uint32_t cpsr;
             cs_mode mode;
 
-            uc_reg_read(uc, UC_ARM_REG_CPSR, &cspr);
-            mode = (cspr & (1 << 5)) ? CS_MODE_THUMB : CS_MODE_ARM;
+            uc_reg_read(uc, UC_ARM_REG_CPSR, &cpsr);
+            mode = (cpsr & (1 << 5)) ? CS_MODE_THUMB : CS_MODE_ARM;
 
             if (cs_open(CS_ARCH_ARM, mode, &handle) != CS_ERR_OK) {
                 printf("debug cs_open() fail.");
@@ -80,11 +80,11 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
             uc_mem_read(uc, address, &binary, size);
             count = cs_disasm(handle, (uint8_t *)&binary, size, address, 1, &insn);
             if (count > 0) {
-                char csprStr[5];
-                csprToStr(cspr, csprStr);
+                char cpsrStr[5];
+                cpsrToStr(cpsr, cpsrStr);
                 for (size_t j = 0; j < count; j++) {
                     printf("[PC:0x%X  %s   %s %s   %s  mem:0x%" PRIX64 "]> ",
-                           pc, csprStr, insn[j].mnemonic, insn[j].op_str, (mode == CS_MODE_ARM ? "ARM" : "THUMB"), address);
+                           pc, cpsrStr, insn[j].mnemonic, insn[j].op_str, (mode == CS_MODE_ARM ? "ARM" : "THUMB"), address);
                 }
                 cs_free(insn, count);
             } else {

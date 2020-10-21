@@ -17,16 +17,11 @@ void printScreen(char *filename, uint16_t *buf) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
     } ;
     // clang-format on
-
     int fh = my_open(filename, MR_FILE_CREATE | MR_FILE_RDWR);
-
     my_write(fh, bmpHeader, sizeof(bmpHeader));
-
     my_write(fh, buf, 240 * 320 * 2);
-
     uint16_t end = 0;
     my_write(fh, &end, sizeof(end));
-
     my_close(fh);
 }
 
@@ -49,7 +44,7 @@ char *memTypeStr(uc_mem_type type) {
     return "<error type>";
 }
 
-void csprToStr(uint32_t v, char *out) {
+void cpsrToStr(uint32_t v, char *out) {
     out[0] = (v & (1 << 31)) ? 'N' : 'n';
     out[1] = (v & (1 << 30)) ? 'Z' : 'z';
     out[2] = (v & (1 << 29)) ? 'C' : 'c';
@@ -58,29 +53,30 @@ void csprToStr(uint32_t v, char *out) {
 }
 
 void dumpREG(uc_engine *uc) {
-    uint32_t v;
+    uint32_t v, cpsr;
 
+    uc_reg_read(uc, UC_ARM_REG_CPSR, &cpsr);
     // clang-format off
     printf("==========================REG=================================\n");
     uc_reg_read(uc, UC_ARM_REG_R0, &v); printf(" R0=0x%08X\t", v);
     uc_reg_read(uc, UC_ARM_REG_R1, &v); printf("R1=0x%08X\t", v);
     uc_reg_read(uc, UC_ARM_REG_R2, &v); printf(" R2=0x%08X\t", v);
-    uc_reg_read(uc, UC_ARM_REG_R3, &v); printf(" R3=0x%08X\n", v);
+    uc_reg_read(uc, UC_ARM_REG_R3, &v); printf(" R3=0x%08X\tN:%d\n", v, (cpsr&(1<<31))>>31);
 
     uc_reg_read(uc, UC_ARM_REG_R4, &v); printf(" R4=0x%08X\t", v);
     uc_reg_read(uc, UC_ARM_REG_R5, &v); printf("R5=0x%08X\t", v);
     uc_reg_read(uc, UC_ARM_REG_R6, &v); printf(" R6=0x%08X\t", v);
-    uc_reg_read(uc, UC_ARM_REG_R7, &v); printf(" R7=0x%08X\n", v);
+    uc_reg_read(uc, UC_ARM_REG_R7, &v); printf(" R7=0x%08X\tZ:%d\n", v, (cpsr&(1<<30))>>30);
 
     uc_reg_read(uc, UC_ARM_REG_R8, &v); printf(" R8=0x%08X\t", v);
     uc_reg_read(uc, UC_ARM_REG_R9, &v); printf("R9=0x%08X\t", v);
     uc_reg_read(uc, UC_ARM_REG_R10, &v); printf("R10=0x%08X\t", v);
-    uc_reg_read(uc, UC_ARM_REG_R11, &v); printf("R11=0x%08X\n", v);
+    uc_reg_read(uc, UC_ARM_REG_R11, &v); printf("R11=0x%08X\tC:%d\n", v, (cpsr&(1<<29))>>29);
 
     uc_reg_read(uc, UC_ARM_REG_R12, &v); printf("R12=0x%08X\t", v);
     uc_reg_read(uc, UC_ARM_REG_SP, &v); printf("SP=0x%08X\t", v);
     uc_reg_read(uc, UC_ARM_REG_LR, &v); printf(" LR=0x%08X\t", v);
-    uc_reg_read(uc, UC_ARM_REG_PC, &v); printf(" PC=0x%08X\n", v);
+    uc_reg_read(uc, UC_ARM_REG_PC, &v); printf(" PC=0x%08X\tV:%d\n", v, (cpsr&(1<<28))>>28);
     printf("==============================================================\n");
     // clang-format on
 }

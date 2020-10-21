@@ -1,7 +1,11 @@
 CC := gcc
 AR := ar
-CFLAGS := -g -Wall
-# CFLAGS := -g -Wall -DDEBUG
+
+ifeq ($(DEBUG),1)
+	CFLAGS := -g -Wall -DDEBUG
+else
+	CFLAGS := -g -Wall
+endif
 
 OBJS = fileLib.o font16_st.o gb2unicode.o vmrp.o tsf_font.o utils.o debug.o \
 	rbtree.o bridge.o memory.o baseLib_cfunction.ext.o main.o

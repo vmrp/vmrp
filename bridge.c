@@ -985,9 +985,9 @@ int32_t bridge_dsm_version(uc_engine *uc) {
 int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, char *filename, char *ext, char *entry) {
     // int32 (*mr_start_dsm)(char *filename, char *ext, char *entry); // 0x04
     uint32_t addr = *(uint32_t *)getMrpMemPtr(dsm_export_funcs + 0x04);
-    uint32_t p0, p1, p2;
+    uint32_t p0, p1, p2 = 0;
 
-    printf("dsm_mr_start_dsm addr:0x%X\n", addr);
+    printf("dsm_mr_start_dsm addr:0x%X ('%s','%s','%s')\n", addr, filename, ext, entry);
 
     p0 = allocMem(strlen(filename));
     strcpy(getMrpMemPtr(p0), filename);
@@ -997,14 +997,16 @@ int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, char *filename, char *ext, char *
     strcpy(getMrpMemPtr(p1), ext);
     uc_reg_write(uc, UC_ARM_REG_R1, &p1);
 
-    p2 = allocMem(strlen(entry));
-    if (p2) strcpy(getMrpMemPtr(p2), entry);
+    if (entry) {
+        p2 = allocMem(strlen(entry));
+        strcpy(getMrpMemPtr(p2), entry);
+    }
     uc_reg_write(uc, UC_ARM_REG_R2, &p2);
 
     runCode(uc, addr, CODE_ADDRESS, false);
     freeMem(p0);
     freeMem(p1);
-    if (p2) freeMem(p2);
+    if (entry) freeMem(p2);
 
     uint32_t v;
     uc_reg_read(uc, UC_ARM_REG_R0, &v);
