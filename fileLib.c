@@ -61,9 +61,7 @@ int32_t my_open(const char *filename, uint32_t mode) {
     if (f == -1) {
         return 0;
     }
-    int32_t ret = handle2int32(f);
-    printf("my_open(%s,%d) fd is: %d\n", filename, new_mode, ret);
-    return ret;
+    return handle2int32(f);
 }
 
 int32_t my_close(int32_t f) {
@@ -410,7 +408,8 @@ void listMrpFiles(const char *path) {
     my_close(fd);
 }
 
-static void writeFile(const char *filename, void *data, uint32 length) {
+void writeFile(const char *filename, void *data, uint32 length) {
+    LOG("writeFile('%s',0x%p,%u)", filename, data, length);
     int fh = my_open(filename, MR_FILE_CREATE | MR_FILE_RDWR);
     my_write(fh, data, length);
     my_close(fh);

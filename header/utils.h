@@ -53,6 +53,7 @@ char *memTypeStr(uc_mem_type type);
 void dumpREG(uc_engine *uc);
 void dumpMemStr(void *ptr, size_t len);
 void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb);
+char *getSplitStr(char *str, char split, int n);
 
 typedef struct uIntMap {
     struct rb_node node;
@@ -65,6 +66,7 @@ int uIntMap_insert(struct rb_root *root, uIntMap *obj);
 uIntMap *uIntMap_delete(struct rb_root *root, uint32_t key);
 char *getStrFromUc(uc_engine *uc, uint32_t addr);
 
+size_t copyToMrp(char *str);
 void printScreen(char *filename, uint16_t *buf);
 
 int64_t get_uptime_ms(void);

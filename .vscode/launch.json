@@ -30,7 +30,10 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/main.exe",
-            "args": [],
+            "args": [
+                "ems.mrp",
+                "cfunction.ext",
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin/",
             "environment": [],

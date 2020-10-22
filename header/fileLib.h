@@ -43,4 +43,5 @@ int ungzipdata(uint8 *dest, uint32 *destLen, const uint8 *source, uint32 sourceL
 void listMrpFiles(const char *path);
 
 void fileLib_init();
+void writeFile(const char *filename, void *data, uint32 length);
 #endif

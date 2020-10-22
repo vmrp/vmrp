@@ -2,6 +2,7 @@
 
 #include "./header/fileLib.h"
 #include "./header/utils.h"
+#include "./header/vmrp.h"
 #include "./windows/capstone-4.0.1-win32/include/capstone/capstone.h"
 
 // 获取等号左边的内容，限制长最大长度为maxLen个字符,
@@ -44,11 +45,24 @@ static uint32_t toUint32(const char *str) {
     return v;
 }
 
+static void dumpFile(uc_engine *uc, char *str) {
+    // dump,a.bin,0x2b3e16,0xff
+    char *filename = getSplitStr(str, ',', 1);
+    char *addrStr = getSplitStr(str, ',', 2);
+    char *lenStr = getSplitStr(str, ',', 3);
+    uint32_t addr = toUint32(addrStr);
+    uint32_t length = toUint32(lenStr);
+    writeFile(filename, getMrpMemPtr(addr), length);
+    free(filename);
+    free(addrStr);
+    free(lenStr);
+}
+
 static uint32_t brkAddress = 0;
 static bool run = false;
 
 void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
-    char str[30];
+    char str[60];
     char *ptr;
     int eqPos;
     uc_err err;
@@ -120,6 +134,10 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
 
         } else if (strncmp("run", str, 3) == 0) {  // 停止debug，不中断运行
             run = true;
+            return;
+
+        } else if (strncmp("dump", str, 4) == 0) {
+            dumpFile(uc, str);
             return;
 
         } else if (strncmp("brklr", str, 5) == 0) {  // 执行到lr地址
@@ -223,14 +241,15 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
         } else {
             // clang-format off
             printf(
-                "    reg                    - print all regs\n"
-                "    run                    - run\n"
-                "    brk 0x80030            - run code to 0x80030\n"
-                "    brklr                  - run code to lr\n"
-                "    SP=0x0027FFF0          - set SP register to 0x0027FFF0\n"
-                "    0x00080008             - print 0x00080008 memory content\n"
-                "    =0x80E34               - print 0x80E34 address string content\n"
-                "    0x00080008=0xFFFFFFFF  - set 0x00080008 memory content to 0xFFFFFFFF\n"
+                "    reg                       - print all regs\n"
+                "    run                       - run\n"
+                "    brk 0x80030               - run code to 0x80030\n"
+                "    brklr                     - run code to lr\n"
+                "    SP=0x0027FFF0             - set SP register to 0x0027FFF0\n"
+                "    0x00080008                - print 0x00080008 memory content\n"
+                "    =0x80E34                  - print 0x80E34 address string content\n"
+                "    0x00080008=0xFFFFFFFF     - set 0x00080008 memory content to 0xFFFFFFFF\n"
+                "    dump,a.bin,0x2b3e16,0xff  - dump memory 0x2b3e16 to a.bin length is 0xff\n"
             );
             // clang-format on
         }

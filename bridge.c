@@ -152,8 +152,7 @@ static void br_DrawRect(BridgeMap *o, uc_engine *uc) {
     uc_mem_read(uc, sp + 4, &g, 4);
     uc_mem_read(uc, sp + 8, &b, 4);
 
-    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, x, y, w, h, r, g, b);
-    LOG("ext call %s([%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, x, y, w, h, r, g, b);
+    LOG("ext call %s(%d, %d, %d, %d, %u, %u, %u)\n", o->name, x, y, w, h, r, g, b);
     uint16_t color = MAKERGB565(r, g, b);
 
     for (uint32_t i = 0; i < w; i++) {
@@ -179,11 +178,8 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
     uc_mem_read(uc, sp + 8, &is_unicode, 4);
     uc_mem_read(uc, sp + 12, &font, 4);
 
-    char *str = getStrFromUc(uc, pcText);
-
-    LOG("ext call %s(0x%X[\"%s\"], 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, pcText, str, x, y, r, g, b, is_unicode, font);
-    LOG("ext call %s([%u][\"%s\"], [%u], [%u], [%u], [%u], [%u], [%u], [%u])\n", o->name, pcText, str, x, y, r, g, b, is_unicode, font);
-
+    char *str = getMrpMemPtr(pcText);
+    LOG("ext call %s(0x%X[\"%s\"], %d, %d, %u, %u, %u, %d, %u)\n", o->name, pcText, str, x, y, r, g, b, is_unicode, font);
     if (is_unicode) {
         tsf_drawText((uint8_t *)str, x, y, MAKERGB565(r, g, b), uc);
     } else {
@@ -191,7 +187,6 @@ static void br__DrawText(BridgeMap *o, uc_engine *uc) {
         tsf_drawText(out, x, y, MAKERGB565(r, g, b), uc);
         free(out);
     }
-    free(str);
     SET_RET_V(MR_SUCCESS);
 }
 
@@ -209,8 +204,7 @@ static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_SP, &sp);
     uc_mem_read(uc, sp, &h, 4);
 
-    LOG("ext call %s(0x%X, 0x%X, 0x%X, 0x%X, 0x%X)\n", o->name, bmp, x, y, w, h);
-    LOG("ext call %s([%u], [%u], [%u], [%u], [%u])\n", o->name, bmp, x, y, w, h);
+    LOG("ext call %s(0x%X, %d, %d, %u, %u)\n", o->name, bmp, x, y, w, h);
 
     for (uint32_t i = 0; i < w; i++) {
         for (uint32_t j = 0; j < h; j++) {
@@ -229,34 +223,20 @@ static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
 static void br_mr_open(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T_mr_open)(const char* filename,  uint32 mode);
     uint32_t filename, mode;
-
     uc_reg_read(uc, UC_ARM_REG_R0, &filename);
     uc_reg_read(uc, UC_ARM_REG_R1, &mode);
-
-    char *filenameStr = getStrFromUc(uc, filename);
-    LOG("ext call %s(0x%X[%s], 0x%X)\n", o->name, filename, filenameStr, mode);
-    LOG("ext call %s([%u], [%u])\n", o->name, filename, mode);
-
+    char *filenameStr = getMrpMemPtr(filename);
     int32_t ret = my_open(filenameStr, mode);
-    free(filenameStr);
-
-    LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
-
+    LOG("ext call %s(0x%X[%s], 0x%X): %d\n", o->name, filename, filenameStr, mode, ret);
     SET_RET_V(ret);
 }
 
 static void br_mr_close(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T_mr_close)(int32 f);
     uint32_t f, ret;
-
     uc_reg_read(uc, UC_ARM_REG_R0, &f);
-
-    LOG("ext call %s(0x%X)\n", o->name, f);
-    LOG("ext call %s([%u])\n", o->name, f);
-
     ret = my_close(f);
-    LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
-
+    LOG("ext call %s(%d): %d\n", o->name, f, ret);
     SET_RET_V(ret);
 }
 
@@ -282,35 +262,23 @@ static void br_mr_write(BridgeMap *o, uc_engine *uc) {
 static void br_mr_read(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T_mr_read)(int32 f,void *p,uint32 l);
     uint32_t f, p, l, ret;
-
     uc_reg_read(uc, UC_ARM_REG_R0, &f);
     uc_reg_read(uc, UC_ARM_REG_R1, &p);
     uc_reg_read(uc, UC_ARM_REG_R2, &l);
-
-    LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, f, p, l);
-    LOG("ext call %s([%u], [%u], [%u])\n", o->name, f, p, l);
-
-    char *buf = malloc(l);
+    char *buf = getMrpMemPtr(p);
     ret = my_read(f, buf, l);
-    uc_mem_write(uc, p, buf, l);
-    free(buf);
-
+    LOG("ext call %s(%d, 0x%X, %u): %d\n", o->name, f, p, l, ret);
     SET_RET_V(ret);
 }
 
 static void br_mr_seek(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T_mr_seek)(int32 f, int32 pos, int method);
     uint32_t f, pos, method, ret;
-
     uc_reg_read(uc, UC_ARM_REG_R0, &f);
     uc_reg_read(uc, UC_ARM_REG_R1, &pos);
     uc_reg_read(uc, UC_ARM_REG_R2, &method);
-
-    LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, f, pos, method);
-    LOG("ext call %s([%u], [%u], [%u])\n", o->name, f, pos, method);
-
     ret = my_seek(f, pos, method);
-
+    LOG("ext call %s(%d, %d, 0x%X): %d\n", o->name, f, pos, method, ret);
     SET_RET_V(ret);
 }
 
@@ -444,7 +412,7 @@ static void br_log(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R0, &msg);
 
     char *str = (char *)getMrpMemPtr(msg);
-    LOG("ext call %s('%s')\n", o->name, str);
+    // LOG("ext call %s('%s')\n", o->name, str);
     puts(str);
     // dumpREG(uc);
 }
@@ -457,10 +425,10 @@ static void br_mem_get(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s()\n", o->name);
 
-    uint32_t len = 1024 * 650;
+    uint32_t len = 1024 * 1024 * 2;
     uint32_t buffer = allocMem(len);
 
-    printf("br_mem_get base=0x%X len=%d =================\n", buffer, len);
+    printf("br_mem_get base=0x%X len=%d(%d kb) =================\n", buffer, len, len / 1024);
 
     // *mem_base = buffer;
     uc_mem_write(uc, mem_base, &buffer, 4);
@@ -988,18 +956,14 @@ int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, char *filename, char *ext, char *
     uint32_t p0, p1, p2 = 0;
 
     printf("dsm_mr_start_dsm addr:0x%X ('%s','%s','%s')\n", addr, filename, ext, entry);
-
-    p0 = allocMem(strlen(filename));
-    strcpy(getMrpMemPtr(p0), filename);
+    p0 = copyToMrp(filename);
     uc_reg_write(uc, UC_ARM_REG_R0, &p0);
 
-    p1 = allocMem(strlen(ext));
-    strcpy(getMrpMemPtr(p1), ext);
+    p1 = copyToMrp(ext);
     uc_reg_write(uc, UC_ARM_REG_R1, &p1);
 
     if (entry) {
-        p2 = allocMem(strlen(entry));
-        strcpy(getMrpMemPtr(p2), entry);
+        p2 = copyToMrp(entry);
     }
     uc_reg_write(uc, UC_ARM_REG_R2, &p2);
 
@@ -1060,7 +1024,7 @@ int32_t bridge_dsm_init(uc_engine *uc, uint32_t addr) {
     // mr_c_function.start_of_ER_RW 写入r9(SB)，指向的内存是用来存放全局变量的
     v = *(uint32_t *)getMrpMemPtr(MR_C_FUNCTION_ADDRESS);
     uc_reg_write(uc, UC_ARM_REG_SB, &v);
-    printf("start_of_ER_RW:0x%X\n", v);
+    printf("vmrp start_of_ER_RW:0x%X\n", v);
 
     runCode(uc, addr, CODE_ADDRESS, false);
 

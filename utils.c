@@ -4,6 +4,8 @@
 #include <time.h>
 
 #include "./header/fileLib.h"
+#include "./header/memory.h"
+#include "./header/vmrp.h"
 
 // 只支持240*320大小
 void printScreen(char *filename, uint16_t *buf) {
@@ -93,6 +95,44 @@ void dumpMemStr(void *ptr, size_t len) {
     }
 }
 
+
+/*
+将字符串看成是split分隔的数组，多个连续的split会看成一个，返回的内存需要free
+"dump,,,a.bin,0x2b3e16,,0xff"
+*/
+char* getSplitStr(char* str, char split, int n) {
+    char* start = str;
+    char *end, *ret, *mem;
+    int count = 0;
+
+    if (!start) return NULL;
+    if (n == 0) goto retResult;
+    while (*start) {
+        if (*start != split) {
+            start++;
+            continue;
+        }
+        count++;
+        while (*start && (*start == split)) start++;
+        if (count == n) {
+            goto retResult;
+        }
+    }
+    return NULL;
+retResult:
+    end = start;
+    while (*end && (*end != split)) end++;
+    ret = malloc(end - start + 1);
+    mem = ret;
+    while (start < end) {
+        *mem = *start;
+        mem++;
+        start++;
+    }
+    *mem = '\0';
+    return ret;
+}
+
 void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb) {
     uint32_t value = stopAddr;
     uc_reg_write(uc, UC_ARM_REG_LR, &value);  // 当程序执行到这里时停止运行(return)
@@ -119,6 +159,15 @@ char *getStrFromUc(uc_engine *uc, uint32_t addr) {
     } while (v && i < BUF_LEN - 1);
     buf[i] = '\0';
     return buf;
+}
+
+size_t copyToMrp(char *str) {
+    size_t len = strlen(str);
+    size_t ret = allocMem(len + 1);
+    char *ptr = getMrpMemPtr(ret);
+    strcpy(ptr, str);
+    *(ptr + len) = '\0';
+    return ret;
 }
 
 int64_t get_uptime_ms(void) {
