@@ -73,6 +73,7 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
     while (brkAddress == 0 || brkAddress == address) {
         brkAddress = 0;
 
+        cs_mode mode;
         uint32_t pc;
         uc_reg_read(uc, UC_ARM_REG_PC, &pc);
 
@@ -82,7 +83,6 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
             size_t count;
             csh handle;
             uint32_t cpsr;
-            cs_mode mode;
 
             uc_reg_read(uc, UC_ARM_REG_CPSR, &cpsr);
             mode = (cpsr & (1 << 5)) ? CS_MODE_THUMB : CS_MODE_ARM;
@@ -139,6 +139,10 @@ void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
         } else if (strncmp("dump", str, 4) == 0) {
             dumpFile(uc, str);
             return;
+
+        } else if (strncmp("brkn", str, 5) == 0) {  // 单步跳过
+            brkAddress = pc + size;
+            printf("-------------> brkn 0x%X\n", brkAddress);
 
         } else if (strncmp("brklr", str, 5) == 0) {  // 执行到lr地址
             uc_reg_read(uc, ARM_REG_LR, &brkAddress);
