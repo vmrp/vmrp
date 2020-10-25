@@ -4,53 +4,6 @@ EXT结构详解：
 4~7：mr_c_function_st 指针
 8~11：mr_c_function_load 函数指针
 
-	
-typedef struct  _mrc_extChunk_st
-{
-	int32 check;
-	
-	MR_LOAD_C_FUNCTION	init_func;  //mr_c_function_load 函数指针
-
-	/**
-	 * (void* P, int32 code, uint8* input, int32 input_len, uint8** output, int32* output_len);
-	 * 参数详解：
-	 * p：global_p_buf 指针
-	 * code定义如下：
-	 *		0：mrc_init 1：mrc_event 2：
-	 */
-	MR_C_FUNCTION		event;		//mr_helper 函数指针
-	
-	uint8*	code_buf; //ext内存地址
-	int32   code_len; //ext长度
-	uint8*	var_buf;  //RW段地址
-	int32   var_len;  //RW段长度
-	mr_c_function_st* global_p_buf; //mr_c_function_st 表地址
-	int32   global_p_len; //mr_c_function_st 表长度
-	int32   timer;
-	mrc_extMainSendAppMsg_t sendAppEvent;
-	mr_table *extMrTable;
-
-#ifdef MRC_PLUGIN
-	MR_C_FUNCTION_EX eventEx;
-#endif
-
-	int32 isPause;/*1: pause 状态0:正常状态*/
-} mrc_extChunk_st;
-	
-typedef struct  _mr_c_function_st                       
-{
-	uint8* start_of_ER_RW;
-	uint32 ER_RW_Length;
-	//uint8* old_start_of_ER_RW;
-	int32 ext_type;
-	mrc_extChunk_st * mrc_extChunk;
-
-	//stack shell 2008-2-28
-	int32 stack;
-	//
-} mr_c_function_st;
-
-
 启动流程：
 	先调用：int32 mr_c_function_load (int32 code)，完成 mr_table 函数表设置
 
@@ -148,4 +101,3 @@ ext启动：
 dealtimer 本身是个函数，在start.mr里定义
 
 *(mr_c_function_load - 0x4) + 0xC 处是ext模块句柄
-不分析不知道，一分析吓一跳。
