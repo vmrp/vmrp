@@ -383,6 +383,27 @@ static void br_mr_exit(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(MR_SUCCESS);
 }
 
+static void br_mr_getScreenInfo(BridgeMap *o, uc_engine *uc) {
+    // int32 mr_getScreenInfo(mr_screeninfo * s) ;
+    LOG("##### ext call %s()\n", o->name);
+
+    uint32_t addr;
+    uc_reg_read(uc, UC_ARM_REG_R0, &addr);
+
+    struct {
+        uint32 width;
+        uint32 height;
+        uint32 bit;
+    } *s = getMrpMemPtr(addr);
+
+    if (s) {
+        s->width = SCREEN_WIDTH;
+        s->height = SCREEN_HEIGHT;
+        s->bit = 16;
+    }
+    SET_RET_V(MR_SUCCESS);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // todo 调用 set_putchar 方法 偏移量在0x2df4 设置一个回调函数，这样才能真正实现mr_printf
 static void br_baseLib_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
@@ -591,8 +612,8 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x70, 0x4, MAP_FUNC, mr_mem_free, NULL, NULL),
     BRIDGE_FUNC_MAP(0x74, 0x4, MAP_FUNC, mr_drawBitmap, NULL, br_mr_drawBitmap),
     BRIDGE_FUNC_MAP(0x78, 0x4, MAP_FUNC, mr_getCharBitmap, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x7C, 0x4, MAP_FUNC, g_mr_timerStart, NULL, NULL),  // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStart函数地址），目前没有实现对mrp读写的hook
-    BRIDGE_FUNC_MAP(0x80, 0x4, MAP_FUNC, g_mr_timerStop, NULL, NULL),   // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStop函数地址），目前没有实现对mrp读写的hook
+    BRIDGE_FUNC_MAP(0x7C, 0x4, MAP_FUNC, mr_timerStart, NULL, NULL),  // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStart函数地址），目前没有实现对mrp读写的hook
+    BRIDGE_FUNC_MAP(0x80, 0x4, MAP_FUNC, mr_timerStop, NULL, NULL),   // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStop函数地址），目前没有实现对mrp读写的hook
     BRIDGE_FUNC_MAP(0x84, 0x4, MAP_FUNC, mr_getTime, NULL, NULL),
     BRIDGE_FUNC_MAP(0x88, 0x4, MAP_FUNC, mr_getDatetime, NULL, br_getDatetime),
     BRIDGE_FUNC_MAP(0x8C, 0x4, MAP_FUNC, mr_getUserInfo, NULL, NULL),
@@ -640,7 +661,7 @@ static BridgeMap mr_table_funcMap[] = {
     BRIDGE_FUNC_MAP(0x134, 0x4, MAP_FUNC, mr_editGetText, NULL, NULL),
     BRIDGE_FUNC_MAP(0x138, 0x4, MAP_FUNC, mr_winCreate, NULL, NULL),
     BRIDGE_FUNC_MAP(0x13C, 0x4, MAP_FUNC, mr_winRelease, NULL, NULL),
-    BRIDGE_FUNC_MAP(0x140, 0x4, MAP_FUNC, mr_getScreenInfo, NULL, NULL),
+    BRIDGE_FUNC_MAP(0x140, 0x4, MAP_FUNC, mr_getScreenInfo, NULL, br_mr_getScreenInfo),
     BRIDGE_FUNC_MAP(0x144, 0x4, MAP_FUNC, mr_initNetwork, NULL, NULL),
     BRIDGE_FUNC_MAP(0x148, 0x4, MAP_FUNC, mr_closeNetwork, NULL, NULL),
     BRIDGE_FUNC_MAP(0x14C, 0x4, MAP_FUNC, mr_getHostByName, NULL, NULL),
