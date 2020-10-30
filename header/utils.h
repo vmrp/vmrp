@@ -13,7 +13,7 @@
 // #ifdef _WIN64
 // #include "../windows/unicorn-1.0.1-win64/include/unicorn/unicorn.h"
 // #else
-#include "../windows/unicorn-1.0.1-win32/include/unicorn/unicorn.h"
+#include "../windows/unicorn-1.0.2-win32/include/unicorn/unicorn.h"
 // #endif
 #else
 #include <unicorn/unicorn.h>
