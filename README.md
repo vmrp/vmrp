@@ -4,52 +4,27 @@
 
 由于mrpoid模拟器受限于安卓系统，于是决定开发一款真正的模拟器
 
-前期在linux和windows下用vscode开发，后期完全在windows下开发
+目前完全在windows下开发并且优先考虑32位版本
 
-第一阶段目标只打算在命令行中模拟出helloworld，并且能够响应事件(已完成)
+目前已经实现的事件： MR_KEY_PRESS, MR_KEY_RELEASE, MR_MOUSE_MOVE, MR_MOUSE_DOWN, MR_MOUSE_UP
 
-第二阶段目标完成图形化界面，可以借助原来的mrp开发环境打造windows模拟器，如果可行的话难度会大大降低，如果不可行，则要另外想办法做，有可能做成动态库提供API的形式供其它容易做图形化的语言调用(图形化界面已用go语言实现,mingw64编译mfc有些图形api没有实现)
-
-目前已经达成了上面两个阶段的目标，因为有不少人用模拟器做刷量牟利，因此我并不打算将这个模拟器完善，能跑helloworld就是我的目的，现在**停止继续开发**
-
-目前已经实现三个事件： MOUSE_DOWN, MOUSE_UP, MOUSE_MOVE
+按键： 上下左右或wsad键控制方向，回车键是ok, q键是左功能键, e键是右功能键
 
 目前实现的函数：
+|                 |                 |                |                    | 
+|-----------------|-----------------|----------------|--------------------|
+| mrc_malloc()    | mrc_free()      | mrc_memcpy()   | mrc_memmove()      |
+| mrc_strcpy()    | mrc_strncpy()   | mrc_strcat()   | mrc_strncat()      |
+| mrc_memcmp()    | mrc_strcmp()    | mrc_strncmp()  | mrc_memchr()       |
+| mrc_memset()    | mrc_strlen()    | mrc_strstr()   | mrc_sprintf()      |
+| mrc_atoi()      | mrc_open()      | mrc_close()    | mrc_write()        |
+| mrc_read()      | mrc_seek()      | mrc_getLen()   | mrc_remove()       |
+| mrc_rename()    | mrc_mkDir()     | mrc_rmDir()    | mrc_clearScreen()  |
+| mrc_drawRect()  | mrc_drawPoint() | mrc_drawText() | mrc_refreshScreen()|
 
-```
-mrc_malloc()
-mrc_free()
-mrc_memcpy()
-mrc_memmove()
-mrc_strcpy()
-mrc_strncpy()
-mrc_strcat()
-mrc_strncat()
-mrc_memcmp()
-mrc_strcmp()
-mrc_strncmp()
-mrc_memchr()
-mrc_memset()
-mrc_strlen()
-mrc_strstr()
-mrc_sprintf()
-mrc_open()
-mrc_close()
-mrc_write()
-mrc_read()
-mrc_seek()
-mrc_getLen()
-mrc_remove()
-mrc_rename()
-mrc_mkDir()
-mrc_rmDir()
-mrc_clearScreen()
-mrc_drawRect()
-mrc_drawPoint()
-mrc_drawText()
-mrc_refreshScreen()
-```
-如果mrp仅使用上面列出的函数开发则可以直接运行，注意入口函数是mrc_init()，如果是MRC_EXT_INIT()则是插件化开发的mrp，目前不支持。建议用mrc/baseLib或res/asm/asm.zip这两个mrp项目测试
+如果mrp仅使用上面列出的函数开发则可以直接运行，注意入口函数是mrc_init()，如果是MRC_EXT_INIT()则是插件化开发的mrp，目前不支持。建议参考mrc/baseLib或res/asm/asm.zip这两个mrp项目。
+
+完整版模拟器将借助mythroad层代码实现，代码在vmrp_arm项目中。
 
 # 实现原理
 
@@ -57,10 +32,15 @@ mrpoid是安卓上的mrp模拟器，c语言开发的mrp是编译后的arm指令�
 
 vmrp实现原理与mrpoid基本相同，参考了mrpoid早期的实现原理，不同的地方是vmrp借助unicorn engine实现真正的模拟器，并不依赖arm cpu，由于unicorn完全是一颗模拟的cpu，并且unicorn仍存在许多bug，基于unicorn开发需要对arm汇编有比较多的了解。
 
-因为我是在windows下开发，unicorn是预编译好的，支持各种指令集，不仅仅是arm，因此编译出来的文件可能保留了其它指令集的支持导致文件变得很大，还有go语言的gui库也是编译出来的文件很大，以及对图像的操作可能有些地方有待优化，指令的hook可能也是导致运行效率低下的一个原因
+因为我是在windows下开发，unicorn是预编译好的，支持各种指令集，不仅仅是arm，因此编译出来的文件可能保留了其它指令集的支持导致文件变得很大，指令的hook可能是导致运行效率低下的一个原因
+
+# 潜在bug
+
+因为ext中的mr_c_function_load()函数是第一个函数，在mythroad层调用此函数其实相当于仍然在mythroad层调用mythroad层的东西，它会回调_mr_c_function_new()将mr_extHelper()或mr_helper()函数的地址传回mythroad，所有的事件传递都是通过这个helper函数，helper函数进去的第一件事就是备份r9寄存到r10，然后设置r9寄存器的值，在ext内的所有全局变量的读写都是基于这个寄存器提供的基地址，而在ext内调用mythroad层的函数时，r9和r10寄存器的值并没有恢复，这可能导致严重的问题，这可能就是安卓上mrpoid运行不稳定的原因，从反编译的结果来看，插件化mrp内的ext之间是有恢复r9寄存器的功能，但是没有恢复r10寄存器的功能，在目前能获得的mythroad层代码中没有看到任何恢复r9和r10的操作。
+
 
 # 下载地址
-https://github.com/zengming00/vmrp/releases/tag/1.0.0
+https://github.com/zengming00/vmrp/releases/
 
 # 编译方法
 
@@ -70,43 +50,30 @@ https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64
 
 https://github.com/aquynh/capstone/releases/download/4.0.1/capstone-4.0.1-win32.zip
 
-https://github.com/unicorn-engine/unicorn/releases/download/1.0.1/unicorn-1.0.1-win32.zip
+https://github.com/unicorn-engine/unicorn/releases/download/1.0.2/unicorn-1.0.2-win32.zip
 
 https://www.libsdl.org/release/SDL2-devel-2.0.10-mingw.tar.gz
 
 可能需要安装zlib，我是直接从官网下载源码安装的
 
-需要安装unicorn (windows下载预编译文件unicorn-1.0.1，解压到./windows文件夹内，在windows下用mingw64(mingw32-make.exe)编译，我的是x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0版本)
+将capstone、SDL2、unicorn解压到./windows文件夹内，在windows下用mingw64(mingw32-make.exe)编译，我的是x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0版本)
 ```
 $ ls ./windows/ -l
-total 8
-drwxr-xr-x 1 zengming 197121 0 2月  11 17:10 unicorn-1.0.1-win32
-drwxr-xr-x 1 zengming 197121 0 2月  11 17:09 unicorn-1.0.1-win64
+drwxr-xr-x 1 zengming 197121       0  2月 29  2020 capstone-4.0.1-win32
+drwxr-xr-x 1 zengming 197121       0  2月 11  2020 SDL2-2.0.10
+drwxr-xr-x 1 zengming 197121       0  2月 11  2020 unicorn-1.0.1-win32
 ```
 
-make命令：在windows下用mingw32-make.exe，在linux下直接make
-
-编译命令行测试程序: 直接输入make
-
-编译SDL版本的图形化程序：
-1. make lib
-2. 下载解压SDL2到./GUI/lib/（我使用的版本是SDL2-2.0.10）
-3. cd GUI/SDL
-4. make 或 make win32
-注意如果是make win32则在make lib时必需确保生成的libvmrp.a是32位版本，在64位系统下编译时gcc需要加 -m32 标志
-
-编译go语言版本的图形化程序： 由于直接用mingw64编译mfc没有成功，所以改用了go语言，使用的版本是go1.12.7
-
-1. make lib
-2. cd GUI/golang/
-3. go build
-
-linux编译：
+SDL2在linux可以通过下面的命令安装：
 ```
 sudo apt install libsdl2-dev
 ```
 
+直接`make`即可编译，使用`make DEBUG=1`可以编译出带调试功能的版本
+
+
 # 参考资料
+
 mrp编辑器:  [Mrpeditor.exe](tool/Mrpeditor.exe)
 
 十六进制方式查看文件:
@@ -145,6 +112,8 @@ https://blog.csdn.net/ayu_ag/article/details/50734282
 https://blog.csdn.net/gooogleman/article/details/3538033
 
 # mrp中ext的实现原理
+
+(仅部分原理，真正的实现还涉及到rw段的切换)
 
 最早的mrp实际是由mr文件组成的，mr文件其实就是编译后的lua，后来的mrp则用c语言开发，于是会至少一有个ext文件。
 

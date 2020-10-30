@@ -59,10 +59,15 @@ static void eventFuncV2(int code, int p1, int p2) {
 static int64_t ttt;
 
 uint32_t th2(uint32_t interval, void *param) {
+    SDL_RemoveTimer(timeId);
+    timeId = 0;
+
     int64_t now = get_time_ms();
     printf("th2 %I64d, %I64d\n", now, now - ttt);
-    timeId = 0;
-    // bridge_dsm_mr_timer(uc);
+    dumpREG(uc);
+    int32_t ret = bridge_dsm_mr_timer(uc);
+    printf("ret:%d\n", ret);
+    dumpREG(uc);
     return 0;
 }
 
@@ -72,7 +77,6 @@ int32_t timerStart(uint16_t t) {
     if (!timeId) {
         timeId = SDL_AddTimer(t, th2, NULL);
     } else {
-        printf("main_timerStart ignore %d======================================\n", t);
         SDL_RemoveTimer(timeId);
         timeId = SDL_AddTimer(t, th2, NULL);
     }
@@ -84,8 +88,6 @@ int32_t timerStop() {
     if (timeId) {
         SDL_RemoveTimer(timeId);
         timeId = 0;
-    } else {
-        printf("main_timerStop ignore----------------------------------------------\n");
     }
     return MR_SUCCESS;
 }
@@ -206,13 +208,12 @@ int main(int argc, char *args[]) {
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
-    if (argc > 1) {
-        filename = args[1];
-        extName = args[2];
-    } else {
-        filename = "dsm_gm.mrp";
-        extName = "start.mr";
-    }
+    // filename = (argc > 1) ? args[1] : "dsm_gm.mrp";
+    // extName = (argc > 2) ? args[2] : "start.mr";
+
+    filename = (argc > 1) ? args[1] : "m0.mrp";
+    extName = (argc > 2) ? args[2] : "cfunction.ext";
+
     startMrp("vmrp.mrp");
 
     SDL_Event event;

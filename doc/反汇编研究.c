@@ -163,17 +163,16 @@ void mrc_vmTimerStop(void) {
 }
 
 void mrc_timerStartEx(int param_1) {
-    iVar1 = mr_table.mr_getTime();
-    *(int *)stopTime = iVar1 + param_1;
+    stopTime = mr_table.mr_getTime() + param_1;
     mrc_vmTimerStop();
     return mrc_vmTimerStart(param_1);
 }
 
 int mrc_timerLeft(void) {
-    if (*(int *)stopTime == 0) {
+    if (stopTime == 0) {
         return 0;
     }
-    return *(int *)stopTime - mr_table.mr_getTime();
+    return stopTime - mr_table.mr_getTime();
 }
 
 int32 mrc_timerStart(mrc_timerSt *t, int time, int data, int cb, int loop) {
