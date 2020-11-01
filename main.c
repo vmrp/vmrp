@@ -211,7 +211,7 @@ int main(int argc, char *args[]) {
     // filename = (argc > 1) ? args[1] : "dsm_gm.mrp";
     // extName = (argc > 2) ? args[2] : "start.mr";
 
-    filename = (argc > 1) ? args[1] : "m0.mrp";
+    filename = (argc > 1) ? args[1] : "winmine.mrp";
     extName = (argc > 2) ? args[2] : "cfunction.ext";
 
     startMrp("vmrp.mrp");

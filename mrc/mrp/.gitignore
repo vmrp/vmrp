@@ -1,0 +1,6 @@
+*.exe
+*.mrp
+*.o
+tmp/*.elf
+tmp/*.ext
+tmp/*.txt
