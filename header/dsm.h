@@ -6,11 +6,11 @@
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
 
-#define VMRP_VER 20201021
+#define VMRP_VER 20201104
 
 // 需要平台实现的函数
 typedef struct {
-    void (*panic)(char *msg);
+    void (*test)(void);
     void (*log)(char *msg);  // msg末尾不带\n
     void (*exit)(void);
     void (*srand)(uint32 seed);

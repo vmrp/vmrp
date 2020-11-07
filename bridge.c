@@ -485,13 +485,9 @@ static void br_timerStart(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(timerStart(t));
 }
 
-static void br_panic(BridgeMap *o, uc_engine *uc) {
-    // void (*panic)(char *msg);
+static void br_test(BridgeMap *o, uc_engine *uc) {
+    // void (*test)(void);
     LOG("ext call %s()\n", o->name);
-    uint32_t msg;
-    uc_reg_read(uc, UC_ARM_REG_R0, &msg);
-    puts(getMrpMemPtr(msg));
-    exit(1);
 }
 
 static void br_exit(BridgeMap *o, uc_engine *uc) {
@@ -741,7 +737,7 @@ static BridgeMap mr_c_function_funcMap[] = {
 
 #define DSM_REQUIRE_FUNCS_SIZE 0x6c
 static BridgeMap dsm_require_funcs_funcMap[] = {
-    BRIDGE_FUNC_MAP_FULL(0x0, 0x4, MAP_FUNC, panic, NULL, br_panic, 0),  // 0x28025C
+    BRIDGE_FUNC_MAP_FULL(0x0, 0x4, MAP_FUNC, test, NULL, br_test, 0),  // 0x28025C
     BRIDGE_FUNC_MAP_FULL(0x4, 0x4, MAP_FUNC, log, NULL, br_log, 0),
     BRIDGE_FUNC_MAP_FULL(0x8, 0x4, MAP_FUNC, exit, NULL, br_exit, 0),
     BRIDGE_FUNC_MAP_FULL(0xc, 0x4, MAP_FUNC, srand, NULL, br_srand, 0),

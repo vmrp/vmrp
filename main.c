@@ -64,10 +64,10 @@ uint32_t th2(uint32_t interval, void *param) {
 
     int64_t now = get_time_ms();
     printf("th2 %I64d, %I64d\n", now, now - ttt);
-    dumpREG(uc);
+    // dumpREG(uc);
     int32_t ret = bridge_dsm_mr_timer(uc);
     printf("ret:%d\n", ret);
-    dumpREG(uc);
+    // dumpREG(uc);
     return 0;
 }
 
