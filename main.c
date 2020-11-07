@@ -56,24 +56,15 @@ static void eventFuncV2(int code, int p1, int p2) {
         bridge_dsm_mr_event(uc, code, p1, p2);
     }
 }
-static int64_t ttt;
 
 uint32_t th2(uint32_t interval, void *param) {
     SDL_RemoveTimer(timeId);
     timeId = 0;
-
-    int64_t now = get_time_ms();
-    printf("th2 %I64d, %I64d\n", now, now - ttt);
-    // dumpREG(uc);
-    int32_t ret = bridge_dsm_mr_timer(uc);
-    printf("ret:%d\n", ret);
-    // dumpREG(uc);
+    bridge_dsm_mr_timer(uc);
     return 0;
 }
 
 int32_t timerStart(uint16_t t) {
-    ttt = get_time_ms();
-    printf("main_timerStart %d, %I64d\n", t, ttt);
     if (!timeId) {
         timeId = SDL_AddTimer(t, th2, NULL);
     } else {
@@ -84,7 +75,6 @@ int32_t timerStart(uint16_t t) {
 }
 
 int32_t timerStop() {
-    printf("main_timerStop\n");
     if (timeId) {
         SDL_RemoveTimer(timeId);
         timeId = 0;
@@ -127,39 +117,50 @@ static int startMrp(char *filename) {
 }
 
 static void keyEvent(int16 type, SDL_Keycode code) {
+    if (code >= SDLK_0 && code <= SDLK_9) {
+        int32_t key = MR_KEY_0 + (code - SDLK_0);
+        eventFunc(type, key, 0);  // 按键 0-9
+        return;
+    }
     switch (code) {
-        case SDLK_RETURN:
-            eventFunc(type, MR_KEY_SELECT, 0);
+        case SDLK_RETURN:                       // 回车键
+            eventFunc(type, MR_KEY_SELECT, 0);  // 确认/选择/ok
+            break;
+        case SDLK_EQUALS:                      // 等号
+            eventFunc(type, MR_KEY_POUND, 0);  // 按键 #
+            break;
+        case SDLK_MINUS:                      // 减号
+            eventFunc(type, MR_KEY_STAR, 0);  // 按键 *
             break;
         case SDLK_w:
-        case SDLK_UP:
+        case SDLK_UP:  // 上
             eventFunc(type, MR_KEY_UP, 0);
             break;
         case SDLK_s:
-        case SDLK_DOWN:
+        case SDLK_DOWN:  // 下
             eventFunc(type, MR_KEY_DOWN, 0);
             break;
         case SDLK_a:
-        case SDLK_LEFT:
+        case SDLK_LEFT:  // 左
             eventFunc(type, MR_KEY_LEFT, 0);
             break;
         case SDLK_d:
-        case SDLK_RIGHT:
+        case SDLK_RIGHT:  // 右
             eventFunc(type, MR_KEY_RIGHT, 0);
             break;
         case SDLK_q:
-        case SDLK_LEFTBRACKET:
-            eventFunc(type, MR_KEY_SOFTLEFT, 0);
+        case SDLK_LEFTBRACKET:                    // 左中括号
+            eventFunc(type, MR_KEY_SOFTLEFT, 0);  // 左功能键
             break;
         case SDLK_e:
-        case SDLK_RIGHTBRACKET:
-            eventFunc(type, MR_KEY_SOFTRIGHT, 0);
+        case SDLK_RIGHTBRACKET:                    // 右中括号
+            eventFunc(type, MR_KEY_SOFTRIGHT, 0);  // 右功能键
             break;
-        case SDLK_HOME:
-            runnn();
+        case SDLK_TAB:
+            eventFunc(type, MR_KEY_SEND, 0);  // 接听键
             break;
-        case SDLK_t:
-            bridge_dsm_mr_timer(uc);
+        case SDLK_ESCAPE:
+            eventFunc(type, MR_KEY_POWER, 0);  // 挂机键
             break;
         default:
             printf("key:%d\n", code);
@@ -208,11 +209,13 @@ int main(int argc, char *args[]) {
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
-    // filename = (argc > 1) ? args[1] : "dsm_gm.mrp";
-    // extName = (argc > 2) ? args[2] : "start.mr";
-
+#if 1
+    filename = (argc > 1) ? args[1] : "dsm_gm.mrp";
+    extName = (argc > 2) ? args[2] : "start.mr";
+#else
     filename = (argc > 1) ? args[1] : "winmine.mrp";
     extName = (argc > 2) ? args[2] : "cfunction.ext";
+#endif
 
     startMrp("vmrp.mrp");
 
