@@ -4,3 +4,4 @@ UseTab: Never
 IndentWidth: 4
 AllowShortFunctionsOnASingleLine: None
 ColumnLimit: 0
+SortIncludes: false

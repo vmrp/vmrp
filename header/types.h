@@ -105,4 +105,7 @@ typedef struct {
     uint8 second;  //秒
 } mr_datetime;
 
+typedef int32 (*MR_INIT_NETWORK_CB)(int32 result);
+typedef int32 (*MR_GET_HOST_CB)(int32 ip);
+
 #endif

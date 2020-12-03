@@ -13,6 +13,7 @@
 #include "./header/memory.h"
 #include "./header/tsf_font.h"
 #include "./header/vmrp.h"
+#include "./header/network.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////
 #ifdef LOG
@@ -575,6 +576,75 @@ static void br_getDatetime(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(getDatetime(getMrpMemPtr(datetime)));
 }
 
+static void br_mr_initNetwork(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_initNetwork)(MR_INIT_NETWORK_CB cb, const char *mode);
+    LOG("ext call %s()\n", o->name);
+    SET_RET_V(my_initNetwork(NULL, NULL));
+}
+
+static void br_mr_socket(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_socket)(int32 type, int32 protocol);
+    LOG("ext call %s()\n", o->name);
+    int32_t type, protocol;
+    uc_reg_read(uc, UC_ARM_REG_R0, &type);
+    uc_reg_read(uc, UC_ARM_REG_R1, &protocol);
+    SET_RET_V(my_socket(type, protocol));
+}
+
+static void br_mr_connect(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_connect)(int32 s, int32 ip, uint16 port, int32 type);
+    LOG("ext call %s()\n", o->name);
+    int32_t s, ip, port, type;
+    uc_reg_read(uc, UC_ARM_REG_R0, &s);
+    uc_reg_read(uc, UC_ARM_REG_R1, &ip);
+    uc_reg_read(uc, UC_ARM_REG_R2, &port);
+    uc_reg_read(uc, UC_ARM_REG_R3, &type);
+    SET_RET_V(my_connect(s, ip, (uint16)port, type));
+}
+
+static void br_mr_closeSocket(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_closeSocket)(int32 s);
+    LOG("ext call %s()\n", o->name);
+    int32_t s;
+    uc_reg_read(uc, UC_ARM_REG_R0, &s);
+    SET_RET_V(my_closeSocket(s));
+}
+
+static void br_mr_closeNetwork(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_closeNetwork)();
+    LOG("ext call %s()\n", o->name);
+    SET_RET_V(my_closeNetwork());
+}
+
+static void br_mr_getHostByName(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_getHostByName)(const char *ptr, MR_GET_HOST_CB cb);
+    LOG("ext call %s()\n", o->name);
+    uint32_t name, cb;
+    uc_reg_read(uc, UC_ARM_REG_R0, &name);
+    uc_reg_read(uc, UC_ARM_REG_R1, &cb);
+    SET_RET_V(my_getHostByName(getMrpMemPtr(name), NULL));
+}
+
+static void br_mr_send(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_send)(int32 s, const char *buf, int len);
+    LOG("ext call %s()\n", o->name);
+    int32_t s, buf, len;
+    uc_reg_read(uc, UC_ARM_REG_R0, &s);
+    uc_reg_read(uc, UC_ARM_REG_R1, &buf);
+    uc_reg_read(uc, UC_ARM_REG_R2, &len);
+    SET_RET_V(my_send(s, getMrpMemPtr(buf), len));
+}
+
+static void br_mr_recv(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_recv)(int32 s, char *buf, int len);
+    LOG("ext call %s()\n", o->name);
+    int32_t s, buf, len;
+    uc_reg_read(uc, UC_ARM_REG_R0, &s);
+    uc_reg_read(uc, UC_ARM_REG_R1, &buf);
+    uc_reg_read(uc, UC_ARM_REG_R2, &len);
+    SET_RET_V(my_recv(s, getMrpMemPtr(buf), len));
+}
+
 // 偏移量由./mrc/[x]_offsets.c直接从mrp中导出
 #define MR_TABLE_SIZE 0x248
 static BridgeMap mr_table_funcMap[] = {
@@ -764,6 +834,18 @@ static BridgeMap dsm_require_funcs_funcMap[] = {
     BRIDGE_FUNC_MAP_FULL(0x60, 0x4, MAP_FUNC, closedir, NULL, br_closedir, 0),
     BRIDGE_FUNC_MAP_FULL(0x64, 0x4, MAP_FUNC, getLen, NULL, br_mr_getLen, 0),
     BRIDGE_FUNC_MAP_FULL(0x68, 0x4, MAP_FUNC, drawBitmap, NULL, br_mr_drawBitmap, 0),
+    BRIDGE_FUNC_MAP_FULL(0x6c, 0x4, MAP_FUNC, mr_initNetwork, NULL, br_mr_initNetwork, 0),
+    BRIDGE_FUNC_MAP_FULL(0x70, 0x4, MAP_FUNC, mr_closeNetwork, NULL, br_mr_closeNetwork, 0),
+    BRIDGE_FUNC_MAP_FULL(0x74, 0x4, MAP_FUNC, mr_getHostByName, NULL, br_mr_getHostByName, 0),
+    BRIDGE_FUNC_MAP_FULL(0x78, 0x4, MAP_FUNC, mr_socket, NULL, br_mr_socket, 0),
+    BRIDGE_FUNC_MAP_FULL(0x7c, 0x4, MAP_FUNC, mr_connect, NULL, br_mr_connect, 0),
+    BRIDGE_FUNC_MAP_FULL(0x80, 0x4, MAP_FUNC, mr_getSocketState, NULL, NULL, 0),
+    BRIDGE_FUNC_MAP_FULL(0x84, 0x4, MAP_FUNC, mr_closeSocket, NULL, br_mr_closeSocket, 0),
+    BRIDGE_FUNC_MAP_FULL(0x88, 0x4, MAP_FUNC, mr_recv, NULL, br_mr_recv, 0),
+    BRIDGE_FUNC_MAP_FULL(0x8c, 0x4, MAP_FUNC, mr_send, NULL, br_mr_send, 0),
+    BRIDGE_FUNC_MAP_FULL(0x90, 0x4, MAP_FUNC, mr_recvfrom, NULL, NULL, 0),
+    BRIDGE_FUNC_MAP_FULL(0x94, 0x4, MAP_FUNC, mr_sendto, NULL, NULL, 0),
+    // BRIDGE_FUNC_MAP_FULL(0x98, 0x4, MAP_FUNC, drawBitmap, NULL, NULL, 0),
 };
 //////////////////////////////////////////////////////////////////////////////////////////
 

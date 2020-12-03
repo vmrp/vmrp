@@ -7,7 +7,7 @@ else
 	CFLAGS := -g -Wall
 endif
 
-OBJS = fileLib.o font16_st.o gb2unicode.o vmrp.o tsf_font.o utils.o debug.o \
+OBJS = network.o fileLib.o font16_st.o gb2unicode.o vmrp.o tsf_font.o utils.o debug.o \
 	rbtree.o bridge.o memory.o baseLib_cfunction.ext.o main.o
 
 UNICORN = -lunicorn
@@ -23,16 +23,13 @@ SDL2 = ./windows/SDL2-2.0.10/i686-w64-mingw32
 # gcc  -o main.exe main.c -lmingw32 -Wl,-subsystem,windows -L./lib -lSDL2main -lSDL2
 main: $(OBJS)
 	$(CC) $(CFLAGS) -m32  -o ./bin/$@ $^ $(UNICORN) $(CAPSTONE) -lpthread -lm -lz \
-		-lmingw32  -L$(SDL2)/lib/ -lSDL2main -lSDL2
+		-lws2_32 -lmingw32  -L$(SDL2)/lib/ -lSDL2main -lSDL2
 
 ifeq (,$(wildcard ./bin/capstone.dll))
 	cp $(CAPSTONE) ./bin/
 	cp $(SDL2)/bin/SDL2.dll ./bin/
 	cp ./windows/unicorn-1.0.2-win32/unicorn.dll ./bin/
 endif
-
-lib: $(OBJS)
-	$(AR) crv ./libvmrp.a $^
 
 %.o:%.c
 	$(CC) $(CFLAGS) -m32 -c $^

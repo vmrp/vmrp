@@ -6,7 +6,7 @@
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
 
-#define VMRP_VER 20201104
+#define VMRP_VER 20201203
 
 // 需要平台实现的函数
 typedef struct {
@@ -37,7 +37,17 @@ typedef struct {
     int32 (*closedir)(int32 f);
     int32 (*getLen)(const char *filename);
     void (*drawBitmap)(uint16 *bmp, int16 x, int16 y, uint16 w, uint16 h);
-
+    int32 (*mr_initNetwork)(MR_INIT_NETWORK_CB cb, const char *mode);
+    int32 (*mr_closeNetwork)();
+    int32 (*mr_getHostByName)(const char *ptr, MR_GET_HOST_CB cb);
+    int32 (*mr_socket)(int32 type, int32 protocol);
+    int32 (*mr_connect)(int32 s, int32 ip, uint16 port, int32 type);
+    int32 (*mr_getSocketState)(int32 s);
+    int32 (*mr_closeSocket)(int32 s);
+    int32 (*mr_recv)(int32 s, char *buf, int len);
+    int32 (*mr_send)(int32 s, const char *buf, int len);
+    int32 (*mr_recvfrom)(int32 s, char *buf, int len, int32 *ip, uint16 *port);
+    int32 (*mr_sendto)(int32 s, const char *buf, int len, int32 ip, uint16 port);
 } DSM_REQUIRE_FUNCS;
 
 // 平台可以调用的函数
