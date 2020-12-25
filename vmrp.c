@@ -121,9 +121,9 @@ uc_engine *initVmrp(char *filename) {
     uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
     // uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE);
 #else
-    uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE);
+    uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE, 0);
 #endif
-    uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0);
+    uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0, 0);
 
     // 设置栈
     uint32_t value = STACK_ADDRESS + STACK_SIZE;  // 满递减

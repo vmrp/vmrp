@@ -15,9 +15,18 @@
 // #else
 #include "../windows/unicorn-1.0.2-win32/include/unicorn/unicorn.h"
 // #endif
-#else
-#include <unicorn/unicorn.h>
 #endif
+
+#ifndef EM_PORT_API
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#define EM_PORT_API(rettype) rettype EMSCRIPTEN_KEEPALIVE
+#include "../wasm/unicorn/unicorn.h"
+#else
+#define EM_PORT_API(rettype) rettype
+#endif
+#endif
+
 
 #ifndef NULL
 #include <stddef.h>
@@ -64,7 +73,6 @@ typedef struct uIntMap {
 uIntMap *uIntMap_search(struct rb_root *root, uint32_t key);
 int uIntMap_insert(struct rb_root *root, uIntMap *obj);
 uIntMap *uIntMap_delete(struct rb_root *root, uint32_t key);
-char *getStrFromUc(uc_engine *uc, uint32_t addr);
 
 size_t copyToMrp(char *str);
 void printScreen(char *filename, uint16_t *buf);

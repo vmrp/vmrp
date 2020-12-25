@@ -168,6 +168,51 @@ static void keyEvent(int16 type, SDL_Keycode code) {
             break;
     }
 }
+void loop() {
+    SDL_Event event;
+    bool isLoop = true;
+    bool isDown = false;
+
+#if defined(__EMSCRIPTEN__)
+#else
+    while (isLoop)
+#endif
+    {
+#if defined(__EMSCRIPTEN__)
+        while (SDL_PollEvent(&event))
+#else
+        while (SDL_WaitEvent(&event))
+#endif
+        {
+            if (event.type == SDL_QUIT) {
+                isLoop = false;
+                // emscripten_cancel_main_loop();
+                break;
+            }
+            switch (event.type) {
+                case SDL_KEYDOWN:
+                    keyEvent(MR_KEY_PRESS, event.key.keysym.sym);
+                    break;
+                case SDL_KEYUP:
+                    keyEvent(MR_KEY_RELEASE, event.key.keysym.sym);
+                    break;
+                case SDL_MOUSEMOTION:
+                    if (isDown) {
+                        eventFunc(MR_MOUSE_MOVE, event.motion.x, event.motion.y);
+                    }
+                    break;
+                case SDL_MOUSEBUTTONDOWN:
+                    isDown = true;
+                    eventFunc(MR_MOUSE_DOWN, event.motion.x, event.motion.y);
+                    break;
+                case SDL_MOUSEBUTTONUP:
+                    isDown = false;
+                    eventFunc(MR_MOUSE_UP, event.motion.x, event.motion.y);
+                    break;
+            }
+        }
+    }
+}
 
 int main(int argc, char *args[]) {
 #ifdef __x86_64__
@@ -201,9 +246,6 @@ int main(int argc, char *args[]) {
         return -1;
     }
 
-    // SDL_Surface *screenSurface = SDL_GetWindowSurface(window);
-    // SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0, 0, 0));
-    // SDL_UpdateWindowSurface(window);
 
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(renderer);
@@ -219,37 +261,10 @@ int main(int argc, char *args[]) {
 
     startMrp("vmrp.mrp");
 
-    SDL_Event event;
-    bool isLoop = true;
-    bool isDown = false;
-    while (isLoop) {
-        while (SDL_WaitEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                isLoop = false;
-                break;
-            }
-            switch (event.type) {
-                case SDL_KEYDOWN:
-                    keyEvent(MR_KEY_PRESS, event.key.keysym.sym);
-                    break;
-                case SDL_KEYUP:
-                    keyEvent(MR_KEY_RELEASE, event.key.keysym.sym);
-                    break;
-                case SDL_MOUSEMOTION:
-                    if (isDown) {
-                        eventFunc(MR_MOUSE_MOVE, event.motion.x, event.motion.y);
-                    }
-                    break;
-                case SDL_MOUSEBUTTONDOWN:
-                    isDown = true;
-                    eventFunc(MR_MOUSE_DOWN, event.motion.x, event.motion.y);
-                    break;
-                case SDL_MOUSEBUTTONUP:
-                    isDown = false;
-                    eventFunc(MR_MOUSE_UP, event.motion.x, event.motion.y);
-                    break;
-            }
-        }
-    }
+#if defined(__EMSCRIPTEN__)
+    emscripten_set_main_loop(loop, 0, 1);
+#else
+    loop();
+#endif
     return 0;
 }

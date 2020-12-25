@@ -286,97 +286,58 @@ static void br_mr_seek(BridgeMap *o, uc_engine *uc) {
 
 static void br_mr_getLen(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T_mr_getLen)(const char* filename);
-    uint32_t filename, ret;
-
+    uint32_t filename;
     uc_reg_read(uc, UC_ARM_REG_R0, &filename);
-    char *filenameStr = getStrFromUc(uc, filename);
-
+    char *filenameStr = getMrpMemPtr(filename);
     LOG("ext call %s(%s)\n", o->name, filenameStr);
-
-    ret = my_getLen(filenameStr);
-    free(filenameStr);
-
-    SET_RET_V(ret);
+    SET_RET_V(my_getLen(filenameStr));
 }
 
 static void br_mr_remove(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T_mr_remove)(const char* filename);
-    uint32_t filename, ret;
-
+    uint32_t filename;
     uc_reg_read(uc, UC_ARM_REG_R0, &filename);
-    char *filenameStr = getStrFromUc(uc, filename);
-
+    char *filenameStr = getMrpMemPtr(filename);
     LOG("ext call %s(%s)\n", o->name, filenameStr);
-
-    ret = my_remove(filenameStr);
-    free(filenameStr);
-
-    SET_RET_V(ret);
+    SET_RET_V(my_remove(filenameStr));
 }
 
 static void br_mr_rename(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T_mr_rename)(const char* oldname, const char* newname);
-    uint32_t oldname, newname, ret;
-
+    uint32_t oldname, newname;
     uc_reg_read(uc, UC_ARM_REG_R0, &oldname);
     uc_reg_read(uc, UC_ARM_REG_R1, &newname);
-    char *oldnameStr = getStrFromUc(uc, oldname);
-    char *newnameStr = getStrFromUc(uc, newname);
-
+    char *oldnameStr = getMrpMemPtr(oldname);
+    char *newnameStr = getMrpMemPtr(newname);
     LOG("ext call %s(%s, %s)\n", o->name, oldnameStr, newnameStr);
-
-    ret = my_rename(oldnameStr, newnameStr);
-    free(oldnameStr);
-    free(newnameStr);
-
-    SET_RET_V(ret);
+    SET_RET_V(my_rename(oldnameStr, newnameStr));
 }
 
 static void br_mr_mkDir(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T_mr_mkDir)(const char* name);
-    uint32_t name, ret;
-
+    uint32_t name;
     uc_reg_read(uc, UC_ARM_REG_R0, &name);
-    char *nameStr = getStrFromUc(uc, name);
-
+    char *nameStr = getMrpMemPtr(name);
     LOG("ext call %s(%s)\n", o->name, nameStr);
-
-    ret = my_mkDir(nameStr);
-    free(nameStr);
-
-    SET_RET_V(ret);
+    SET_RET_V(my_mkDir(nameStr));
 }
 
 static void br_mr_rmDir(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T_mr_rmDir)(const char* name);
-    uint32_t name, ret;
-
+    uint32_t name;
     uc_reg_read(uc, UC_ARM_REG_R0, &name);
-    char *nameStr = getStrFromUc(uc, name);
-
+    char *nameStr = getMrpMemPtr(name);
     LOG("ext call %s(%s)\n", o->name, nameStr);
-
-    ret = my_rmDir(nameStr);
-    free(nameStr);
-
-    SET_RET_V(ret);
+    SET_RET_V(my_rmDir(nameStr));
 }
 
 static void br_atoi(BridgeMap *o, uc_engine *uc) {
     // typedef int (*T_atoi)(const char * nptr);
     uint32_t nptr;
-
     uc_reg_read(uc, UC_ARM_REG_R0, &nptr);
-
-    char *str = getStrFromUc(uc, nptr);
+    char *str = getMrpMemPtr(nptr);
     LOG("ext call %s(0x%X[%s])\n", o->name, nptr, str);
-
-    int32_t ret = atoi(str);
-    free(str);
-
-    LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
-
-    SET_RET_V(ret);
+    SET_RET_V(atoi(str));
 }
 
 static void br_mr_exit(BridgeMap *o, uc_engine *uc) {

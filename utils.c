@@ -149,20 +149,6 @@ void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb)
     }
 }
 
-#define BUF_LEN (1024 * 4)
-char *getStrFromUc(uc_engine *uc, uint32_t addr) {
-    char *buf = malloc(BUF_LEN);
-    uint8_t v;
-    uint8_t i = 0;
-    do {
-        uc_mem_read(uc, addr, &v, 1);
-        buf[i] = v;
-        addr++;
-        i++;
-    } while (v && i < BUF_LEN - 1);
-    buf[i] = '\0';
-    return buf;
-}
 
 size_t copyToMrp(char *str) {
     size_t len = strlen(str);

@@ -1,5 +1,6 @@
 #include "./header/fileLib.h"
 
+#include <string.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <malloc.h>

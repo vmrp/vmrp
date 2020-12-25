@@ -1,8 +1,13 @@
 
 #include <stdio.h>
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+
+// #define NETWORK
+#endif
 
 #include "./header/types.h"
 
@@ -27,6 +32,7 @@ enum {
    MR_WAITING 使用异步方式进行连接，应用需要轮询该socket的状态以获知连接状况 
 */
 int32 my_connect(int32 s, int32 ip, uint16 port, int32 type) {
+#ifdef NETWORK
     struct sockaddr_in clientService;
     clientService.sin_family = AF_INET;
     clientService.sin_addr.s_addr = ip;  //inet_addr("127.0.0.1");
@@ -36,6 +42,9 @@ int32 my_connect(int32 s, int32 ip, uint16 port, int32 type) {
         return MR_FAILED;
     }
     return MR_SUCCESS;
+#else
+    return MR_FAILED;
+#endif
 }
 
 /*
@@ -43,6 +52,7 @@ int32 my_connect(int32 s, int32 ip, uint16 port, int32 type) {
    MR_FAILED 失败 
 */
 int32 my_socket(int32 type, int32 protocol) {
+#ifdef NETWORK
     type = (type == MR_SOCK_STREAM) ? SOCK_STREAM : SOCK_DGRAM;
     protocol = (protocol == MR_IPPROTO_TCP) ? IPPROTO_TCP : IPPROTO_UDP;
     SOCKET sock = socket(AF_INET, type, protocol);
@@ -50,9 +60,13 @@ int32 my_socket(int32 type, int32 protocol) {
         return MR_FAILED;
     }
     return (int)sock;
+#else
+    return MR_FAILED;
+#endif
 }
 
 int32 my_closeSocket(int32 s) {
+#ifdef NETWORK
     if (shutdown((SOCKET)s, SD_BOTH) != 0) {
         return MR_FAILED;
     }
@@ -60,11 +74,18 @@ int32 my_closeSocket(int32 s) {
         return MR_FAILED;
     }
     return MR_SUCCESS;
+#else
+    return MR_FAILED;
+#endif
 }
 
 int32 my_closeNetwork(void) {
+#ifdef NETWORK
     WSACleanup();
     return MR_SUCCESS;
+#else
+    return MR_FAILED;
+#endif
 }
 
 /*  
@@ -73,6 +94,7 @@ int32 my_closeNetwork(void) {
    MR_WAITING 使用回调函数通知引擎初始化结果 
 */
 int32 my_initNetwork(MR_INIT_NETWORK_CB cb, const char *mode) {
+#ifdef NETWORK
     WSADATA wsaData;
     int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
@@ -85,6 +107,9 @@ int32 my_initNetwork(MR_INIT_NETWORK_CB cb, const char *mode) {
         return MR_FAILED;
     }
     return MR_SUCCESS;
+#else
+    return MR_FAILED;
+#endif
 }
 /*
    MR_FAILED （立即感知的）失败，不再调用cb
@@ -92,6 +117,7 @@ int32 my_initNetwork(MR_INIT_NETWORK_CB cb, const char *mode) {
    其他值 同步模式，立即返回的IP地址，不再调用cb 
 */
 int32 my_getHostByName(const char *name, MR_GET_HOST_CB cb) {
+#ifdef NETWORK
     struct hostent *remoteHost = gethostbyname(name);
     if (remoteHost != NULL) {
         if (remoteHost->h_addrtype == AF_INET) {
@@ -105,6 +131,9 @@ int32 my_getHostByName(const char *name, MR_GET_HOST_CB cb) {
         }
     }
     return MR_FAILED;
+#else
+    return MR_FAILED;
+#endif
 }
 
 /*
@@ -112,11 +141,15 @@ int32 my_getHostByName(const char *name, MR_GET_HOST_CB cb) {
    MR_FAILED Socket已经被关闭或遇到了无法修复的错误。 
 */
 int32 my_send(int32 s, const char *buf, int len) {
+#ifdef NETWORK
     int32 ret = send((SOCKET)s, buf, len, 0);
     if (ret == SOCKET_ERROR) {
         return MR_FAILED;
     }
     return ret;
+#else
+    return MR_FAILED;
+#endif
 }
 
 /*
@@ -124,14 +157,19 @@ int32 my_send(int32 s, const char *buf, int len) {
    MR_FAILED Socket已经被关闭或遇到了无法修复的错误。 
 */
 int32 my_recv(int32 s, char *buf, int len) {
+#ifdef NETWORK
     int32 ret = recv((SOCKET)s, buf, len, 0);
     if (ret == SOCKET_ERROR) {
         return MR_FAILED;
     }
     return ret;
+#else
+    return MR_FAILED;
+#endif
 }
 
 int test() {
+#ifdef NETWORK
     my_initNetwork(NULL, "cmnet");
 
     // gcc -Wall a.c -m32 -lws2_32 && ./a.exe
@@ -162,5 +200,6 @@ int test() {
     } while (ret > 0);
 
     my_closeNetwork();
+#endif
     return 0;
 }

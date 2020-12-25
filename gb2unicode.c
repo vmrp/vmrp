@@ -1280,7 +1280,7 @@ static const unsigned char gb2uTable[] = {
 
 //编码转换，从GB2312转成unicode
 const unsigned char *GBCodeToUnicode(unsigned char *gbCode) {
-    int i;
+    int i=0;
 
     if ((*(gbCode + 1) >= 0xa1) && (*(gbCode + 1) <= 0xfe)) {
         if ((*gbCode >= 0xa1) && (*gbCode <= 0xa9)) {

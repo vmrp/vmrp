@@ -1,10 +1,9 @@
 CC := gcc
-AR := ar
 
 ifeq ($(DEBUG),1)
 	CFLAGS := -g -Wall -DDEBUG
 else
-	CFLAGS := -g -Wall
+	CFLAGS := -Wall
 endif
 
 OBJS = network.o fileLib.o font16_st.o gb2unicode.o vmrp.o tsf_font.o utils.o debug.o \
