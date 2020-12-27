@@ -40,9 +40,8 @@ uc_engine *initVmrp(char *filename);
 int freeVmrp();
 
 // 需要外部实现的接口
-extern void guiSetPixel(int32_t x, int32_t y, uint16_t color);
-extern void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h);
+extern void guiDrawBitmap(uint16_t *bmp, int32_t x, int32_t y, int32_t w, int32_t h);
 extern int32_t timerStart(uint16_t t);
-int32_t timerStop();
+extern int32_t timerStop();
 
 #endif

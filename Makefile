@@ -28,6 +28,7 @@ ifeq (,$(wildcard ./bin/capstone.dll))
 	cp $(CAPSTONE) ./bin/
 	cp $(SDL2)/bin/SDL2.dll ./bin/
 	cp ./windows/unicorn-1.0.2-win32/unicorn.dll ./bin/
+	cp ./windows/unicorn-1.0.2-win32/libwinpthread-1.dll ./bin/
 endif
 
 %.o:%.c

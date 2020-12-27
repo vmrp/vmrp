@@ -207,19 +207,7 @@ static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
     uc_mem_read(uc, sp, &h, 4);
 
     LOG("ext call %s(0x%X, %d, %d, %u, %u)\n", o->name, bmp, x, y, w, h);
-
-    for (uint32_t i = 0; i < w; i++) {
-        for (uint32_t j = 0; j < h; j++) {
-            int32_t xx = x + i;
-            int32_t yy = y + j;
-            if (xx < 0 || yy < 0 || xx >= SCREEN_WIDTH || yy >= SCREEN_HEIGHT) {
-                continue;
-            }
-            uint16_t color = *(uint16_t *)getMrpMemPtr(bmp + (xx + yy * SCREEN_WIDTH) * 2);
-            guiSetPixel(xx, yy, color);
-        }
-    }
-    guiRefreshScreen(x, y, w, h);
+    guiDrawBitmap(getMrpMemPtr(bmp), x, y, w, h);
 }
 
 static void br_mr_open(BridgeMap *o, uc_engine *uc) {

@@ -26,23 +26,30 @@
 static char *filename;
 static char *extName;
 static SDL_TimerID timeId = 0;
-static SDL_Renderer *renderer;
+static SDL_Window *window;
 static uc_engine *uc;
 static void (*eventFunc)(int code, int p1, int p2);
 
-void guiSetPixel(int32_t x, int32_t y, uint16_t color) {
-    SDL_SetRenderDrawColor(renderer, PIXEL565R(color), PIXEL565G(color), PIXEL565B(color), 0xFF);
-    SDL_RenderDrawPoint(renderer, x, y);
-}
-
-void guiRefreshScreen(int32_t x, int32_t y, uint32_t w, uint32_t h) {
-    SDL_RenderPresent(renderer);
-}
-
-static void runnn() {
-    uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
-    printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
-    SDL_RenderPresent(renderer);
+void guiDrawBitmap(uint16_t *bmp, int32_t x, int32_t y, int32_t w, int32_t h) {
+    SDL_Surface *surface = SDL_GetWindowSurface(window);
+    if (SDL_MUSTLOCK(surface)) {
+        if (SDL_LockSurface(surface) != 0) printf("SDL_LockSurface err\n");
+    }
+    for (int32_t j = 0; j < h; j++) {
+        for (int32_t i = 0; i < w; i++) {
+            int32_t xx = x + i;
+            int32_t yy = y + j;
+            if (xx < 0 || yy < 0 || xx >= SCREEN_WIDTH || yy >= SCREEN_HEIGHT) {
+                continue;
+            }
+            uint16_t color = *(bmp + (xx + yy * SCREEN_WIDTH));
+            Uint32 *p = (Uint32 *)(((Uint8 *)surface->pixels) + surface->pitch * yy) + xx;
+            *p = SDL_MapRGB(surface->format, PIXEL565R(color), PIXEL565G(color), PIXEL565B(color));
+        }
+    }
+    if (SDL_MUSTLOCK(surface)) SDL_UnlockSurface(surface);
+    if (SDL_UpdateWindowSurface(window) != 0)
+        printf("SDL_UpdateWindowSurface err\n");
 }
 
 static void eventFuncV1(int code, int p1, int p2) {
@@ -82,11 +89,11 @@ int32_t timerStop() {
     return MR_SUCCESS;
 }
 
-static int startMrp(char *filename) {
+static int startMrp(char *f) {
     fileLib_init();
     eventFunc = eventFuncV1;
 
-    uc = initVmrp(filename);
+    uc = initVmrp(f);
     if (uc == NULL) {
         printf("initVmrp() fail.\n");
         return 1;
@@ -100,7 +107,8 @@ static int startMrp(char *filename) {
             eventFunc = eventFuncV2;
             printf("bridge_dsm_init success\n");
             dumpREG(uc);
-            runnn();
+            uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
+            printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
         }
     }
 
@@ -112,7 +120,6 @@ static int startMrp(char *filename) {
 
     // freeVmrp(uc);
     // printf("exit.\n");
-    SDL_RenderPresent(renderer);
     return 0;
 }
 
@@ -164,14 +171,16 @@ static void keyEvent(int16 type, SDL_Keycode code) {
             break;
         default:
             printf("key:%d\n", code);
-            SDL_RenderPresent(renderer);
             break;
     }
 }
+
+bool isMouseDown = false;
+SDL_Keycode isKeyDown = SDLK_UNKNOWN;
+
 void loop() {
     SDL_Event event;
     bool isLoop = true;
-    bool isDown = false;
 
 #if defined(__EMSCRIPTEN__)
 #else
@@ -191,22 +200,28 @@ void loop() {
             }
             switch (event.type) {
                 case SDL_KEYDOWN:
-                    keyEvent(MR_KEY_PRESS, event.key.keysym.sym);
+                    if (isKeyDown == SDLK_UNKNOWN) {
+                        isKeyDown = event.key.keysym.sym;
+                        keyEvent(MR_KEY_PRESS, event.key.keysym.sym);
+                    }
                     break;
                 case SDL_KEYUP:
-                    keyEvent(MR_KEY_RELEASE, event.key.keysym.sym);
+                    if (isKeyDown == event.key.keysym.sym) {
+                        isKeyDown = SDLK_UNKNOWN;
+                        keyEvent(MR_KEY_RELEASE, event.key.keysym.sym);
+                    }
                     break;
                 case SDL_MOUSEMOTION:
-                    if (isDown) {
+                    if (isMouseDown) {
                         eventFunc(MR_MOUSE_MOVE, event.motion.x, event.motion.y);
                     }
                     break;
                 case SDL_MOUSEBUTTONDOWN:
-                    isDown = true;
+                    isMouseDown = true;
                     eventFunc(MR_MOUSE_DOWN, event.motion.x, event.motion.y);
                     break;
                 case SDL_MOUSEBUTTONUP:
-                    isDown = false;
+                    isMouseDown = false;
                     eventFunc(MR_MOUSE_UP, event.motion.x, event.motion.y);
                     break;
             }
@@ -234,22 +249,11 @@ int main(int argc, char *args[]) {
         return -1;
     }
 
-    SDL_Window *window = SDL_CreateWindow("vmrp", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("vmrp", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     if (window == NULL) {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return -1;
     }
-    // renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);  // windows xp
-    if (renderer == NULL) {
-        printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
-        return -1;
-    }
-
-
-    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
 
 #if 1
     filename = (argc > 1) ? args[1] : "dsm_gm.mrp";
