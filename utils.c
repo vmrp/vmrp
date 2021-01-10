@@ -142,21 +142,35 @@ void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb)
 
     // Note we start at ADDRESS | 1 to indicate THUMB mode.
     startAddr = isThumb ? (startAddr | 1) : startAddr;
-    uc_err err = uc_emu_start(uc, startAddr, stopAddr, 0, 0); // todo 似乎并不会在pc==stopAddr时立即停止
+    uc_err err = uc_emu_start(uc, startAddr, stopAddr, 0, 0);  // 似乎unicorn 1.0.2之前并不会在pc==stopAddr时立即停止
     if (err) {
         printf("Failed on uc_emu_start() with error returned: %u (%s)\n", err, uc_strerror(err));
         exit(1);
     }
 }
 
+int wstrlen(char *txt) {
+    int i = 0;
+    if (txt) {
+        while (txt[i] || txt[i + 1]) i += 2;
+    }
+    return i;
+}
 
-size_t copyToMrp(char *str) {
-    size_t len = strlen(str);
-    size_t ret = allocMem(len + 1);
-    char *ptr = getMrpMemPtr(ret);
-    strcpy(ptr, str);
-    *(ptr + len) = '\0';
-    return ret;
+uint32_t copyWstrToMrp(char *str) {
+    if (!str) return 0;
+    int len = wstrlen(str) + 2;
+    void *p = my_mallocExt(len);
+    memcpy(p, str, len);
+    return toMrpMemAddr(p);
+}
+
+uint32_t copyStrToMrp(char *str) {
+    if (!str) return 0;
+    uint32_t len = strlen(str) + 1;
+    void *p = my_mallocExt(len);
+    memcpy(p, str, len);
+    return toMrpMemAddr(p);
 }
 
 int64_t get_uptime_ms(void) {

@@ -12,12 +12,26 @@
 #include "./header/tsf_font.h"
 #include "./header/utils.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 uint16_t *screenBuf;
 uint8_t *mrpMem;  // 模拟器的全部内存
 
-// 返回的内存禁止free
+// 返回的内存不能free
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 void *getMrpMemPtr(uint32_t addr) {
     return mrpMem + (addr - START_ADDRESS);
+}
+
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
+uint32_t toMrpMemAddr(void *ptr) {
+    return ((uint8_t *)ptr - mrpMem) + START_ADDRESS;
 }
 
 #ifdef DEBUG

@@ -34,6 +34,7 @@
 extern uint16_t *screenBuf;  // 屏幕缓冲区地址
 
 void *getMrpMemPtr(uint32_t addr);
+uint32_t toMrpMemAddr(void *ptr);
 
 int vmrp_test();
 uc_engine *initVmrp(char *filename);

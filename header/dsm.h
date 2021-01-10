@@ -6,7 +6,7 @@
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
 
-#define VMRP_VER 20201203
+#define VMRP_VER 20210101
 
 // 需要平台实现的函数
 typedef struct {
@@ -48,6 +48,20 @@ typedef struct {
     int32 (*mr_send)(int32 s, const char *buf, int len);
     int32 (*mr_recvfrom)(int32 s, char *buf, int len, int32 *ip, uint16 *port);
     int32 (*mr_sendto)(int32 s, const char *buf, int len, int32 ip, uint16 port);
+    int32 (*mr_startShake)(int32 ms);
+    int32 (*mr_stopShake)();
+    int32 (*mr_playSound)(int type, const void *data, uint32 dataLen, int32 loop);
+    int32 (*mr_stopSound)(int type);
+    int32 (*mr_dialogCreate)(const char *title, const char *text, int32 type);
+    int32 (*mr_dialogRelease)(int32 dialog);
+    int32 (*mr_dialogRefresh)(int32 dialog, const char *title, const char *text, int32 type);
+    int32 (*mr_textCreate)(const char *title, const char *text, int32 type);
+    int32 (*mr_textRelease)(int32 text);
+    int32 (*mr_textRefresh)(int32 handle, const char *title, const char *text);
+    int32 (*mr_editCreate)(const char *title, const char *text, int32 type, int32 max_size);
+    int32 (*mr_editRelease)(int32 edit);
+    const char *(*mr_editGetText)(int32 edit);
+
 } DSM_REQUIRE_FUNCS;
 
 // 平台可以调用的函数

@@ -57,6 +57,7 @@
 #define PIXEL565G(v) ((((uint32_t)v >> 5) << 2) & 0xff)
 #define PIXEL565B(v) (((uint32_t)v << 3) & 0xff)
 
+int wstrlen(char* txt);
 void cpsrToStr(uint32_t v, char *out);
 char *memTypeStr(uc_mem_type type);
 void dumpREG(uc_engine *uc);
@@ -74,7 +75,8 @@ uIntMap *uIntMap_search(struct rb_root *root, uint32_t key);
 int uIntMap_insert(struct rb_root *root, uIntMap *obj);
 uIntMap *uIntMap_delete(struct rb_root *root, uint32_t key);
 
-size_t copyToMrp(char *str);
+uint32_t copyWstrToMrp(char *str);
+uint32_t copyStrToMrp(char *str);
 void printScreen(char *filename, uint16_t *buf);
 
 int64_t get_uptime_ms(void);

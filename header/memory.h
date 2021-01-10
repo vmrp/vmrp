@@ -11,10 +11,8 @@
 
 #include "utils.h"
 
-#define HEAP_ALIGNMENT 4
-
-bool freeMem(size_t addr);
-size_t allocMem(size_t num);
-void initMemoryManager(size_t baseAddress, size_t len);
+void *my_mallocExt(uint32 len);
+void my_freeExt(void *p);
+void initMemoryManager(uint32_t baseAddress, uint32_t len);
 
 #endif

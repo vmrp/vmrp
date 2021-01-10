@@ -16,6 +16,10 @@
 #include <SDL2/SDL.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #define MOUSE_DOWN 2
 #define MOUSE_UP 3
 #define MOUSE_MOVE 12
@@ -23,8 +27,6 @@
 // http://wiki.libsdl.org/Tutorials
 // http://lazyfoo.net/tutorials/SDL/index.php
 
-static char *filename;
-static char *extName;
 static SDL_TimerID timeId = 0;
 static SDL_Window *window;
 static uc_engine *uc;
@@ -63,6 +65,27 @@ static void eventFuncV2(int code, int p1, int p2) {
         bridge_dsm_mr_event(uc, code, p1, p2);
     }
 }
+
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+int32_t c_event(int code, int p1, int p2) {
+    if (uc) {
+        return bridge_dsm_mr_event(uc, code, p1, p2);
+    }
+    return MR_FAILED;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setEventEnable(int v) {
+    int state = v ? SDL_ENABLE : SDL_DISABLE;
+    SDL_EventState(SDL_TEXTINPUT, state);
+    SDL_EventState(SDL_KEYDOWN, state);
+    SDL_EventState(SDL_KEYUP, state);
+    SDL_EventState(SDL_MOUSEMOTION, state);
+    SDL_EventState(SDL_MOUSEBUTTONDOWN, state);
+    SDL_EventState(SDL_MOUSEBUTTONUP, state);
+}
+#endif
 
 uint32_t th2(uint32_t interval, void *param) {
     SDL_RemoveTimer(timeId);
@@ -107,6 +130,12 @@ static int startMrp(char *f) {
             eventFunc = eventFuncV2;
             printf("bridge_dsm_init success\n");
             dumpREG(uc);
+
+            char *filename = "dsm_gm.mrp";
+            // char *filename = "winmine.mrp";
+            char *extName = "start.mr";
+            // char *extName = "cfunction.ext";
+
             uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
             printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
         }
@@ -130,6 +159,37 @@ static void keyEvent(int16 type, SDL_Keycode code) {
         return;
     }
     switch (code) {
+        case SDLK_KP_0:
+            eventFunc(type, MR_KEY_0, 0);
+            break;
+        case SDLK_KP_1:
+            eventFunc(type, MR_KEY_1, 0);
+            break;
+        case SDLK_KP_2:
+            eventFunc(type, MR_KEY_2, 0);
+            break;
+        case SDLK_KP_3:
+            eventFunc(type, MR_KEY_3, 0);
+            break;
+        case SDLK_KP_4:
+            eventFunc(type, MR_KEY_4, 0);
+            break;
+        case SDLK_KP_5:
+            eventFunc(type, MR_KEY_5, 0);
+            break;
+        case SDLK_KP_6:
+            eventFunc(type, MR_KEY_6, 0);
+            break;
+        case SDLK_KP_7:
+            eventFunc(type, MR_KEY_7, 0);
+            break;
+        case SDLK_KP_8:
+            eventFunc(type, MR_KEY_8, 0);
+            break;
+        case SDLK_KP_9:
+            eventFunc(type, MR_KEY_9, 0);
+            break;
+        case SDLK_KP_ENTER:
         case SDLK_RETURN:                       // 回车键
             eventFunc(type, MR_KEY_SELECT, 0);  // 确认/选择/ok
             break;
@@ -254,14 +314,6 @@ int main(int argc, char *args[]) {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return -1;
     }
-
-#if 1
-    filename = (argc > 1) ? args[1] : "dsm_gm.mrp";
-    extName = (argc > 2) ? args[2] : "start.mr";
-#else
-    filename = (argc > 1) ? args[1] : "winmine.mrp";
-    extName = (argc > 2) ? args[2] : "cfunction.ext";
-#endif
 
     startMrp("vmrp.mrp");
 

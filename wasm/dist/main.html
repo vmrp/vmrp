@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vmrp</title>
+    <style>
+        body {
+            font-family: arial;
+            margin: 0;
+            padding: none;
+        }
+        
+        #main {
+            margin: auto;
+            width: 100%;
+            max-width: 640px;
+        }
+        
+        #main div:first-child {
+            text-align: center;
+        }
+        
+        #screen {
+            position: relative;
+        }
+        
+        #canvas {
+            /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+            position: relative;
+            display: block;
+            left: 50%;
+            margin-left: -120px;
+            width: 240px;
+            height: 320px;
+            border: 0px none;
+            padding: 0;
+            background-color: black;
+        }
+        
+        #dialog {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            margin-left: -120px;
+            width: 240px;
+            height: 320px;
+            background-color: white;
+            visibility: hidden;
+        }
+        
+        #dialog h1 {
+            text-align: center;
+            margin: 0;
+            font-size: 1em;
+            border: 1px solid black;
+            border-bottom-color: transparent;
+        }
+        
+        #dialog textarea {
+            flex: 1;
+            width: 100%;
+            border: 1px solid black;
+            box-sizing: border-box;
+            overflow: auto;
+            outline: none;
+            resize: none;
+        }
+        
+        #dialog .control {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        #status {
+            height: 1em;
+            font-weight: bold;
+            color: rgb(120, 120, 120);
+        }
+        
+        #progress {
+            height: 20px;
+            width: 300px;
+        }
+        
+        #output {
+            width: 100%;
+            height: 200px;
+            margin: 20px auto;
+            border-left: 0px;
+            border-right: 0px;
+            padding-left: 0px;
+            padding-right: 0px;
+            display: block;
+            background-color: black;
+            color: white;
+            font-family: 'Lucida Console', Monaco, monospace;
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main">
+        <div>
+            <div id="status">Downloading...</div>
+            <progress value="0" max="100" id="progress"></progress>
+        </div>
+        <div id="screen">
+            <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+            <div id="dialog">
+                <h1>标题</h1>
+                <textarea></textarea>
+                <div class="control">
+                    <button id="dialogOk">确定</button>
+                    <span id="dialogInfo">0/0</span>
+                    <button id="dialogCancel">取消</button>
+                </div>
+            </div>
+        </div>
+        <textarea id="output" rows="8"></textarea>
+        <div>
+            <input type="file" id="files" multiple style="display:none" />
+            <input type="button" id="import" value="导入文件" />
+            <input type="button" id="clearLog" value="清除日志" />
+        </div>
+        <p>
+            按键： 0-9对应0-9键<br> 减号对应 * 键<br> 等号对应 # 键<br> 上下左右或wsad控制方向<br> 回车键：确认/选择/ok<br> q键或左中括号：左功能键<br> e键或右中括号: 右功能键<br> tab键：接听键<br> esc键：挂机键<br> 导入文件后不会刷新列表，你可以先打开一个app然后退出app这样就能刷新到<br> 注意！模拟器所有文件都是在内存中，刷新网页将导致恢复初始状态<br> 本软件的开源地址是：<a href="https://github.com/zengming00/vmrp"
+                target="_blank">https://github.com/zengming00/vmrp</a><br>本软件采用GNU General Public License v3.0开源协议
+        </p>
+    </div>
+    <script>
+        const dialog = document.getElementById('dialog');
+        const dialogTextarea = document.querySelector('#dialog textarea');
+        const dialogTitle = document.querySelector('#dialog h1');
+        const dialogOkBtn = document.getElementById('dialogOk');
+        const dialogCancelBtn = document.getElementById('dialogCancel');
+        const dialogInfo = document.getElementById('dialogInfo');
+        const clearLogBtn = document.getElementById('clearLog');
+        const importBtn = document.getElementById('import');
+        const inputFile = document.getElementById('files');
+        const canvas = document.getElementById('canvas');
+
+        importBtn.addEventListener("click", function(ev) {
+            inputFile.click();
+        });
+        inputFile.addEventListener('change', function(ev) {
+            for (const file of inputFile.files) {
+                console.log(file);
+                const reader = new FileReader();
+                reader.onerror = function() {
+                    console.log("error", reader.error);
+                }
+                reader.onload = function() {
+                    FS.writeFile('/mythroad/' + file.name, new Uint8Array(reader.result));
+                    print("写入:'" + file.name + "'完成.");
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+        clearLogBtn.addEventListener("click", function(ev) {
+            const element = document.getElementById('output');
+            if (element) element.value = '';
+        });
+
+        function js_playSound(type, data, dataLen, loop) {
+            console.log(arguments);
+            return 0;
+        }
+
+        function js_stopSound(type) {
+            console.log(arguments);
+            return 0;
+        }
+
+        let shakef = 0;
+        let shakeStartTime = 0;
+
+        function js_startShake(ms) {
+            shakeStartTime = Date.now();
+            shakef = setInterval(() => {
+                if (Date.now() - shakeStartTime >= ms) {
+                    js_stopShake();
+                    return;
+                }
+                if (canvas.style.marginLeft === '-121px') {
+                    canvas.style.marginLeft = '-119px';
+                } else {
+                    canvas.style.marginLeft = '-121px';
+                }
+            }, 1);
+            return 0;
+        }
+
+        function js_stopShake() {
+            if (shakef) {
+                clearInterval(shakef);
+                shakef = 0;
+                canvas.style.marginLeft = '-120px';
+            }
+            return 0;
+        }
+
+        const MR_DIALOG_EVENT = 6;
+        const MR_DIALOG_KEY_OK = 0; // 对话框/文本框等的"确定"键被点击(选择);
+        const MR_DIALOG_KEY_CANCEL = 1; // 对话框/文本框等的"取消"("返回")键被点击(选择);
+        const MR_DIALOG_OK = 0; // 对话框有"确定"键;
+        const MR_DIALOG_OK_CANCEL = 1; // 对话框有"确定" "取消"键;
+        const MR_DIALOG_CANCEL = 2; // 对话框有"返回"键
+        const MR_EDIT_ANY = 0;
+        const MR_EDIT_NUMERIC = 1;
+        const MR_EDIT_PASSWORD = 2;
+
+        function dialogRelease() {
+            dialog.style.visibility = 'hidden';
+            dialogOkBtn.style.visibility = 'hidden';
+            dialogCancelBtn.style.visibility = 'hidden';
+            dialogOkBtn.onclick = null;
+            dialogCancelBtn.onclick = null;
+            Module._setEventEnable(true);
+        }
+
+        function dialogCreate(title, text, keyType, editAble, editType, max_size) {
+            Module._setEventEnable(false);
+            dialog.style.visibility = 'visible';
+            dialogTitle.innerText = getUnicodeStr(title);
+            dialogTextarea.value = getUnicodeStr(text);
+            dialogTextarea.scrollTop = 0;
+            dialogTextarea.readOnly = !editAble;
+            if (dialogTextarea.readOnly) {
+                dialogInfo.innerText = '';
+            }
+            if (keyType == MR_DIALOG_OK_CANCEL || keyType == MR_DIALOG_OK) {
+                dialogOkBtn.style.visibility = 'visible';
+                dialogOkBtn.onclick = function(e) {
+                    if (editAble && getDialogText().length > max_size) {
+                        return;
+                    }
+                    dialogTextarea.readOnly = true;
+                    Module._c_event(MR_DIALOG_EVENT, MR_DIALOG_KEY_OK, 0);
+                }
+            }
+            if (keyType == MR_DIALOG_OK_CANCEL || keyType == MR_DIALOG_CANCEL) {
+                dialogCancelBtn.style.visibility = 'visible';
+                dialogCancelBtn.onclick = function(e) {
+                    Module._c_event(MR_DIALOG_EVENT, MR_DIALOG_KEY_CANCEL, 0);
+                }
+            }
+            dialogTextarea.oninput = function(e) {
+                if (editType == MR_EDIT_NUMERIC) {
+                    // todo
+                }
+                if (editAble) {
+                    updateDialogInfo(max_size);
+                }
+            };
+            if (editAble) {
+                updateDialogInfo(max_size);
+            }
+        }
+
+        function js_dialogCreate(title, text, type) {
+            dialogCreate(title, text, type, false, 0, 0);
+            return 1234;
+        }
+
+        function js_dialogRelease(dialog) {
+            dialogRelease();
+            return 0;
+        }
+
+        function js_dialogRefresh(dialog, title, text, keyType) {
+            dialogTitle.innerText = getUnicodeStr(title);
+            dialogTextarea.value = getUnicodeStr(text);
+            if (keyType == -1) return 0;
+            dialogOkBtn.style.visibility = 'hidden';
+            dialogCancelBtn.style.visibility = 'hidden';
+            dialogOkBtn.onclick = null;
+            dialogCancelBtn.onclick = null;
+            if (keyType == MR_DIALOG_OK_CANCEL || keyType == MR_DIALOG_OK) {
+                dialogOkBtn.style.visibility = 'visible';
+                dialogOkBtn.onclick = function(e) {
+                    Module._c_event(MR_DIALOG_EVENT, MR_DIALOG_KEY_OK, 0);
+                }
+            }
+            if (keyType == MR_DIALOG_OK_CANCEL || keyType == MR_DIALOG_CANCEL) {
+                dialogCancelBtn.style.visibility = 'visible';
+                dialogCancelBtn.onclick = function(e) {
+                    Module._c_event(MR_DIALOG_EVENT, MR_DIALOG_KEY_CANCEL, 0);
+                }
+            }
+            return 0;
+        }
+
+        function js_textCreate(title, text, type) {
+            dialogCreate(title, text, type, false, 0, 0);
+            return 1234;
+        }
+
+        function js_textRelease(handle) {
+            dialogRelease();
+            return 0;
+        }
+
+        function js_textRefresh(handle, title, text) {
+            dialogTitle.innerText = getUnicodeStr(title);
+            dialogTextarea.value = getUnicodeStr(text);
+            return 0;
+        }
+
+        function getUnicodeStr(p) {
+            let i = p / 2;
+            const arr = [];
+            while (Module.HEAPU16[i]) {
+                const v = Module.HEAPU16[i];
+                arr.push(String.fromCharCode((v >> 8 | v << 8) & 0xffff));
+                i++;
+            }
+            return arr.join('');
+        }
+
+        function getDialogText() {
+            let str = dialogTextarea.value;
+            str = str.replace(/\r\n/g, '\n');
+            str = str.replace(/\n/g, '\r\n');
+            return str;
+        }
+
+        function updateDialogInfo(max_size) {
+            const str = getDialogText();
+            dialogInfo.innerText = str.length + '/' + max_size;
+            if (str.length > max_size) {
+                dialogInfo.style.color = 'red';
+            } else {
+                dialogInfo.style.color = 'black';
+            }
+        }
+
+        function js_editCreate(title, text, type, max_size) {
+            dialogCreate(title, text, MR_DIALOG_OK_CANCEL, true, type, max_size);
+            return 1234;
+        }
+
+        function js_editRelease(edit) {
+            dialogRelease();
+            return 0;
+        }
+
+        let holdTextMem = 0;
+
+        function js_editGetText(edit) {
+            const str = getDialogText();
+            const len = str.length + 1;
+            if (holdTextMem != 0) {
+                Module._my_freeExt(holdTextMem);
+            }
+            holdTextMem = Module._my_mallocExt(len * 2);
+            if (holdTextMem != 0) {
+                let ptr = holdTextMem;
+                for (let a = 0; a < str.length; a++) {
+                    const v = str.charCodeAt(a);
+                    Module.HEAPU8[ptr++] = (v >> 8) & 0xff;
+                    Module.HEAPU8[ptr++] = v & 0xff;
+                }
+                Module.HEAPU8[ptr++] = 0;
+                Module.HEAPU8[ptr] = 0;
+            }
+            return holdTextMem;
+        }
+    </script>
+
+    <script type='text/javascript'>
+        var statusElement = document.getElementById('status');
+        var progressElement = document.getElementById('progress');
+        const print = (function() {
+            var element = document.getElementById('output');
+            if (element) element.value = ''; // clear browser cache
+            return function(text) {
+                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                // These replacements are necessary if you render to raw HTML
+                //text = text.replace(/&/g, "&amp;");
+                //text = text.replace(/</g, "&lt;");
+                //text = text.replace(/>/g, "&gt;");
+                //text = text.replace('\n', '<br>', 'g');
+                console.log(text);
+                if (element) {
+                    element.value += text + "\n";
+                    element.scrollTop = element.scrollHeight; // focus on bottom
+                }
+            };
+        })();
+        var Module = {
+            preRun: [],
+            postRun: [],
+            print: print,
+            printErr: function(text) {
+                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                console.error(text);
+            },
+            canvas: (function() {
+                var canvas = document.getElementById('canvas');
+
+                // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+                // application robust, you may want to override this behavior before shipping!
+                // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+                canvas.addEventListener("webglcontextlost", function(e) {
+                    alert('WebGL context lost. You will need to reload the page.');
+                    e.preventDefault();
+                }, false);
+
+                return canvas;
+            })(),
+            setStatus: function(text) {
+                if (!Module.setStatus.last) Module.setStatus.last = {
+                    time: Date.now(),
+                    text: ''
+                };
+                if (text === Module.setStatus.last.text) return;
+                var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+                var now = Date.now();
+                if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
+                Module.setStatus.last.time = now;
+                Module.setStatus.last.text = text;
+                if (m) {
+                    text = m[1];
+                    progressElement.value = parseInt(m[2]) * 100;
+                    progressElement.max = parseInt(m[4]) * 100;
+                    progressElement.style.visibility = 'visible';
+                } else {
+                    progressElement.style.visibility = 'hidden';
+                }
+                statusElement.innerHTML = text;
+            },
+            totalDependencies: 0,
+            monitorRunDependencies: function(left) {
+                this.totalDependencies = Math.max(this.totalDependencies, left);
+                Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+            }
+        };
+        Module.setStatus('Downloading...');
+        window.onerror = function(event) {
+            // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+            Module.setStatus('Exception thrown, see JavaScript console');
+            Module.setStatus = function(text) {
+                if (text) Module.printErr('[post-exception status] ' + text);
+            };
+        };
+    </script>
+    <script async type="text/javascript" src="./vmrp.js"></script>
+</body>
+
+</html>
