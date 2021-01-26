@@ -30,17 +30,27 @@ enum {
    MR_SUCCESS 成功
    MR_FAILED 失败
    MR_WAITING 使用异步方式进行连接，应用需要轮询该socket的状态以获知连接状况 
+
+   IP地址,如果一个主机的IP地址为218.18.95.203，则值为218<<24 + 18<<16 + 95<<8 + 203= 0xda125fcb
 */
 int32 my_connect(int32 s, int32 ip, uint16 port, int32 type) {
 #ifdef NETWORK
     struct sockaddr_in clientService;
     clientService.sin_family = AF_INET;
-    clientService.sin_addr.s_addr = ip;  //inet_addr("127.0.0.1");
     clientService.sin_port = htons(port);
 
+    clientService.sin_addr.s_addr = htonl(ip);  //inet_addr("127.0.0.1");
+    printf("my_connect(%s)\n", inet_ntoa(clientService.sin_addr));
+
+    if (ip == 0x0A0000AC) {  // 10.0.0.172
+        return MR_SUCCESS;
+    }
+
     if (connect((SOCKET)s, (SOCKADDR *)&clientService, sizeof(clientService)) != 0) {
+        printf("my_connect(%d) fail\n", ip);
         return MR_FAILED;
     }
+    printf("my_connect(%d) suc\n", ip);
     return MR_SUCCESS;
 #else
     return MR_FAILED;
@@ -57,8 +67,10 @@ int32 my_socket(int32 type, int32 protocol) {
     protocol = (protocol == MR_IPPROTO_TCP) ? IPPROTO_TCP : IPPROTO_UDP;
     SOCKET sock = socket(AF_INET, type, protocol);
     if (sock == INVALID_SOCKET) {
+        printf("my_socket() fail\n");
         return MR_FAILED;
     }
+    printf("my_socket(): %d\n", (int)sock);
     return (int)sock;
 #else
     return MR_FAILED;
@@ -118,6 +130,7 @@ int32 my_initNetwork(MR_INIT_NETWORK_CB cb, const char *mode) {
 */
 int32 my_getHostByName(const char *name, MR_GET_HOST_CB cb) {
 #ifdef NETWORK
+    printf("my_getHostByName(%s)\n", name);
     struct hostent *remoteHost = gethostbyname(name);
     if (remoteHost != NULL) {
         if (remoteHost->h_addrtype == AF_INET) {
@@ -125,8 +138,8 @@ int32 my_getHostByName(const char *name, MR_GET_HOST_CB cb) {
                 struct in_addr addr;
                 addr.s_addr = *(u_long *)remoteHost->h_addr_list[0];
                 // printf("%d\n", addr.S_un.S_addr);
-                // printf("%s\n", inet_ntoa(addr));
-                return addr.S_un.S_addr;
+                printf("%s\n", inet_ntoa(addr));
+                return ntohl(addr.S_un.S_addr);
             }
         }
     }

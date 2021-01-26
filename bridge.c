@@ -539,11 +539,12 @@ static void br_mr_initNetwork(BridgeMap *o, uc_engine *uc) {
 
 static void br_mr_socket(BridgeMap *o, uc_engine *uc) {
     // int32 (*mr_socket)(int32 type, int32 protocol);
-    LOG("ext call %s()\n", o->name);
     int32_t type, protocol;
     uc_reg_read(uc, UC_ARM_REG_R0, &type);
     uc_reg_read(uc, UC_ARM_REG_R1, &protocol);
-    SET_RET_V(my_socket(type, protocol));
+    int32_t ret = my_socket(type, protocol);
+    LOG("ext call %s(): %d \n", o->name, ret);
+    SET_RET_V(ret);
 }
 
 static void br_mr_connect(BridgeMap *o, uc_engine *uc) {
@@ -598,6 +599,28 @@ static void br_mr_recv(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R1, &buf);
     uc_reg_read(uc, UC_ARM_REG_R2, &len);
     SET_RET_V(my_recv(s, getMrpMemPtr(buf), len));
+}
+
+/*
+获取socket connect 状态（主要用于TCP的异步连接） 
+Syntax
+int32 mrc_getSocketState(int32 s); 
+Parameters
+s
+   [IN] 打开的socket句柄，由mrc_socket创建
+
+Return Value
+   MR_SUCCESS ： 连接成功
+   MR_FAILED ： 连接失败
+   MR_WAITING ： 连接中
+   MR_IGNORE ： 不支持该功能
+*/
+static void br_mr_getSocketState(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_getSocketState)(int32 s);
+    int32_t s;
+    uc_reg_read(uc, UC_ARM_REG_R0, &s);
+    LOG("ext call %s(%d)\n", o->name, s);
+    SET_RET_V(MR_IGNORE);
 }
 
 enum {
@@ -1132,7 +1155,7 @@ static BridgeMap dsm_require_funcs_funcMap[51] = {
     BRIDGE_FUNC_MAP(0x74, MAP_FUNC, mr_getHostByName, NULL, br_mr_getHostByName, 0),
     BRIDGE_FUNC_MAP(0x78, MAP_FUNC, mr_socket, NULL, br_mr_socket, 0),
     BRIDGE_FUNC_MAP(0x7c, MAP_FUNC, mr_connect, NULL, br_mr_connect, 0),
-    BRIDGE_FUNC_MAP(0x80, MAP_FUNC, mr_getSocketState, NULL, NULL, 0),
+    BRIDGE_FUNC_MAP(0x80, MAP_FUNC, mr_getSocketState, NULL, br_mr_getSocketState, 0),
     BRIDGE_FUNC_MAP(0x84, MAP_FUNC, mr_closeSocket, NULL, br_mr_closeSocket, 0),
     BRIDGE_FUNC_MAP(0x88, MAP_FUNC, mr_recv, NULL, br_mr_recv, 0),
     BRIDGE_FUNC_MAP(0x8c, MAP_FUNC, mr_send, NULL, br_mr_send, 0),
