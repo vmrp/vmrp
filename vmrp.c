@@ -78,6 +78,7 @@ static int32_t loadCode(uc_engine *uc, char *filename) {
     LOG("load %s suc: offset:%d, length:%d", extFilename, value, length);
 
     uc_mem_write(uc, CODE_ADDRESS, code, length);
+    LOG("uc mem write");
     free(code);
     return ret;
 }

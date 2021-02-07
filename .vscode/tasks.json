@@ -5,7 +5,7 @@
             "label": "make",
             "command": "make",
             "args": [
-                // "-g",
+                // "DEBUG=1",
                 // "${file}",
                 // "-o",
                 // "${fileDirname}/${fileBasenameNoExtension}"

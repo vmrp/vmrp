@@ -3,7 +3,13 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#if defined(WIN32)
 #define LOG(format, ...) printf(">> " format "\n", ##__VA_ARGS__)
+#elif defined(__ANDROID__)
+#include <android/log.h>
+#define TAG "vmrp" // 这个是自定义的LOG的标识
+#define LOG(...) __android_log_print(ANDROID_LOG_DEBUG,TAG ,__VA_ARGS__) // 定义LOGD类型
+#endif
 
 typedef uint64_t uint64; /* Unsigned 64 bit value */
 typedef int64_t int64;   /* signed 64 bit value */
@@ -70,7 +76,39 @@ enum {
     MR_KEY_A,        //游戏模拟器A键
     MR_KEY_B,        //游戏模拟器B键
     MR_KEY_CAPTURE,  //拍照键
-    MR_KEY_NONE      //按键 保留
+    MR_KEY_NONE,      //按键 保留
+    MR_KEY_LETTER_A = 0X61,
+    MR_KEY_LETTER_B,
+    MR_KEY_LETTER_C,
+    MR_KEY_LETTER_D,
+    MR_KEY_LETTER_E,
+    MR_KEY_LETTER_F,
+    MR_KEY_LETTER_G,
+    MR_KEY_LETTER_H,
+    MR_KEY_LETTER_I,
+    MR_KEY_LETTER_J,
+    MR_KEY_LETTER_K,
+    MR_KEY_LETTER_L,
+    MR_KEY_LETTER_M,
+    MR_KEY_LETTER_N,
+    MR_KEY_LETTER_O,
+    MR_KEY_LETTER_P,
+    MR_KEY_LETTER_Q,
+    MR_KEY_LETTER_R,
+    MR_KEY_LETTER_S,
+    MR_KEY_LETTER_T,
+    MR_KEY_LETTER_U,
+    MR_KEY_LETTER_V,
+    MR_KEY_LETTER_W,
+    MR_KEY_LETTER_X,
+    MR_KEY_LETTER_Y,
+    MR_KEY_LETTER_Z,
+    MR_KEY_LETTER_UNDERSCORE='_',
+    MR_KEY_LETTER_BACKQUOTE='`',
+    MR_KEY_LETTER_CARET='^',
+    MR_KEY_LETTER_QUESTION= '?',
+    MR_KEY_LETTER_AT = '@',
+    MR_KEY_LETTER_SPACE= ' '
 };
 
 enum {

@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "dsm.h": "c",
+        "*.idl": "c",
+        "pthread.h": "c",
+        "fcntl.h": "c",
+        "ws2tcpip.h": "c",
+        "types.h": "c",
+        "iconv.h": "c",
+        "mem.h": "c",
+        "tables.h": "c",
+        "encode.h": "c"
+    }
+}

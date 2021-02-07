@@ -9,12 +9,10 @@
 
 #include "types.h"
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-// #ifdef _WIN64
-// #include "../windows/unicorn-1.0.1-win64/include/unicorn/unicorn.h"
-// #else
+#if defined(WIN32)
 #include "../windows/unicorn-1.0.2-win32/include/unicorn/unicorn.h"
-// #endif
+#else
+#include "unicorn.h"
 #endif
 
 #ifndef EM_PORT_API
@@ -62,7 +60,7 @@ void cpsrToStr(uint32_t v, char *out);
 char *memTypeStr(uc_mem_type type);
 void dumpREG(uc_engine *uc);
 void dumpMemStr(void *ptr, size_t len);
-void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb);
+void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, int isThumb);
 char *getSplitStr(char *str, char split, int n);
 
 typedef struct uIntMap {
@@ -77,6 +75,7 @@ uIntMap *uIntMap_delete(struct rb_root *root, uint32_t key);
 
 uint32_t copyWstrToMrp(char *str);
 uint32_t copyStrToMrp(char *str);
+uint32_t copyIntToMrp(uint32_t num);
 void printScreen(char *filename, uint16_t *buf);
 
 int64_t get_uptime_ms(void);
