@@ -1,3 +1,9 @@
+/*
+实现网络连接
+从mrpoid移植而来，经过适当修改实现兼容
+
+风的影子
+*/
 #include <ctype.h>
 #include <unistd.h>
 #include <sys/types.h>
