@@ -4,6 +4,7 @@
 *.ext
 *.exe
 *.dll
+.vscode/settings.json
 
 
 

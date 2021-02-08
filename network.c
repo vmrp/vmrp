@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+// https://docs.microsoft.com/en-us/windows/win32/api/winsock2/
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>

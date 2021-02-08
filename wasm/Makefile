@@ -10,5 +10,5 @@ main:
 		-s USE_SDL=2 \
 		-s USE_ZLIB=1 \
 		-s WASM=1 \
-		--preload-file ./fs@/ \
+		-s FORCE_FILESYSTEM=1 \
 		-o dist/vmrp.js
