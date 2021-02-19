@@ -27,7 +27,8 @@ typedef struct BridgeMap {
     BridgeCB fn;
     uint32_t extraData;
 } BridgeMap;
-
+extern uint32_t cb_addr;
+extern uint32_t cb_p0;
 #define BRIDGE_FUNC_MAP(offset, mapType, field, init, func, extraData) \
     { #field, offset, mapType, init, func, extraData }
 

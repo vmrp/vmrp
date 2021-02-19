@@ -5,6 +5,7 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
+#include "header/types.h"
 
 typedef struct {
     uint32 next;
@@ -24,7 +25,7 @@ uint32 LG_mem_left;  // 剩余内存
 #define realLGmemSize(x) (((x) + 7) & (0xfffffff8))
 
 void initMemoryManager(uint32_t baseAddress, uint32_t len) {
-    printf("initMemoryManager: baseAddress:0x%X len: 0x%X\n", baseAddress, len);
+    LOG("initMemoryManager: baseAddress:0x%X len: 0x%X\n", baseAddress, len);
     Origin_LG_mem_base = getMrpMemPtr(baseAddress);
     Origin_LG_mem_len = len;
 
@@ -46,9 +47,9 @@ void initMemoryManager(uint32_t baseAddress, uint32_t len) {
 EMSCRIPTEN_KEEPALIVE
 #endif
 void printMemoryInfo() {
-    printf(".......total:%d, min:%d, free:%d, top:%d\n", LG_mem_len, LG_mem_min, LG_mem_left, LG_mem_top);
-    printf(".......base:%p, end:%p\n", LG_mem_base, LG_mem_end);
-    printf(".......obase:%p, olen:%d\n", Origin_LG_mem_base, Origin_LG_mem_len);
+    LOG(".......total:%d, min:%d, free:%d, top:%d\n", LG_mem_len, LG_mem_min, LG_mem_left, LG_mem_top);
+    LOG(".......base:%p, end:%p\n", LG_mem_base, LG_mem_end);
+    LOG(".......obase:%p, olen:%d\n", Origin_LG_mem_base, Origin_LG_mem_len);
 }
 
 void *my_malloc(uint32 len) {
@@ -57,15 +58,15 @@ void *my_malloc(uint32 len) {
 
     len = (uint32)realLGmemSize(len);
     if (len >= LG_mem_left) {
-        printf("my_malloc no memory\n");
+        LOG("my_malloc no memory\n");
         goto err;
     }
     if (!len) {
-        printf("my_malloc invalid memory request");
+        LOG("my_malloc invalid memory request");
         goto err;
     }
     if (LG_mem_base + LG_mem_free.next > LG_mem_end) {
-        printf("my_malloc corrupted memory");
+        LOG("my_malloc corrupted memory");
         goto err;
     }
     previous = &LG_mem_free;
@@ -101,7 +102,7 @@ void *my_malloc(uint32 len) {
         previous = nextfree;
         nextfree = (LG_mem_free_t *)(LG_mem_base + nextfree->next);
     }
-    printf("my_malloc no memory\n");
+    LOG("my_malloc no memory\n");
 err:
     return 0;
 end:
@@ -113,8 +114,8 @@ void my_free(void *p, uint32 len) {
     len = (uint32)realLGmemSize(len);
 #ifdef MEM_DEBUG
     if (!len || !p || (char *)p < LG_mem_base || (char *)p >= LG_mem_end || (char *)p + len > LG_mem_end || (char *)p + len <= LG_mem_base) {
-        printf("my_free invalid\n");
-        printf("p=%d,l=%d,base=%d,LG_mem_end=%d\n", (int32)p, len, (int32)LG_mem_base, (int32)LG_mem_end);
+        LOG("my_free invalid\n");
+        LOG("p=%d,l=%d,base=%d,LG_mem_end=%d\n", (int32)p, len, (int32)LG_mem_base, (int32)LG_mem_end);
         return;
     }
 #endif
@@ -126,7 +127,7 @@ void my_free(void *p, uint32 len) {
     }
 #ifdef MEM_DEBUG
     if (p == (void *)free || p == (void *)n) {
-        printf("my_free:already free\n");
+        LOG("my_free:already free\n");
         return;
     }
 #endif

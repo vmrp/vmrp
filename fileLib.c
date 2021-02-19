@@ -6,6 +6,9 @@
 #include <malloc.h>
 #include <sys/stat.h>
 #include <zlib.h>
+#include "header/types.h"
+#include "header/gb2unicode.h"
+#include "header/encode.h"
 
 /////////////////////////////////////////////////////////////////
 #define HANDLE_NUM 64
@@ -13,6 +16,181 @@
 // 因为系统句柄转成int32可能是负数，导致mrp编程不规范只判断是否大于0时出现遍历文件夹为空的bug，需要有一种转换机制避免返回负数
 // 0号下标不使用，下标作为mrp使用的句柄，值为系统的句柄，值为-1时表示未使用
 static uint32_t handles[HANDLE_NUM + 1];
+
+char SDPath[DSM_MAX_FILE_LEN] = "mnt/sdcard"; //内存卡目录(需要初始化) 以后考虑弃用
+//char *SystemPath = "system";  //系统盘目录
+//char *DataPath = "data/data";  //data目录
+//char *AllPath = "";   //系统根目录
+// char dsmWorkPath[DSM_MAX_FILE_LEN]; //平台目录 暂时不用管
+static char ProjectPath[DSM_MAX_FILE_LEN]; //运行文件路径 工程路径(绝对路径)
+static char RUN_NAME[DSM_MAX_FILE_LEN]; //运行的文件名
+static char PlatDir[DSM_MAX_FILE_LEN]; //平台路径
+static char SDCard[DSM_MAX_FILE_LEN]; //SD卡路径
+static char DocDir[DSM_MAX_FILE_LEN]; //doc文档路径
+static char CacheDir[DSM_MAX_FILE_LEN]; //应用缓存路径
+static char FilesDir[DSM_MAX_FILE_LEN]; //files目录
+int IS_RUN = 0; //true运行器模式 false打包模式
+
+/*
+ * 整理路径，将分隔符统一为sep，并清除连续的多个
+ *
+ * 参数：路径(必须可读写)
+ */
+char *FormatPathString(char *path, char sep) {
+    char *p, *q;
+    int flag = 0;
+
+    if (NULL == path)
+        return NULL;
+
+    for (p = q = path; '\0' != *p; p++) {
+        if ('\\' == *p || '/' == *p) {
+            if (0 == flag)
+                *q++ = sep;
+            flag = 1;
+        }
+        else {
+            *q++ = *p;
+            flag = 0;
+        }
+    }
+
+    *q = '\0';
+
+    return path;
+}
+
+char *dsm_getSDCard(){
+    return SDCard;
+}
+
+char *dsm_getRunName(){
+    return RUN_NAME;
+}
+
+void argcopy(char *cache, char *arg){
+    #if defined(WIN32)
+    uint32 outlen = strlen(arg)*3;
+    if(IsUTF8(arg, strlen(arg)) == 0){
+        char *temp = UTF8StrToGBStr(arg, &outlen);
+        printf("strcpy %s \n", temp);
+        strcpy(cache, temp);
+        free(temp);
+    }
+    else{
+        strcpy(cache, arg);
+    }
+    #else
+    strcpy(cache, arg);
+    #endif
+}
+
+//解析参数 配置各目录
+void dsm_parseArgs(int argc, char *argv[]){
+    printf("dsm_parseArgs\n");
+    int i=0;
+    memset(SDCard,0,sizeof(SDCard));
+    memset(PlatDir,0,sizeof(PlatDir));
+    memset(ProjectPath,0,sizeof(ProjectPath));
+    memset(RUN_NAME,0,sizeof(RUN_NAME));
+    memset(CacheDir,0,sizeof(CacheDir));
+    memset(FilesDir,0,sizeof(FilesDir));
+    memset(DocDir,0,sizeof(DocDir));
+    argcopy(RUN_NAME,"dsm_gm.mrp");
+    argcopy(SDCard,"D:\\workspace\\vmrp\\vmrp-master\\bin\\");
+    if(argc == 2){
+        argcopy(RUN_NAME,argv[1]);
+    }
+    for(i=0;i<argc;i++){
+        printf("%s\n",argv[i]);
+        if(strcmp(argv[i],"-cache_dir")==0){
+            argcopy(CacheDir,argv[i+1]);
+        }
+        if(strcmp(argv[i],"-extern_dir")==0){
+            argcopy(SDCard,argv[i+1]);
+        }
+        if(strcmp(argv[i],"-extern_filesdir")==0){
+            argcopy(DocDir,argv[i+1]);
+        }
+        if(strcmp(argv[i],"-files_dir")==0){
+            argcopy(FilesDir,argv[i+1]);
+        }
+        if(strcmp(argv[i],"-extern_cache_dir")==0){
+            // argcopy(CacheDir,argv[i+1]);
+        }
+        if(strcmp(argv[i],"-plat_dir")==0){
+            argcopy(PlatDir,argv[i+1]);
+        }
+        if(strcmp(argv[i],"-run_name")==0){
+            argcopy(RUN_NAME,argv[i+1]);
+        }
+        if(strcmp(argv[i],"-project_dir")==0){
+            argcopy(ProjectPath,argv[i+1]);
+        }
+        if(strcmp(argv[i],"-is_run")==0){
+            IS_RUN = 1;
+        }
+
+    }
+    FormatPathString(SDCard,'/');
+    FormatPathString(PlatDir,'/');
+    FormatPathString(ProjectPath,'/');
+    FormatPathString(RUN_NAME,'/');
+    FormatPathString(CacheDir,'/');
+    FormatPathString(FilesDir,'/');
+    FormatPathString(DocDir,'/');
+    if(argc>=2)
+    my_copyFileToPlat(dsm_getRunName());
+
+}
+
+char *my_copyFileToPlat(char *filename){
+    size_t len = my_getLen(filename);
+    char *buf = NULL;
+    char *name = strrchr(filename,'/');
+    char temp[255];
+    if(name==NULL){
+        name = filename;
+    }
+    else{
+        name = name+1;
+    }
+    
+    sprintf(temp,"%smythroad/%s",dsm_getSDCard(), name);
+    printf("copy file %s %s\n",filename,temp);
+    if(len>0){
+        buf = malloc(len);
+        FILE *in = fopen(filename, "rb");
+        fread(buf,len,1,in);
+        fclose(in);
+
+    
+    FILE *fout = fopen(temp, "wb+");
+    fwrite(buf, len, 1, fout);
+    fclose(fout);
+    free(buf);
+    printf("copy success\n");
+    }
+    else{
+        printf("copy error\n");
+    }
+    return name;
+}
+
+char *my_getFileName(char *filename){
+    size_t len = my_getLen(filename);
+    char *buf = NULL;
+    char *name = strrchr(filename,'/');
+    if(name==NULL){
+        name = filename;
+    }
+    else{
+        name = name+1;
+    }
+    // sprintf(temp,"%smythroad/%s",dsm_getSDCard(), name);
+
+    return name;
+}
 
 static void handleInit() {
     for (int i = 1; i <= HANDLE_NUM; i++) {
@@ -54,11 +232,19 @@ int32_t my_open(const char *filename, uint32_t mode) {
     if (mode & MR_FILE_RDWR) new_mode = O_RDWR;
     if (mode & MR_FILE_CREATE) new_mode |= O_CREAT;
 
-#ifdef _WIN32
+#if defined(WIN32)
     new_mode |= O_RAW;
+    char path[600];
+    sprintf(path, "%s%s", dsm_getSDCard(),filename);
+    LOG("my_open %s",path);
+    f = open(path, new_mode, S_IRWXU | S_IRWXG | S_IRWXO);
+#elif defined(__ANDROID__)
+    char path[600];
+    sprintf(path, "%s%s", dsm_getSDCard(),filename);
+    LOG("my_open %s",path);
+    f = open(path, new_mode, S_IRWXU | S_IRWXG | S_IRWXO);
 #endif
 
-    f = open((char *)filename, new_mode, S_IRWXU | S_IRWXG | S_IRWXO);
     if (f == -1) {
         return 0;
     }
@@ -103,7 +289,10 @@ int32_t my_write(int32_t f, void *p, uint32_t l) {
 }
 
 int32_t my_rename(const char *oldname, const char *newname) {
-    int ret = rename(oldname, newname);
+    char old[600],new[600];
+    sprintf(old, "%s%s", dsm_getSDCard(),oldname);
+    sprintf(new, "%s%s", dsm_getSDCard(),newname);
+    int ret = rename(old, new);
     if (ret != 0) {
         return MR_FAILED;
     }
@@ -111,7 +300,9 @@ int32_t my_rename(const char *oldname, const char *newname) {
 }
 
 int32_t my_remove(const char *filename) {
-    int ret = remove(filename);
+    char temp[600];
+    sprintf(temp, "%s%s", dsm_getSDCard(),filename);
+    int ret = remove(temp);
     if (ret != 0) {
         return MR_FAILED;
     }
@@ -120,7 +311,17 @@ int32_t my_remove(const char *filename) {
 
 int32_t my_getLen(const char *filename) {
     struct stat s1;
-    int ret = stat(filename, &s1);
+    char temp[600];
+    if(strstr(filename,":")>0){
+sprintf(temp, "%s%s", "",filename);
+    }
+    else{
+sprintf(temp, "%s%s", dsm_getSDCard(),filename);
+    }
+    
+    int ret = stat(temp, &s1);
+    
+
     if (ret != 0)
         return -1;
     return s1.st_size;
@@ -128,13 +329,15 @@ int32_t my_getLen(const char *filename) {
 
 int32_t my_mkDir(const char *name) {
     int ret;
-    if (access(name, F_OK) == 0) {  //检测是否已存在
+    char path[600];
+    sprintf(path, "%s%s", dsm_getSDCard(),name);
+    if (access(path, F_OK) == 0) {  //检测是否已存在
         goto ok;
     }
 #ifndef _WIN32
-    ret = mkdir(name, S_IRWXU | S_IRWXG | S_IRWXO);
+    ret = mkdir(path, S_IRWXU | S_IRWXG | S_IRWXO);
 #else
-    ret = mkdir(name);
+    ret = mkdir(path);
 #endif
     if (ret != 0) {
         return MR_FAILED;
@@ -144,7 +347,9 @@ ok:
 }
 
 int32_t my_rmDir(const char *name) {
-    int ret = rmdir(name);
+    char path[600];
+    sprintf(path, "%s%s", dsm_getSDCard(),name);
+    int ret = rmdir(path);
     if (ret != 0) {
         return MR_FAILED;
     }
@@ -153,7 +358,9 @@ int32_t my_rmDir(const char *name) {
 
 int32_t my_info(const char *filename) {
     struct stat s1;
-    int ret = stat(filename, &s1);
+    char path[600];
+    sprintf(path, "%s%s", dsm_getSDCard(),filename);
+    int ret = stat(path, &s1);
 
     if (ret != 0) {
         return MR_IS_INVALID;
@@ -167,7 +374,9 @@ int32_t my_info(const char *filename) {
 }
 
 int32_t my_opendir(const char *name) {
-    DIR *pDir = opendir(name);
+    char path[600];
+    sprintf(path, "%s%s", dsm_getSDCard(),name);
+    DIR *pDir = opendir(path);
     if (pDir != NULL) {
         return handle2int32((uint32_t)pDir);
     }
@@ -293,6 +502,7 @@ int32 readMrpFileEx(const char *path, const char *name, int32 *offset,
     char fName[128] = {0};  //文件名
 
     fd = my_open(path, MR_FILE_RDONLY);
+    LOG("readMrpFileEx 1");
     if (0 == fd) goto err;
 
     //读取文件列表起始位置
@@ -303,6 +513,7 @@ int32 readMrpFileEx(const char *path, const char *name, int32 *offset,
     my_seek(fd, 4, MR_SEEK_SET);
     my_read(fd, &flEnd, 4);
     flEnd += 8;
+    LOG("readMrpFileEx 2");
 
     while (flStar < flEnd) {
         // 1.读取文件名

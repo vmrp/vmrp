@@ -1,13 +1,5 @@
 <a href="https://996.icu"><img src="https://img.shields.io/badge/link-996.icu-red.svg" alt="996.icu" /></a> 反对996是每个软件工程师的义务
 
-# PC版本下载地址
-
-https://github.com/zengming00/vmrp/releases/download/1.0.0/vmrp_win32_20201107.zip
-
-# web网页版体验地址
-
-https://zengming00.github.io/vmrp_v1.0/main.html
-
 # vmrp
 
 由于mrpoid模拟器受限于安卓系统，于是决定开发一款真正的模拟器
@@ -18,7 +10,7 @@ https://zengming00.github.io/vmrp_v1.0/main.html
 
 按键： 上下左右或wsad键控制方向，回车键是ok, q键是左功能键, e键是右功能键
 
-初始版本实现的函数：
+目前实现的函数：
 |                 |                 |                |                    | 
 |-----------------|-----------------|----------------|--------------------|
 | mrc_malloc()    | mrc_free()      | mrc_memcpy()   | mrc_memmove()      |
@@ -45,6 +37,10 @@ vmrp实现原理与mrpoid基本相同，参考了mrpoid早期的实现原理，�
 # 潜在bug
 
 因为ext中的mr_c_function_load()函数是第一个函数，在mythroad层调用此函数其实相当于仍然在mythroad层调用mythroad层的东西，它会回调_mr_c_function_new()将mr_extHelper()或mr_helper()函数的地址传回mythroad，所有的事件传递都是通过这个helper函数，helper函数进去的第一件事就是备份r9寄存到r10，然后设置r9寄存器的值，在ext内的所有全局变量的读写都是基于这个寄存器提供的基地址，而在ext内调用mythroad层的函数时，r9和r10寄存器的值并没有恢复，这可能导致严重的问题，这可能就是安卓上mrpoid运行不稳定的原因，从反编译的结果来看，插件化mrp内的ext之间是有恢复r9寄存器的功能，但是没有恢复r10寄存器的功能，在目前能获得的mythroad层代码中没有看到任何恢复r9和r10的操作。
+
+
+# 下载地址
+https://github.com/zengming00/vmrp/releases/
 
 # 编译方法
 

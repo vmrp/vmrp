@@ -8,6 +8,22 @@
 
 #define VMRP_VER 20210101
 
+#ifdef LOG
+#undef LOG
+#endif
+
+#ifdef DEBUG
+#define LOG(format, ...) printf("   -> bridge: " format, ##__VA_ARGS__)
+#define LOGI(format, ...) printf("   -> LOGI: " format, ##__VA_ARGS__)
+#define LOGE(format, ...) printf("   -> LOGE: " format, ##__VA_ARGS__)
+#define LOGW(format, ...) printf("   -> LOGE: " format, ##__VA_ARGS__)
+#else
+#define LOG(format, ...)
+#define LOGI(format, ...)
+#define LOGE(format, ...)
+#define LOGW(format, ...)
+#endif
+
 // 需要平台实现的函数
 typedef struct {
     void (*test)(void);

@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "./header/gb2unicode.h"
+#include <iconv.h>
+#if defined(WIN32)
+#pragma comment(lib, "libiconv/libiconv.lib")
+#endif
 
 // clang-format off
 // 编码表
@@ -1324,4 +1328,94 @@ char *gbToUCS2BE(uint8_t *gbCode, uint32_t *outSize) {
     unicode[j] = 0;
     unicode[j + 1] = 0;
     return unicode;
+}
+
+
+
+// typedef long unsigned int    size_t;
+int utf8ToGBK(char *inbuf, size_t inlen, char *outbuf, size_t outlen)
+{
+    iconv_t cd;    
+    char **pin = &inbuf;
+    char **pout = &outbuf;
+    
+    cd = iconv_open("gbk", "utf-8"); //gb2312
+    if (0 == cd) 
+        return -1;
+    if (-1 == iconv(cd, pin, &inlen, pout, &outlen))
+    {
+        iconv_close(cd);
+        return -1;
+    }
+ 
+    iconv_close(cd);
+    return 0;
+}
+
+//判断utf编码，0为成功，-1失败
+int IsUTF8(void *pBuffer, long size) {
+  int IsUTF8 = 0;
+  unsigned char *start = (unsigned char *)pBuffer;
+  unsigned char *end = (unsigned char *)pBuffer + size;
+  while (start < end) {
+    if (*start < 0x80)  // (10000000): 值小于0x80的为ASCII字符
+    {
+      start++;
+    } else if (*start <
+               (0xC0))  // (11000000): 值介于0x80与0xC0之间的为无效UTF-8字符
+    {
+      IsUTF8 = -1;
+      break;
+    } else if (*start < (0xE0))  // (11100000): 此范围内为2字节UTF-8字符
+    {
+      if (start >= end - 1) break;
+      if ((start[1] & (0xC0)) != 0x80) {
+        IsUTF8 = -1;
+        break;
+      }
+      start += 2;
+    } else if (*start < (0xF0))  // (11110000): 此范围内为3字节UTF-8字符
+    {
+      if (start >= end - 2) break;
+      if ((start[1] & (0xC0)) != 0x80 || (start[2] & (0xC0)) != 0x80) {
+        IsUTF8 = -1;
+        break;
+      }
+      start += 3;
+    } else {
+      IsUTF8 = -1;
+      break;
+    }
+  }
+  return IsUTF8;
+}
+
+// 万能转换函数 需要释放内存
+char *en_coding(char *text, int len, const char *coding, const char *tocoding){
+    printf("en_coding %s %d\n", text, len);
+    iconv_t cd;
+    size_t inlen = len;
+    size_t outlen = len*3+2;
+    char *outbuf = malloc(outlen);
+    memset(outbuf,0, outlen);
+    strncpy(outbuf,text,len+1);
+    char **pin = &text;
+    char **pout = &outbuf;
+    size_t rc;
+    cd = iconv_open(tocoding, coding); //gb2312
+    if(cd == 0){
+        printf("cd == 0\n");
+        return outbuf;
+    }
+    rc = iconv(cd, pin, &inlen, pout, &outlen);
+    if (-1 == rc)
+    {
+        printf("iconv == -1\n");
+        iconv_close(cd);
+        return outbuf;
+    }
+    printf("iconv success 长度：%d %d %s\n",outlen,rc,outbuf);
+ 
+    iconv_close(cd);
+    return outbuf;
 }

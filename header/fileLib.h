@@ -12,6 +12,8 @@
 #define MR_IS_DIR 2      //目录
 #define MR_IS_INVALID 8  //无效(非文件、非目录)
 
+#define DSM_MAX_FILE_LEN	600
+
 enum {
     MR_SEEK_SET,
     MR_SEEK_CUR,
@@ -44,4 +46,10 @@ void listMrpFiles(const char *path);
 
 void fileLib_init();
 void writeFile(const char *filename, void *data, uint32 length);
+
+char* my_copyFileToPlat(char *filename);
+char *my_getFileName(char *filename);
+void dsm_parseArgs(int argc, char *argv[]);
+char *dsm_getSDCard();
+char *dsm_getRunName();
 #endif

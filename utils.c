@@ -132,7 +132,7 @@ retResult:
     return ret;
 }
 
-void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb) {
+void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, int isThumb) {
     // uint32_t value = stopAddr + 8;
     // if (value == startAddr) {
     //     value = stopAddr;
@@ -170,6 +170,14 @@ uint32_t copyStrToMrp(char *str) {
     uint32_t len = strlen(str) + 1;
     void *p = my_mallocExt(len);
     memcpy(p, str, len);
+    return toMrpMemAddr(p);
+}
+
+uint32_t copyIntToMrp(uint32_t num) {
+    
+    uint32_t len = sizeof(uint32_t);
+    void *p = my_mallocExt(len);
+    memcpy(p, &num, len);
     return toMrpMemAddr(p);
 }
 
