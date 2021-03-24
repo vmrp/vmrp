@@ -12,3 +12,7 @@ main:
 		-s WASM=1 \
 		-s FORCE_FILESYSTEM=1 \
 		-o dist/vmrp.js
+
+		#--preload-file ./fs@/
+
+		

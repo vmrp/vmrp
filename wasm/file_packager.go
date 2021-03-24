@@ -11,8 +11,16 @@ import (
 	"github.com/google/uuid"
 )
 
+/*
+自定义文件系统的工具，实现原理参考：
 // /c/Users/zengming/Desktop/emsdk/upstream/emscripten/tools
 // $ python file_packager.py vmrp.data --preload /c/Users/zengming/Desktop/src/vmrp/wasm/fs@/ --js-output=vmrp2.js
+
+用法很简单，传入文件夹路径就行了
+file_packager.exe ./fs
+把生成的fs.js和fs.data放进dist文件夹
+dist文件夹中的内容就是最终的vmrp网页版
+*/
 
 type FileInfo struct {
 	FileName string `json:"filename"`

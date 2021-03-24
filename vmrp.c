@@ -173,9 +173,14 @@ static int32_t eventFuncV2(int32_t code, int32_t p1, int32_t p2) {
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE
 int32_t c_event(int32_t code, int32_t p1, int32_t p2) {
-#else
-int32_t event(int32_t code, int32_t p1, int32_t p2) {
+    if (eventFunc) {
+        return eventFunc(code, p1, p2);
+    }
+    return MR_FAILED;
+}
 #endif
+
+int32_t event(int32_t code, int32_t p1, int32_t p2) {
     if (eventFunc) {
         return eventFunc(code, p1, p2);
     }
