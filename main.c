@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #include "./header/bridge.h"
-#include "./header/fileLib.h"
 #include "./header/vmrp.h"
 
 #ifdef _WIN32
@@ -29,8 +28,6 @@
 
 static SDL_TimerID timeId = 0;
 static SDL_Window *window;
-static uc_engine *uc;
-static void (*eventFunc)(int code, int p1, int p2);
 
 void guiDrawBitmap(uint16_t *bmp, int32_t x, int32_t y, int32_t w, int32_t h) {
     SDL_Surface *surface = SDL_GetWindowSurface(window);
@@ -54,27 +51,7 @@ void guiDrawBitmap(uint16_t *bmp, int32_t x, int32_t y, int32_t w, int32_t h) {
         printf("SDL_UpdateWindowSurface err\n");
 }
 
-static void eventFuncV1(int code, int p1, int p2) {
-    if (uc) {
-        bridge_mr_event(uc, code, p1, p2);
-    }
-}
-
-static void eventFuncV2(int code, int p1, int p2) {
-    if (uc) {
-        bridge_dsm_mr_event(uc, code, p1, p2);
-    }
-}
-
 #ifdef __EMSCRIPTEN__
-EMSCRIPTEN_KEEPALIVE
-int32_t c_event(int code, int p1, int p2) {
-    if (uc) {
-        return bridge_dsm_mr_event(uc, code, p1, p2);
-    }
-    return MR_FAILED;
-}
-
 EMSCRIPTEN_KEEPALIVE
 void setEventEnable(int v) {
     int state = v ? SDL_ENABLE : SDL_DISABLE;
@@ -90,7 +67,7 @@ void setEventEnable(int v) {
 uint32_t th2(uint32_t interval, void *param) {
     SDL_RemoveTimer(timeId);
     timeId = 0;
-    bridge_dsm_mr_timer(uc);
+    timer();
     return 0;
 }
 
@@ -112,122 +89,82 @@ int32_t timerStop() {
     return MR_SUCCESS;
 }
 
-static int startMrp(char *f) {
-    fileLib_init();
-    eventFunc = eventFuncV1;
-
-    uc = initVmrp(f);
-    if (uc == NULL) {
-        printf("initVmrp() fail.\n");
-        return 1;
-    }
-
-    int32_t ret = bridge_mr_init(uc);
-    if (ret > CODE_ADDRESS) {
-        printf("bridge_mr_init:0x%X try vmrp loader\n", ret);
-
-        if (bridge_dsm_init(uc, ret) == MR_SUCCESS) {
-            eventFunc = eventFuncV2;
-            printf("bridge_dsm_init success\n");
-            dumpREG(uc);
-
-            char *filename = "dsm_gm.mrp";
-            // char *filename = "winmine.mrp";
-            char *extName = "start.mr";
-            // char *extName = "cfunction.ext";
-
-            uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
-            printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
-        }
-    }
-
-    // bridge_mr_pauseApp(uc);
-    // bridge_mr_resumeApp(uc);
-
-    // mrc_exitApp() 可能由MR_EVENT_EXIT event之后自动调用
-    // bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
-
-    // freeVmrp(uc);
-    // printf("exit.\n");
-    return 0;
-}
-
 static void keyEvent(int16 type, SDL_Keycode code) {
     if (code >= SDLK_0 && code <= SDLK_9) {
         int32_t key = MR_KEY_0 + (code - SDLK_0);
-        eventFunc(type, key, 0);  // 按键 0-9
+        event(type, key, 0);  // 按键 0-9
         return;
     }
     switch (code) {
         case SDLK_KP_0:
-            eventFunc(type, MR_KEY_0, 0);
+            event(type, MR_KEY_0, 0);
             break;
         case SDLK_KP_1:
-            eventFunc(type, MR_KEY_1, 0);
+            event(type, MR_KEY_1, 0);
             break;
         case SDLK_KP_2:
-            eventFunc(type, MR_KEY_2, 0);
+            event(type, MR_KEY_2, 0);
             break;
         case SDLK_KP_3:
-            eventFunc(type, MR_KEY_3, 0);
+            event(type, MR_KEY_3, 0);
             break;
         case SDLK_KP_4:
-            eventFunc(type, MR_KEY_4, 0);
+            event(type, MR_KEY_4, 0);
             break;
         case SDLK_KP_5:
-            eventFunc(type, MR_KEY_5, 0);
+            event(type, MR_KEY_5, 0);
             break;
         case SDLK_KP_6:
-            eventFunc(type, MR_KEY_6, 0);
+            event(type, MR_KEY_6, 0);
             break;
         case SDLK_KP_7:
-            eventFunc(type, MR_KEY_7, 0);
+            event(type, MR_KEY_7, 0);
             break;
         case SDLK_KP_8:
-            eventFunc(type, MR_KEY_8, 0);
+            event(type, MR_KEY_8, 0);
             break;
         case SDLK_KP_9:
-            eventFunc(type, MR_KEY_9, 0);
+            event(type, MR_KEY_9, 0);
             break;
         case SDLK_KP_ENTER:
-        case SDLK_RETURN:                       // 回车键
-            eventFunc(type, MR_KEY_SELECT, 0);  // 确认/选择/ok
+        case SDLK_RETURN:                   // 回车键
+            event(type, MR_KEY_SELECT, 0);  // 确认/选择/ok
             break;
-        case SDLK_EQUALS:                      // 等号
-            eventFunc(type, MR_KEY_POUND, 0);  // 按键 #
+        case SDLK_EQUALS:                  // 等号
+            event(type, MR_KEY_POUND, 0);  // 按键 #
             break;
-        case SDLK_MINUS:                      // 减号
-            eventFunc(type, MR_KEY_STAR, 0);  // 按键 *
+        case SDLK_MINUS:                  // 减号
+            event(type, MR_KEY_STAR, 0);  // 按键 *
             break;
         case SDLK_w:
         case SDLK_UP:  // 上
-            eventFunc(type, MR_KEY_UP, 0);
+            event(type, MR_KEY_UP, 0);
             break;
         case SDLK_s:
         case SDLK_DOWN:  // 下
-            eventFunc(type, MR_KEY_DOWN, 0);
+            event(type, MR_KEY_DOWN, 0);
             break;
         case SDLK_a:
         case SDLK_LEFT:  // 左
-            eventFunc(type, MR_KEY_LEFT, 0);
+            event(type, MR_KEY_LEFT, 0);
             break;
         case SDLK_d:
         case SDLK_RIGHT:  // 右
-            eventFunc(type, MR_KEY_RIGHT, 0);
+            event(type, MR_KEY_RIGHT, 0);
             break;
         case SDLK_q:
-        case SDLK_LEFTBRACKET:                    // 左中括号
-            eventFunc(type, MR_KEY_SOFTLEFT, 0);  // 左功能键
+        case SDLK_LEFTBRACKET:                // 左中括号
+            event(type, MR_KEY_SOFTLEFT, 0);  // 左功能键
             break;
         case SDLK_e:
-        case SDLK_RIGHTBRACKET:                    // 右中括号
-            eventFunc(type, MR_KEY_SOFTRIGHT, 0);  // 右功能键
+        case SDLK_RIGHTBRACKET:                // 右中括号
+            event(type, MR_KEY_SOFTRIGHT, 0);  // 右功能键
             break;
         case SDLK_TAB:
-            eventFunc(type, MR_KEY_SEND, 0);  // 接听键
+            event(type, MR_KEY_SEND, 0);  // 接听键
             break;
         case SDLK_ESCAPE:
-            eventFunc(type, MR_KEY_POWER, 0);  // 挂机键
+            event(type, MR_KEY_POWER, 0);  // 挂机键
             break;
         default:
             printf("key:%d\n", code);
@@ -239,7 +176,7 @@ bool isMouseDown = false;
 SDL_Keycode isKeyDown = SDLK_UNKNOWN;
 
 void loop() {
-    SDL_Event event;
+    SDL_Event ev;
     bool isLoop = true;
 
 #if defined(__EMSCRIPTEN__)
@@ -248,41 +185,41 @@ void loop() {
 #endif
     {
 #if defined(__EMSCRIPTEN__)
-        while (SDL_PollEvent(&event))
+        while (SDL_PollEvent(&ev))
 #else
-        while (SDL_WaitEvent(&event))
+        while (SDL_WaitEvent(&ev))
 #endif
         {
-            if (event.type == SDL_QUIT) {
+            if (ev.type == SDL_QUIT) {
                 isLoop = false;
                 // emscripten_cancel_main_loop();
                 break;
             }
-            switch (event.type) {
+            switch (ev.type) {
                 case SDL_KEYDOWN:
                     if (isKeyDown == SDLK_UNKNOWN) {
-                        isKeyDown = event.key.keysym.sym;
-                        keyEvent(MR_KEY_PRESS, event.key.keysym.sym);
+                        isKeyDown = ev.key.keysym.sym;
+                        keyEvent(MR_KEY_PRESS, ev.key.keysym.sym);
                     }
                     break;
                 case SDL_KEYUP:
-                    if (isKeyDown == event.key.keysym.sym) {
+                    if (isKeyDown == ev.key.keysym.sym) {
                         isKeyDown = SDLK_UNKNOWN;
-                        keyEvent(MR_KEY_RELEASE, event.key.keysym.sym);
+                        keyEvent(MR_KEY_RELEASE, ev.key.keysym.sym);
                     }
                     break;
                 case SDL_MOUSEMOTION:
                     if (isMouseDown) {
-                        eventFunc(MR_MOUSE_MOVE, event.motion.x, event.motion.y);
+                        event(MR_MOUSE_MOVE, ev.motion.x, ev.motion.y);
                     }
                     break;
                 case SDL_MOUSEBUTTONDOWN:
                     isMouseDown = true;
-                    eventFunc(MR_MOUSE_DOWN, event.motion.x, event.motion.y);
+                    event(MR_MOUSE_DOWN, ev.motion.x, ev.motion.y);
                     break;
                 case SDL_MOUSEBUTTONUP:
                     isMouseDown = false;
-                    eventFunc(MR_MOUSE_UP, event.motion.x, event.motion.y);
+                    event(MR_MOUSE_UP, ev.motion.x, ev.motion.y);
                     break;
             }
         }
@@ -315,7 +252,9 @@ int main(int argc, char *args[]) {
         return -1;
     }
 
-    startMrp("vmrp.mrp");
+    bridge_set_guiDrawBitmap(guiDrawBitmap);
+    bridge_set_timer(timerStart, timerStop);
+    startVmrp();
 
 #if defined(__EMSCRIPTEN__)
     emscripten_set_main_loop(loop, 0, 1);

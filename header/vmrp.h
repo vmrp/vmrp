@@ -31,18 +31,12 @@
 #define STOP_ADDRESS (SCREEN_BUF_ADDRESS + SCREEN_BUF_SIZE)
 #define TOTAL_MEMORY (STOP_ADDRESS - START_ADDRESS)
 
-extern uint16_t *screenBuf;  // 屏幕缓冲区地址
-
 void *getMrpMemPtr(uint32_t addr);
 uint32_t toMrpMemAddr(void *ptr);
 
-int vmrp_test();
-uc_engine *initVmrp(char *filename);
-int freeVmrp();
+int32_t event(int32_t code, int32_t p1, int32_t p2);
+int32_t timer();
+int startVmrp();
 
-// 需要外部实现的接口
-extern void guiDrawBitmap(uint16_t *bmp, int32_t x, int32_t y, int32_t w, int32_t h);
-extern int32_t timerStart(uint16_t t);
-extern int32_t timerStop();
 
 #endif

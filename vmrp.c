@@ -16,7 +16,6 @@
 #include <emscripten.h>
 #endif
 
-uint16_t *screenBuf;
 uint8_t *mrpMem;  // 模拟器的全部内存
 
 // 返回的内存不能free
@@ -84,7 +83,6 @@ static int32_t loadCode(uc_engine *uc, char *filename) {
 
 static bool mem_init(uc_engine *uc, char *filename) {
     mrpMem = malloc(TOTAL_MEMORY);
-    screenBuf = getMrpMemPtr(SCREEN_BUF_ADDRESS);
 
     // unicorn存在BUG，UC_HOOK_MEM_INVALID只能拦截第一次UC_MEM_FETCH_PROT，所以干脆设置成可执行，统一在UC_HOOK_CODE事件中处理
     uc_err err = uc_mem_map_ptr(uc, START_ADDRESS, TOTAL_MEMORY, UC_PROT_ALL, mrpMem);
@@ -153,4 +151,80 @@ uc_engine *initVmrp(char *filename) {
 end:
     uc_close(uc);
     return NULL;
+}
+
+static uc_engine *uc;
+static int32_t (*eventFunc)(int32_t code, int32_t p1, int32_t p2);
+
+static int32_t eventFuncV1(int32_t code, int32_t p1, int32_t p2) {
+    if (uc) {
+        return bridge_mr_event(uc, code, p1, p2);
+    }
+    return MR_FAILED;
+}
+
+static int32_t eventFuncV2(int32_t code, int32_t p1, int32_t p2) {
+    if (uc) {
+        return bridge_dsm_mr_event(uc, code, p1, p2);
+    }
+    return MR_FAILED;
+}
+
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+int32_t c_event(int32_t code, int32_t p1, int32_t p2) {
+#else
+int32_t event(int32_t code, int32_t p1, int32_t p2) {
+#endif
+    if (eventFunc) {
+        return eventFunc(code, p1, p2);
+    }
+    return MR_FAILED;
+}
+
+int32_t timer() {
+    if (uc) {
+        return bridge_dsm_mr_timer(uc);
+    }
+    return MR_FAILED;
+}
+
+int startVmrp() {
+    fileLib_init();
+    eventFunc = eventFuncV1;
+
+    uc = initVmrp("vmrp.mrp");
+    if (uc == NULL) {
+        printf("initVmrp() fail.\n");
+        return 1;
+    }
+
+    int32_t ret = bridge_mr_init(uc);
+    if (ret > CODE_ADDRESS) {
+        printf("bridge_mr_init:0x%X try vmrp loader\n", ret);
+
+        if (bridge_dsm_init(uc, ret) == MR_SUCCESS) {
+            eventFunc = eventFuncV2;
+            printf("bridge_dsm_init success\n");
+            dumpREG(uc);
+
+            char *filename = "dsm_gm.mrp";
+            // char *filename = "winmine.mrp";
+            char *extName = "start.mr";
+            // char *extName = "cfunction.ext";
+
+            uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
+            printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
+        }
+    }
+
+    // bridge_mr_pauseApp(uc);
+    // bridge_mr_resumeApp(uc);
+
+    // mrc_exitApp() 可能由MR_EVENT_EXIT event之后自动调用
+    // bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
+
+    // freeVmrp(uc);
+    // printf("exit.\n");
+    return 0;
 }

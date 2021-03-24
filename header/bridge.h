@@ -31,6 +31,14 @@ typedef struct BridgeMap {
 #define BRIDGE_FUNC_MAP(offset, mapType, field, init, func, extraData) \
     { #field, offset, mapType, init, func, extraData }
 
+// 需要外部实现的接口
+typedef void (*guiDrawBitmap_t)(uint16_t *bmp, int32_t x, int32_t y, int32_t w, int32_t h);
+typedef int32_t (*timerStart_t)(uint16_t t);
+typedef int32_t (*timerStop_t)();
+
+void bridge_set_guiDrawBitmap(guiDrawBitmap_t cb);
+void bridge_set_timer(timerStart_t start, timerStop_t stop);
+
 void bridge(uc_engine *uc, uc_mem_type type, uint64_t address);
 uc_err bridge_init(uc_engine *uc);
 

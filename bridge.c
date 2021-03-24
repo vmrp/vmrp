@@ -47,6 +47,10 @@ static _mr_c_event_st *mr_c_event;  // 用于mrc_event参数传递的内存
 
 static uint32_t mr_helper_addr;  //mrc_extHelper()函数的地址
 static uint32_t baseLib_cfunction_ext_mem;
+static uint16_t *screenBuf;
+static guiDrawBitmap_t guiDrawBitmap;
+static timerStart_t timerStart;
+static timerStop_t timerStop;
 
 // data ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1241,6 +1245,8 @@ uc_err bridge_init(uc_engine *uc) {
     uc_err err;
     uint32_t size = END_ADDRESS - BRIDGE_TABLE_ADDRESS;
 
+    screenBuf = getMrpMemPtr(SCREEN_BUF_ADDRESS);
+
     printf("[bridge_init]startAddr: 0x%X, endAddr: 0x%X, size: 0x%X\n", BRIDGE_TABLE_ADDRESS, END_ADDRESS, size);
     printf("[bridge_init]MR_TABLE_ADDRESS: 0x%X\n", MR_TABLE_ADDRESS);
     printf("[bridge_init]MR_C_FUNCTION_ADDRESS: 0x%X\n", MR_C_FUNCTION_ADDRESS);
@@ -1272,6 +1278,15 @@ uc_err bridge_init(uc_engine *uc) {
     tsf_init(SCREEN_WIDTH, SCREEN_HEIGHT, setPixel);
 
     return UC_ERR_OK;
+}
+
+void bridge_set_guiDrawBitmap(guiDrawBitmap_t cb) {
+    guiDrawBitmap = cb;
+}
+
+void bridge_set_timer(timerStart_t start, timerStop_t stop) {
+    timerStart = start;
+    timerStop = stop;
 }
 
 static int32_t bridge_mr_helper(uc_engine *uc, uint32_t code, uint32_t input, uint32_t input_len) {
