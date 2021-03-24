@@ -8,13 +8,19 @@ https://github.com/zengming00/vmrp/releases/download/1.0.0/vmrp_win32_20201107.z
 
 https://zengming00.github.io/vmrp_v1.0/main.html
 
-# vmrp
+# 实现原理
 
 由于mrpoid模拟器受限于安卓系统，于是决定开发一款真正的模拟器
 
-目前完全在windows下开发并且优先考虑32位版本
+mrpoid是安卓上的mrp模拟器，c语言开发的mrp是编译后的arm架构机器码，因此在arm芯片上直接加载运行就可以，安卓手机大多都是采用arm架构的cpu，mrpoid就是加载mrp代码到内存中，修改mrp内部的函数表然后运行，因此mrpoid无法在其它架构的设备上运行。
 
-目前已经实现的事件： MR_KEY_PRESS, MR_KEY_RELEASE, MR_MOUSE_MOVE, MR_MOUSE_DOWN, MR_MOUSE_UP
+vmrp实现原理与mrpoid基本相同，参考了mrpoid早期的实现原理，不同的地方是vmrp借助unicorn engine实现真正的模拟器，不再依赖arm架构cpu。
+
+![工作流程](https://github.com/zengming00/vmrp/raw/master/doc/images/2.0.jpg)
+
+## 自身实现的mythroad层：
+
+实现的事件： MR_KEY_PRESS, MR_KEY_RELEASE, MR_MOUSE_MOVE, MR_MOUSE_DOWN, MR_MOUSE_UP
 
 按键： 上下左右或wsad键控制方向，回车键是ok, q键是左功能键, e键是右功能键
 
@@ -34,25 +40,17 @@ https://zengming00.github.io/vmrp_v1.0/main.html
 
 完整版模拟器将借助mythroad层代码实现，代码在vmrp_arm项目中。
 
-# 实现原理
-
-mrpoid是安卓上的mrp模拟器，c语言开发的mrp是编译后的arm指令数据，因此在arm芯片上直接加载运行就可以，mrpoid就是加载mrp代码到内存中，修改mrp内部的函数表然后运行，因此必需在arm cpu才能运行
-
-vmrp实现原理与mrpoid基本相同，参考了mrpoid早期的实现原理，不同的地方是vmrp借助unicorn engine实现真正的模拟器，并不依赖arm cpu，由于unicorn完全是一颗模拟的cpu，并且unicorn仍存在许多bug，基于unicorn开发需要对arm汇编有比较多的了解。
-
-因为我是在windows下开发，unicorn是预编译好的，支持各种指令集，不仅仅是arm，因此编译出来的文件可能保留了其它指令集的支持导致文件变得很大，指令的hook可能是导致运行效率低下的一个原因
-
-# 潜在bug
+# R9寄存器导致的BUG
 
 因为ext中的mr_c_function_load()函数是第一个函数，在mythroad层调用此函数其实相当于仍然在mythroad层调用mythroad层的东西，它会回调_mr_c_function_new()将mr_extHelper()或mr_helper()函数的地址传回mythroad，所有的事件传递都是通过这个helper函数，helper函数进去的第一件事就是备份r9寄存到r10，然后设置r9寄存器的值，在ext内的所有全局变量的读写都是基于这个寄存器提供的基地址，而在ext内调用mythroad层的函数时，r9和r10寄存器的值并没有恢复，这可能导致严重的问题，这可能就是安卓上mrpoid运行不稳定的原因，从反编译的结果来看，插件化mrp内的ext之间是有恢复r9寄存器的功能，但是没有恢复r10寄存器的功能，在目前能获得的mythroad层代码中没有看到任何恢复r9和r10的操作。
 
 # 编译方法
 
-目前使用到的工具和库：
+目前使用到的工具和支持库：
 
 https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/sjlj/x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0.7z
 
-https://github.com/aquynh/capstone/releases/download/4.0.1/capstone-4.0.1-win32.zip
+https://github.com/aquynh/capstone/releases/download/4.0.1/capstone-4.0.1-win32.zip  （非必需）
 
 https://github.com/unicorn-engine/unicorn/releases/download/1.0.2/unicorn-1.0.2-win32.zip
 
