@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/google/uuid"
 )
 
 /*
@@ -31,7 +29,6 @@ type FileInfo struct {
 type PackageInfo struct {
 	Files             []FileInfo `json:"files"`
 	RemotePackageSize int        `json:"remote_package_size"`
-	PackageUUID       string     `json:"package_uuid"`
 }
 
 var data []byte
@@ -46,7 +43,6 @@ func main() {
 	}
 	rootDir = filepath.Clean(rootDir)
 	packageInfo.Files = make([]FileInfo, 0)
-	packageInfo.PackageUUID = uuid.NewString()
 	readDir(rootDir, 0)
 	bts, err := json.MarshalIndent(packageInfo, "", "    ")
 	if err != nil {
@@ -133,7 +129,6 @@ Module.expectedDataFileDownloads++;
         var REMOTE_PACKAGE_NAME = Module['locateFile'] ? Module['locateFile'](REMOTE_PACKAGE_BASE, '') : REMOTE_PACKAGE_BASE;
 
         var REMOTE_PACKAGE_SIZE = metadata['remote_package_size'];
-        var PACKAGE_UUID = metadata['package_uuid'];
 
         function fetchRemotePackage(packageName, packageSize, callback, errback) {
             var xhr = new XMLHttpRequest();
@@ -226,7 +221,10 @@ Module.expectedDataFileDownloads++;
                 finish: function(byteArray) {
                     var that = this;
 
-                    Module['FS_createDataFile'](this.name, null, byteArray, true, true, true); // canOwn this data in the filesystem, it is a slide into the heap that will never change
+                    if (Module['dsm_gm'] && this.name === '/mythroad/dsm_gm.mrp') {
+                    } else {
+                        Module['FS_createDataFile'](this.name, null, byteArray, true, true, true); // canOwn this data in the filesystem, it is a slide into the heap that will never change
+                    }
                     Module['removeRunDependency']('fp ' + that.name);
 
                     this.requests[this.name] = null;
@@ -243,7 +241,6 @@ Module.expectedDataFileDownloads++;
                 assert(arrayBuffer, 'Loading data file failed.');
                 assert(arrayBuffer instanceof ArrayBuffer, 'bad input to processPackageData');
                 var byteArray = new Uint8Array(arrayBuffer);
-                var curr;
 
                 // Reuse the bytearray from the XHR as the source for file reads.
                 DataRequest.prototype.byteArray = byteArray;
