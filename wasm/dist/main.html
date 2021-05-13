@@ -18,7 +18,7 @@
             max-width: 640px;
         }
 
-        #main div:first-child {
+        #main>div:first-child {
             text-align: center;
         }
 
@@ -85,6 +85,23 @@
             height: 20px;
             width: 300px;
         }
+
+        #keymap {
+            max-width: 400px;
+            margin: 30px auto;
+        }
+
+        #keymap>div {
+            display: flex;
+            justify-content: space-evenly;
+        }
+
+        #keymap>div button {
+            line-height: 40px;
+            width: 40px;
+            margin: 5px;
+            outline: none;
+        }
     </style>
 </head>
 
@@ -104,6 +121,35 @@
                     <span id="dialogInfo">0/0</span>
                     <button id="dialogCancel">取消</button>
                 </div>
+            </div>
+        </div>
+        <div id="keymap">
+            <div>
+                <button id="key_sleft">=</button>
+                <button id="key_up">↑</button>
+                <button id="key_sright">=</button>
+                <button id="key_1">1</button>
+                <button id="key_2">2</button>
+                <button id="key_3">3</button>
+                <button id="key_star">*</button>
+            </div>
+            <div>
+                <button id="key_left">←</button>
+                <button id="key_ok"></button>
+                <button id="key_right">→</button>
+                <button id="key_4">4</button>
+                <button id="key_5">5</button>
+                <button id="key_6">6</button>
+                <button id="key_0">0</button>
+            </div>
+            <div>
+                <button style="visibility: hidden;"></button>
+                <button id="key_down">↓</button>
+                <button style="visibility: hidden;"></button>
+                <button id="key_7">7</button>
+                <button id="key_8">8</button>
+                <button id="key_9">9</button>
+                <button id="key_pound">#</button>
             </div>
         </div>
         <p>
@@ -350,6 +396,36 @@
             }
             return holdTextMem;
         }
+
+        function touch_add(id, code) {
+            const key = document.getElementById(id);
+            key.onmousedown = function (event) {
+                Module._c_event(0, code, 0);
+            }
+            key.onmouseup = function (event) {
+                Module._c_event(1, code, 0);
+            }
+        }
+        touch_add("key_0", 0);
+        touch_add("key_1", 1);
+        touch_add("key_2", 2);
+        touch_add("key_3", 3);
+        touch_add("key_4", 4);
+        touch_add("key_5", 5);
+        touch_add("key_6", 6);
+        touch_add("key_7", 7);
+        touch_add("key_8", 8);
+        touch_add("key_9", 9);
+        touch_add("key_star", 10);
+        touch_add("key_pound", 11);
+        touch_add("key_up", 12);
+        touch_add("key_down", 13);
+        touch_add("key_left", 14);
+        touch_add("key_right", 15);
+        touch_add("key_sleft", 17);
+        touch_add("key_sright", 18);
+        touch_add("key_ok", 20);
+
     </script>
 
     <script type='text/javascript'>
