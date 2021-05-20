@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vmrp</title>
+    <title></title>
     <style>
         * {
             user-select: none;
@@ -169,6 +169,13 @@
         </div>
     </div>
     <script>
+        function GetQueryString(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return decodeURI(r[2]);
+            return null;
+        }
+
         const dialog = document.getElementById('dialog');
         const dialogTextarea = document.querySelector('#dialog textarea');
         const dialogTitle = document.querySelector('#dialog h1');
@@ -444,9 +451,16 @@
             if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
             console.log(text);
         }
+        function setTitle() {
+            const title = GetQueryString('title')
+            if (title) {
+                document.title = title;
+            }
+        }
+
         var Module = {
             preRun: [],
-            postRun: [],
+            postRun: [setTitle],
             print: print,
             printErr: function (text) {
                 if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');

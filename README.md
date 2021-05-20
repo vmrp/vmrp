@@ -6,6 +6,8 @@ https://github.com/zengming00/vmrp/releases/download/1.0.0/vmrp_win32_20201107.z
 
 # web网页版体验地址
 
+https://zengming00.github.io/
+
 https://zengming00.github.io/vmrp_v1.0/main.html
 
 # 实现原理

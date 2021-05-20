@@ -25,13 +25,6 @@ var Module = typeof Module !== 'undefined' ? Module : {};
             FS.mkdir(v);
         }
 
-        function GetQueryString(name) {
-            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
-            var r = window.location.search.substr(1).match(reg);
-            if (r != null) return decodeURI(r[2]);
-            return null;
-        }
-
         const dsm_gm = GetQueryString('f');
         for (const v of files) {
             const parent = v.substring(0, v.lastIndexOf('/'));
