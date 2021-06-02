@@ -62,7 +62,6 @@ void cpsrToStr(uint32_t v, char *out);
 char *memTypeStr(uc_mem_type type);
 void dumpREG(uc_engine *uc);
 void dumpMemStr(void *ptr, size_t len);
-void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb);
 char *getSplitStr(char *str, char split, int n);
 
 typedef struct uIntMap {

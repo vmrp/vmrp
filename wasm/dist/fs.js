@@ -11,7 +11,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
             "/mythroad/plugins/ose/brwcore.mrp",
             "/mythroad/system/gb12.uc2",
             "/mythroad/system/gb16.uc2",
-            "/vmrp.mrp",
+            "/vmrp.elf",
         ];
         const dirs = [
             "/mythroad",

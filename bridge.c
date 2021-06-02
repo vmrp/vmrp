@@ -35,172 +35,9 @@
         uc_reg_write(uc, UC_ARM_REG_R0, &_v); \
     }
 
-typedef struct _mr_c_event_st {
-    int32 code;
-    int32 param0;
-    int32 param1;
-    int32 param2;
-    int32 param3;
-} _mr_c_event_st;
-
-static _mr_c_event_st *mr_c_event;  // 用于mrc_event参数传递的内存
-
-static uint32_t mr_helper_addr;  //mrc_extHelper()函数的地址
-static uint32_t baseLib_cfunction_ext_mem;
-static uint16_t *screenBuf;
 static guiDrawBitmap_t guiDrawBitmap;
 static timerStart_t timerStart;
 static timerStop_t timerStop;
-
-// data ////////////////////////////////////////////////////////////////////////////////////////
-
-static void br_mr_screen_h_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
-    uint32_t *mr_screen_h = my_mallocExt(4);
-    *mr_screen_h = SCREEN_HEIGHT;
-    uint32_t *p = getMrpMemPtr(addr);
-    *p = toMrpMemAddr(mr_screen_h);
-}
-
-static void br_mr_screen_w_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
-    uint32_t *mr_screen_w = my_mallocExt(4);
-    *mr_screen_w = SCREEN_WIDTH;
-    uint32_t *p = getMrpMemPtr(addr);
-    *p = toMrpMemAddr(mr_screen_w);
-}
-
-static void br_mr_screenBuf_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
-    uint32_t *mr_screenBuf = my_mallocExt(4);
-    *mr_screenBuf = SCREEN_BUF_ADDRESS;
-    uint32_t *p = getMrpMemPtr(addr);
-    *p = toMrpMemAddr(mr_screenBuf);
-}
-// func ////////////////////////////////////////////////////////////////////////////////////////
-
-static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
-    // typedef int32 (*T__mr_c_function_new)(MR_C_FUNCTION f, int32 len);
-    uint32_t p_f, p_len;
-    uc_reg_read(uc, UC_ARM_REG_R0, &p_f);
-    uc_reg_read(uc, UC_ARM_REG_R1, &p_len);
-    printf("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p_f, p_f, p_len, p_len);
-    dumpREG(uc);
-    mr_helper_addr = p_f;
-    printf("mrc_extHelper() addr:0x%X\n", mr_helper_addr);
-    SET_RET_V(MR_SUCCESS);
-}
-
-static void br_mr_malloc(BridgeMap *o, uc_engine *uc) {
-    // typedef void* (*T_mr_malloc)(uint32 len);
-    uint32_t len;
-    uc_reg_read(uc, UC_ARM_REG_R0, &len);
-    void *p = my_mallocExt(len);
-    if (p) {
-        uint32_t ret = toMrpMemAddr(p);
-        LOG("ext call %s(0x%X[%u]) ret=0x%X[%u]\n", o->name, len, len, ret, ret);
-        SET_RET_V(ret);
-        return;
-    }
-    SET_RET_V((uint32_t)NULL);
-}
-
-static void br_mr_free(BridgeMap *o, uc_engine *uc) {
-    // typedef void  (*T_mr_free)(void* p, uint32 len);
-    uint32_t p, len;
-    uc_reg_read(uc, UC_ARM_REG_R0, &p);
-    uc_reg_read(uc, UC_ARM_REG_R1, &len);
-
-    LOG("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p, p, len, len);
-    my_freeExt(getMrpMemPtr(p));
-}
-
-static void br__mr_TestCom(BridgeMap *o, uc_engine *uc) {
-    // typedef int32 (*T__mr_TestCom)(int32 L, int input0, int input1);
-    uint32_t L, input0, input1;
-
-    uc_reg_read(uc, UC_ARM_REG_R0, &L);
-    uc_reg_read(uc, UC_ARM_REG_R1, &input0);
-    uc_reg_read(uc, UC_ARM_REG_R2, &input1);
-
-    LOG("ext call %s(0x%X[%u], 0x%X[%u], 0x%X[%u])\n", o->name, L, L, input0, input0, input1, input1);
-    SET_RET_V(MR_SUCCESS);
-}
-
-static inline void setPixel(int32_t x, int32_t y, uint16_t color, void *userData) {
-    if (x < 0 || y < 0 || x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
-        return;
-    }
-    *(screenBuf + (x + SCREEN_WIDTH * y)) = color;
-}
-
-static void br__DrawPoint(BridgeMap *o, uc_engine *uc) {
-    // typedef  void (*T__DrawPoint)(int16 x, int16 y, uint16 nativecolor);
-    uint32_t x, y, nativecolor;
-
-    uc_reg_read(uc, UC_ARM_REG_R0, &x);
-    uc_reg_read(uc, UC_ARM_REG_R1, &y);
-    uc_reg_read(uc, UC_ARM_REG_R2, &nativecolor);
-
-    LOG("ext call %s(0x%X, 0x%X, 0x%X)\n", o->name, x, y, nativecolor);
-    LOG("ext call %s([%u], [%u], [%u])\n", o->name, x, y, nativecolor);
-    setPixel(x, y, nativecolor, uc);
-}
-
-// 实际上mrc_clearScreen()也是调用的这个方法
-static void br_DrawRect(BridgeMap *o, uc_engine *uc) {
-    // typedef  void (*T_DrawRect)(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b);
-    uint32_t x, y, w, h, r, g, b;
-    // 前四个参数是通过寄存器传递
-    uc_reg_read(uc, UC_ARM_REG_R0, &x);
-    uc_reg_read(uc, UC_ARM_REG_R1, &y);
-    uc_reg_read(uc, UC_ARM_REG_R2, &w);
-    uc_reg_read(uc, UC_ARM_REG_R3, &h);
-
-    // 后面的参数通过栈传递（注意内存对齐遵循ATPCS）
-    uint32_t sp;
-    uc_reg_read(uc, UC_ARM_REG_SP, &sp);
-    uc_mem_read(uc, sp, &r, 4);
-    uc_mem_read(uc, sp + 4, &g, 4);
-    uc_mem_read(uc, sp + 8, &b, 4);
-
-    LOG("ext call %s(%d, %d, %d, %d, %u, %u, %u)\n", o->name, x, y, w, h, r, g, b);
-    uint16_t color = MAKERGB565(r, g, b);
-
-    for (uint32_t i = 0; i < w; i++) {
-        for (uint32_t j = 0; j < h; j++) {
-            setPixel(x + i, y + j, color, uc);
-        }
-    }
-}
-
-static void br__DrawText(BridgeMap *o, uc_engine *uc) {
-    // typedef  int32 (*T__DrawText)(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int is_unicode, uint16 font);
-    uint32_t pcText, x, y, r, g, b, is_unicode, font;
-
-    uc_reg_read(uc, UC_ARM_REG_R0, &pcText);
-    uc_reg_read(uc, UC_ARM_REG_R1, &x);
-    uc_reg_read(uc, UC_ARM_REG_R2, &y);
-    uc_reg_read(uc, UC_ARM_REG_R3, &r);
-
-    uint32_t sp;
-    uc_reg_read(uc, UC_ARM_REG_SP, &sp);
-    uc_mem_read(uc, sp, &g, 4);
-    uc_mem_read(uc, sp + 4, &b, 4);
-    uc_mem_read(uc, sp + 8, &is_unicode, 4);
-    uc_mem_read(uc, sp + 12, &font, 4);
-
-    char *str = getMrpMemPtr(pcText);
-    LOG("ext call %s(0x%X[\"%s\"], %d, %d, %u, %u, %u, %d, %u)\n", o->name, pcText, str, x, y, r, g, b, is_unicode, font);
-    if (is_unicode) {
-        tsf_drawText((uint8_t *)str, x, y, MAKERGB565(r, g, b), uc);
-    } else {
-        uint8_t *out = (uint8_t *)gbToUCS2BE((uint8_t *)str, NULL);
-        tsf_drawText(out, x, y, MAKERGB565(r, g, b), uc);
-        free(out);
-    }
-    SET_RET_V(MR_SUCCESS);
-}
 
 // 实际上mrc_refreshScreen()是调用的这个方法
 static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
@@ -329,50 +166,6 @@ static void br_mr_rmDir(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(my_rmDir(nameStr));
 }
 
-static void br_atoi(BridgeMap *o, uc_engine *uc) {
-    // typedef int (*T_atoi)(const char * nptr);
-    uint32_t nptr;
-    uc_reg_read(uc, UC_ARM_REG_R0, &nptr);
-    char *str = getMrpMemPtr(nptr);
-    LOG("ext call %s(0x%X[%s])\n", o->name, nptr, str);
-    SET_RET_V(atoi(str));
-}
-
-static void br_mr_exit(BridgeMap *o, uc_engine *uc) {
-    // typedef int32 (*T_mr_exit)(void);
-    LOG("##### ext call %s()\n", o->name);
-    SET_RET_V(MR_SUCCESS);
-}
-
-static void br_mr_getScreenInfo(BridgeMap *o, uc_engine *uc) {
-    // int32 mr_getScreenInfo(mr_screeninfo * s) ;
-    LOG("##### ext call %s()\n", o->name);
-
-    uint32_t addr;
-    uc_reg_read(uc, UC_ARM_REG_R0, &addr);
-
-    struct {
-        uint32 width;
-        uint32 height;
-        uint32 bit;
-    } *s = getMrpMemPtr(addr);
-
-    if (s) {
-        s->width = SCREEN_WIDTH;
-        s->height = SCREEN_HEIGHT;
-        s->bit = 16;
-    }
-    SET_RET_V(MR_SUCCESS);
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////
-static void br_baseLib_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    uint32_t v = o->extraData + baseLib_cfunction_ext_mem + 8;  // ext文件+8才是mr_c_function_load的地址，所有函数偏移量都是基于这个地址
-    LOG("br_baseLib_%s_init() addr:0x%X[%u] v:0x%X[%u]\n", o->name, addr, addr, v, v);
-    uc_mem_write(uc, addr, &v, 4);
-}
-//////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t uptime_ms;
 static void br_get_uptime_ms_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
     LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
@@ -406,7 +199,7 @@ static void br_mem_get(BridgeMap *o, uc_engine *uc) {
 
     LOG("ext call %s()\n", o->name);
 
-    uint32_t len = 1024 * 1024 * 2;
+    uint32_t len = 1024 * 1024 * 4;
     uint32_t buffer = toMrpMemAddr(my_mallocExt(len));
 
     printf("br_mem_get base=0x%X len=%d(%d kb) =================\n", buffer, len, len / 1024);
@@ -965,166 +758,6 @@ static void br_mr_editGetText(BridgeMap *o, uc_engine *uc) {
 #endif
 }
 
-// 偏移量由./mrc/[x]_offsets.c直接从mrp中导出
-#define MR_TABLE_SIZE (4 * 146)
-static BridgeMap mr_table_funcMap[146] = {
-    BRIDGE_FUNC_MAP(0x0, MAP_FUNC, mr_malloc, NULL, br_mr_malloc, 0),  // 0x280000
-    BRIDGE_FUNC_MAP(0x4, MAP_FUNC, mr_free, NULL, br_mr_free, 0),
-    BRIDGE_FUNC_MAP(0x8, MAP_FUNC, mr_realloc, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xC, MAP_FUNC, memcpy, br_baseLib_init, NULL, 0x1b90),
-    BRIDGE_FUNC_MAP(0x10, MAP_FUNC, memmove, br_baseLib_init, NULL, 0x1bb0),
-    BRIDGE_FUNC_MAP(0x14, MAP_FUNC, strcpy, br_baseLib_init, NULL, 0x2eac),
-    BRIDGE_FUNC_MAP(0x18, MAP_FUNC, strncpy, br_baseLib_init, NULL, 0x2f7c),
-    BRIDGE_FUNC_MAP(0x1C, MAP_FUNC, strcat, br_baseLib_init, NULL, 0x2e48),
-    BRIDGE_FUNC_MAP(0x20, MAP_FUNC, strncat, br_baseLib_init, NULL, 0x2ee4),
-    BRIDGE_FUNC_MAP(0x24, MAP_FUNC, memcmp, br_baseLib_init, NULL, 0x1b5c),
-    BRIDGE_FUNC_MAP(0x28, MAP_FUNC, strcmp, br_baseLib_init, NULL, 0x2e7c),
-    BRIDGE_FUNC_MAP(0x2C, MAP_FUNC, strncmp, br_baseLib_init, NULL, 0x2f40),
-    BRIDGE_FUNC_MAP(0x30, MAP_FUNC, strcoll, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x34, MAP_FUNC, memchr, br_baseLib_init, NULL, 0x1b30),
-    BRIDGE_FUNC_MAP(0x38, MAP_FUNC, memset, br_baseLib_init, NULL, 0x1c00),
-    BRIDGE_FUNC_MAP(0x3C, MAP_FUNC, strlen, br_baseLib_init, NULL, 0x2ec8),
-    BRIDGE_FUNC_MAP(0x40, MAP_FUNC, strstr, br_baseLib_init, NULL, 0x2fa8),
-    BRIDGE_FUNC_MAP(0x44, MAP_FUNC, sprintf, br_baseLib_init, NULL, 0x2e08),
-    BRIDGE_FUNC_MAP(0x48, MAP_FUNC, atoi, NULL, br_atoi, 0),
-    BRIDGE_FUNC_MAP(0x4C, MAP_FUNC, strtoul, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x50, MAP_FUNC, rand, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x54, MAP_DATA, reserve0, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x58, MAP_DATA, reserve1, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x5C, MAP_DATA, _mr_c_internal_table, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x60, MAP_DATA, _mr_c_port_table, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x64, MAP_FUNC, _mr_c_function_new, NULL, br__mr_c_function_new, 0),
-    BRIDGE_FUNC_MAP(0x68, MAP_FUNC, mr_printf, br_baseLib_init, NULL, 0x2db4),
-    BRIDGE_FUNC_MAP(0x6C, MAP_FUNC, mr_mem_get, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x70, MAP_FUNC, mr_mem_free, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x74, MAP_FUNC, mr_drawBitmap, NULL, br_mr_drawBitmap, 0),
-    BRIDGE_FUNC_MAP(0x78, MAP_FUNC, mr_getCharBitmap, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x7C, MAP_FUNC, mr_timerStart, NULL, NULL, 0),  // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStart函数地址），目前没有实现对mrp读写的hook
-    BRIDGE_FUNC_MAP(0x80, MAP_FUNC, mr_timerStop, NULL, NULL, 0),   // todo 在mrp初始化时会修改这个值（修改为mrp内的mrc_extTimerStop函数地址），目前没有实现对mrp读写的hook
-    BRIDGE_FUNC_MAP(0x84, MAP_FUNC, mr_getTime, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x88, MAP_FUNC, mr_getDatetime, NULL, br_getDatetime, 0),
-    BRIDGE_FUNC_MAP(0x8C, MAP_FUNC, mr_getUserInfo, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x90, MAP_FUNC, mr_sleep, NULL, br_sleep, 0),
-    BRIDGE_FUNC_MAP(0x94, MAP_FUNC, mr_plat, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x98, MAP_FUNC, mr_platEx, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x9C, MAP_FUNC, mr_ferrno, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xA0, MAP_FUNC, mr_open, NULL, br_mr_open, 0),
-    BRIDGE_FUNC_MAP(0xA4, MAP_FUNC, mr_close, NULL, br_mr_close, 0),
-    BRIDGE_FUNC_MAP(0xA8, MAP_FUNC, mr_info, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xAC, MAP_FUNC, mr_write, NULL, br_mr_write, 0),
-    BRIDGE_FUNC_MAP(0xB0, MAP_FUNC, mr_read, NULL, br_mr_read, 0),
-    BRIDGE_FUNC_MAP(0xB4, MAP_FUNC, mr_seek, NULL, br_mr_seek, 0),
-    BRIDGE_FUNC_MAP(0xB8, MAP_FUNC, mr_getLen, NULL, br_mr_getLen, 0),
-    BRIDGE_FUNC_MAP(0xBC, MAP_FUNC, mr_remove, NULL, br_mr_remove, 0),
-    BRIDGE_FUNC_MAP(0xC0, MAP_FUNC, mr_rename, NULL, br_mr_rename, 0),
-    BRIDGE_FUNC_MAP(0xC4, MAP_FUNC, mr_mkDir, NULL, br_mr_mkDir, 0),
-    BRIDGE_FUNC_MAP(0xC8, MAP_FUNC, mr_rmDir, NULL, br_mr_rmDir, 0),
-    BRIDGE_FUNC_MAP(0xCC, MAP_FUNC, mr_findStart, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xD0, MAP_FUNC, mr_findGetNext, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xD4, MAP_FUNC, mr_findStop, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xD8, MAP_FUNC, mr_exit, NULL, br_mr_exit, 0),
-    BRIDGE_FUNC_MAP(0xDC, MAP_FUNC, mr_startShake, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xE0, MAP_FUNC, mr_stopShake, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xE4, MAP_FUNC, mr_playSound, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xE8, MAP_FUNC, mr_stopSound, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xEC, MAP_FUNC, mr_sendSms, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xF0, MAP_FUNC, mr_call, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xF4, MAP_FUNC, mr_getNetworkID, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xF8, MAP_FUNC, mr_connectWAP, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xFC, MAP_FUNC, mr_menuCreate, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x100, MAP_FUNC, mr_menuSetItem, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x104, MAP_FUNC, mr_menuShow, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x108, MAP_DATA, reserve, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x10C, MAP_FUNC, mr_menuRelease, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x110, MAP_FUNC, mr_menuRefresh, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x114, MAP_FUNC, mr_dialogCreate, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x118, MAP_FUNC, mr_dialogRelease, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x11C, MAP_FUNC, mr_dialogRefresh, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x120, MAP_FUNC, mr_textCreate, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x124, MAP_FUNC, mr_textRelease, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x128, MAP_FUNC, mr_textRefresh, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x12C, MAP_FUNC, mr_editCreate, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x130, MAP_FUNC, mr_editRelease, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x134, MAP_FUNC, mr_editGetText, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x138, MAP_FUNC, mr_winCreate, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x13C, MAP_FUNC, mr_winRelease, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x140, MAP_FUNC, mr_getScreenInfo, NULL, br_mr_getScreenInfo, 0),
-    BRIDGE_FUNC_MAP(0x144, MAP_FUNC, mr_initNetwork, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x148, MAP_FUNC, mr_closeNetwork, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x14C, MAP_FUNC, mr_getHostByName, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x150, MAP_FUNC, mr_socket, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x154, MAP_FUNC, mr_connect, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x158, MAP_FUNC, mr_closeSocket, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x15C, MAP_FUNC, mr_recv, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x160, MAP_FUNC, mr_recvfrom, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x164, MAP_FUNC, mr_send, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x168, MAP_FUNC, mr_sendto, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x16C, MAP_DATA, mr_screenBuf, br_mr_screenBuf_init, NULL, 0),
-    BRIDGE_FUNC_MAP(0x170, MAP_DATA, mr_screen_w, br_mr_screen_w_init, NULL, 0),
-    BRIDGE_FUNC_MAP(0x174, MAP_DATA, mr_screen_h, br_mr_screen_h_init, NULL, 0),
-    BRIDGE_FUNC_MAP(0x178, MAP_DATA, mr_screen_bit, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x17C, MAP_DATA, mr_bitmap, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x180, MAP_DATA, mr_tile, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x184, MAP_DATA, mr_map, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x188, MAP_DATA, mr_sound, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x18C, MAP_DATA, mr_sprite, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x190, MAP_DATA, pack_filename, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x194, MAP_DATA, start_filename, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x198, MAP_DATA, old_pack_filename, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x19C, MAP_DATA, old_start_filename, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1A0, MAP_DATA, mr_ram_file, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1A4, MAP_DATA, mr_ram_file_len, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1A8, MAP_DATA, mr_soundOn, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1AC, MAP_DATA, mr_shakeOn, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1B0, MAP_DATA, LG_mem_base, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1B4, MAP_DATA, LG_mem_len, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1B8, MAP_DATA, LG_mem_end, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1BC, MAP_DATA, LG_mem_left, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1C0, MAP_DATA, mr_sms_cfg_buf, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1C4, MAP_FUNC, mr_md5_init, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1C8, MAP_FUNC, mr_md5_append, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1CC, MAP_FUNC, mr_md5_finish, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1D0, MAP_FUNC, _mr_load_sms_cfg, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1D4, MAP_FUNC, _mr_save_sms_cfg, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1D8, MAP_FUNC, _DispUpEx, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1DC, MAP_FUNC, _DrawPoint, NULL, br__DrawPoint, 0),
-    BRIDGE_FUNC_MAP(0x1E0, MAP_FUNC, _DrawBitmap, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1E4, MAP_FUNC, _DrawBitmapEx, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1E8, MAP_FUNC, DrawRect, NULL, br_DrawRect, 0),
-    BRIDGE_FUNC_MAP(0x1EC, MAP_FUNC, _DrawText, NULL, br__DrawText, 0),
-    BRIDGE_FUNC_MAP(0x1F0, MAP_FUNC, _BitmapCheck, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1F4, MAP_FUNC, _mr_readFile, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1F8, MAP_FUNC, mr_wstrlen, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x1FC, MAP_FUNC, mr_registerAPP, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x200, MAP_FUNC, _DrawTextEx, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x204, MAP_FUNC, _mr_EffSetCon, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x208, MAP_FUNC, _mr_TestCom, NULL, br__mr_TestCom, 0),
-    BRIDGE_FUNC_MAP(0x20C, MAP_FUNC, _mr_TestCom1, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x210, MAP_FUNC, c2u, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x214, MAP_FUNC, _mr_div, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x218, MAP_FUNC, _mr_mod, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x21C, MAP_DATA, LG_mem_min, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x220, MAP_DATA, LG_mem_top, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x224, MAP_DATA, mr_updcrc, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x228, MAP_DATA, start_fileparameter, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x22C, MAP_DATA, mr_sms_return_flag, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x230, MAP_DATA, mr_sms_return_val, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x234, MAP_DATA, mr_unzip, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x238, MAP_DATA, mr_exit_cb, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x23C, MAP_DATA, mr_exit_cb_data, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x240, MAP_DATA, mr_entry, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x244, MAP_FUNC, mr_platDrawChar, NULL, NULL, 0),
-};
-
-#define MR_C_FUNCTION_SIZE (4 * 5)
-static BridgeMap mr_c_function_funcMap[5] = {
-    BRIDGE_FUNC_MAP(0x0, MAP_DATA, start_of_ER_RW, NULL, NULL, 0),  // 地址0x280248，值0x285880
-    BRIDGE_FUNC_MAP(0x4, MAP_DATA, ER_RW_Length, NULL, NULL, 0),    // 调用ext内的mrc_malloc()时会加4
-    BRIDGE_FUNC_MAP(0x8, MAP_DATA, ext_type, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0xC, MAP_DATA, mrc_extChunk, NULL, NULL, 0),  // 0x280254
-    BRIDGE_FUNC_MAP(0x10, MAP_DATA, stack, NULL, NULL, 0),
-};
-
 #define DSM_REQUIRE_FUNCS_SIZE (4 * 51)
 static BridgeMap dsm_require_funcs_funcMap[51] = {
     BRIDGE_FUNC_MAP(0x0, MAP_FUNC, test, NULL, br_test, 0),  // 0x28025C
@@ -1235,48 +868,20 @@ static int hooks_init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t
 
 // 必需是在BRIDGE_TABLE_ADDRESS开始，长度为BRIDGE_TABLE_SIZE的内存中分配地址
 // clang-format off
-#define MR_TABLE_ADDRESS            BRIDGE_TABLE_ADDRESS
-#define MR_C_FUNCTION_ADDRESS       (MR_TABLE_ADDRESS + MR_TABLE_SIZE)
-#define DSM_REQUIRE_FUNCS_ADDRESS   (MR_C_FUNCTION_ADDRESS + MR_C_FUNCTION_SIZE)
+#define DSM_REQUIRE_FUNCS_ADDRESS   BRIDGE_TABLE_ADDRESS
 #define END_ADDRESS                 (DSM_REQUIRE_FUNCS_ADDRESS + DSM_REQUIRE_FUNCS_SIZE)
 // clang-format on
 
 uc_err bridge_init(uc_engine *uc) {
-    uc_err err;
     uint32_t size = END_ADDRESS - BRIDGE_TABLE_ADDRESS;
-
-    screenBuf = getMrpMemPtr(SCREEN_BUF_ADDRESS);
-
     printf("[bridge_init]startAddr: 0x%X, endAddr: 0x%X, size: 0x%X\n", BRIDGE_TABLE_ADDRESS, END_ADDRESS, size);
-    printf("[bridge_init]MR_TABLE_ADDRESS: 0x%X\n", MR_TABLE_ADDRESS);
-    printf("[bridge_init]MR_C_FUNCTION_ADDRESS: 0x%X\n", MR_C_FUNCTION_ADDRESS);
     printf("[bridge_init]DSM_REQUIRE_FUNCS_ADDRESS: 0x%X\n", DSM_REQUIRE_FUNCS_ADDRESS);
     if (size > BRIDGE_TABLE_SIZE) {
         printf("error: size[%d] > BRIDGE_TABLE_SIZE[%d]\n", size, BRIDGE_TABLE_SIZE);
         exit(1);
     }
 
-    // 加载预编译的包含有纯C语言实现函数的机器码指令数据，由mrc/baseLib项目生成的mrp中提取
-    extern unsigned char baseLib_cfunction_ext[18524];
-    baseLib_cfunction_ext_mem = toMrpMemAddr(my_mallocExt(sizeof(baseLib_cfunction_ext)));
-    err = uc_mem_write(uc, baseLib_cfunction_ext_mem, baseLib_cfunction_ext, sizeof(baseLib_cfunction_ext));
-    if (err) return err;
-
-    uint32_t v = MR_TABLE_ADDRESS;
-    hooks_init(uc, mr_table_funcMap, countof(mr_table_funcMap), MR_TABLE_ADDRESS);
-    err = uc_mem_write(uc, CODE_ADDRESS, &v, 4);
-    if (err) return err;
-
-    v = MR_C_FUNCTION_ADDRESS;
-    hooks_init(uc, mr_c_function_funcMap, countof(mr_c_function_funcMap), MR_C_FUNCTION_ADDRESS);
-    err = uc_mem_write(uc, CODE_ADDRESS + 4, &v, 4);
-    if (err) return err;
-
     hooks_init(uc, dsm_require_funcs_funcMap, countof(dsm_require_funcs_funcMap), DSM_REQUIRE_FUNCS_ADDRESS);
-
-    mr_c_event = my_mallocExt(sizeof(_mr_c_event_st));
-    tsf_init(SCREEN_WIDTH, SCREEN_HEIGHT, setPixel);
-
     return UC_ERR_OK;
 }
 
@@ -1287,78 +892,6 @@ void bridge_set_guiDrawBitmap(guiDrawBitmap_t cb) {
 void bridge_set_timer(timerStart_t start, timerStop_t stop) {
     timerStart = start;
     timerStop = stop;
-}
-
-static int32_t bridge_mr_helper(uc_engine *uc, uint32_t code, uint32_t input, uint32_t input_len) {
-    // typedef int32 (*MR_C_FUNCTION)(void* P, int32 code, uint8* input, int32 input_len, uint8** output, int32* output_len);
-
-    uint32_t v = MR_C_FUNCTION_ADDRESS;
-    uc_reg_write(uc, UC_ARM_REG_R0, &v);          // p
-    uc_reg_write(uc, UC_ARM_REG_R1, &code);       // code
-    uc_reg_write(uc, UC_ARM_REG_R2, &input);      // input
-    uc_reg_write(uc, UC_ARM_REG_R3, &input_len);  // input_len
-
-    uint32_t sp, addr;
-    uc_reg_read(uc, UC_ARM_REG_SP, &sp);
-
-    // mr_c_function.start_of_ER_RW 会被写入r9(SB)，指向的内存是用来存放全局变量的
-    v = *(uint32_t *)getMrpMemPtr(MR_C_FUNCTION_ADDRESS);
-    printf("bridge_mr_helper() sp: 0x%X[%u], sb(r9):0x%X\n", sp, sp, v);
-
-    addr = sp;
-    v = 0;  // 相当于传递 NULL
-
-    addr -= 4;
-    uc_mem_write(uc, addr, &v, 4);  // output_len
-    addr -= 4;
-    uc_mem_write(uc, addr, &v, 4);  // output
-    uc_reg_write(uc, UC_ARM_REG_SP, &addr);
-
-    runCode(uc, mr_helper_addr, CODE_ADDRESS, false);
-
-    uc_reg_write(uc, UC_ARM_REG_SP, &sp);
-
-    int32_t ret;
-    uc_reg_read(uc, UC_ARM_REG_R0, &ret);
-    return ret;
-}
-
-// 暂停应用
-int32_t bridge_mr_pauseApp(uc_engine *uc) {
-    LOG("bridge_mr_pauseApp() ------------------------------------------------ \n");
-    // return mr_helper(&cfunction_table, 4, NULL, 0, NULL, NULL);
-    int32_t ret = bridge_mr_helper(uc, 4, 0, 0);
-    LOG("bridge_mr_pauseApp() done.\n");
-    return ret;
-}
-
-// 恢复应用
-int32_t bridge_mr_resumeApp(uc_engine *uc) {
-    LOG("bridge_mr_resumeApp() ------------------------------------------------ \n");
-    // return mr_helper(&cfunction_table, 5, NULL, 0, NULL, NULL);
-    int32_t ret = bridge_mr_helper(uc, 5, 0, 0);
-    LOG("bridge_mr_resumeApp() done.\n");
-    return ret;
-}
-
-// 事件进行处理
-int32_t bridge_mr_event(uc_engine *uc, int32_t code, int32_t param0, int32_t param1) {
-    // return mr_helper(&cfunction_table, 1, (uint8 *)input, sizeof(input), NULL, NULL);
-    LOG("bridge_mr_event() ------------------------------------------------ \n");
-    mr_c_event->code = code;
-    mr_c_event->param0 = param0;
-    mr_c_event->param1 = param1;
-    int32_t ret = bridge_mr_helper(uc, 1, toMrpMemAddr(mr_c_event), sizeof(_mr_c_event_st));
-    LOG("bridge_mr_event() done.\n");
-    return ret;
-}
-
-int32_t bridge_mr_init(uc_engine *uc) {
-    LOG("bridge_mr_init() ------------------------------------------------ \n");
-    // mr_helper(&cfunction_table, 0, NULL, 0, NULL, NULL);
-    int32_t ret = bridge_mr_helper(uc, 0, 0, 0);
-    LOG("bridge_mr_init() done.\n");
-    return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1508,11 +1041,6 @@ int32_t bridge_dsm_init(uc_engine *uc, uint32_t addr) {
     uint32_t v = DSM_REQUIRE_FUNCS_ADDRESS;
     uc_reg_write(uc, UC_ARM_REG_R0, &v);
 
-    // mr_c_function.start_of_ER_RW 写入r9(SB)，指向的内存是用来存放全局变量的
-    v = *(uint32_t *)getMrpMemPtr(MR_C_FUNCTION_ADDRESS);
-    uc_reg_write(uc, UC_ARM_REG_SB, &v);
-    printf("vmrp start_of_ER_RW:0x%X\n", v);
-
     runCode(uc, addr, CODE_ADDRESS, false);
 
     // 返回值，DSM_EXPORT_FUNCS指针
@@ -1530,4 +1058,21 @@ int32_t bridge_dsm_init(uc_engine *uc, uint32_t addr) {
         printf("warning: bridge_dsm_version:%d != %d\n", v, VMRP_VER);
     }
     return MR_FAILED;
+}
+
+void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb) {
+    // uint32_t value = stopAddr + 8;
+    // if (value == startAddr) {
+    //     value = stopAddr;
+    // }
+    uint32_t value = stopAddr;
+    uc_reg_write(uc, UC_ARM_REG_LR, &value);  // 当程序执行到这里时停止运行(return)
+
+    // Note we start at ADDRESS | 1 to indicate THUMB mode.
+    startAddr = isThumb ? (startAddr | 1) : startAddr;
+    uc_err err = uc_emu_start(uc, startAddr, stopAddr, 0, 0);  // 似乎unicorn 1.0.2之前并不会在pc==stopAddr时立即停止
+    if (err) {
+        printf("Failed on uc_emu_start() with error returned: %u (%s)\n", err, uc_strerror(err));
+        exit(1);
+    }
 }

@@ -34,14 +34,7 @@ int32_t my_opendir(const char *name);
 char *my_readdir(int32_t f);
 int32_t my_closedir(int32_t f);
 
-int32 getMrpFileInfo(const char *path, const char *name, int32 *offset, int32 *length);
-
-int32 readMrpFileEx(const char *path, const char *name, int32 *offset, int32 *length, uint8 **data);
-
-int ungzipdata(uint8 *dest, uint32 *destLen, const uint8 *source, uint32 sourceLen);
-
-void listMrpFiles(const char *path);
-
 void fileLib_init();
 void writeFile(const char *filename, void *data, uint32 length);
+char *readFile(const char *filename);
 #endif

@@ -11,14 +11,16 @@
 #include "./header/memory.h"
 #include "./header/tsf_font.h"
 #include "./header/utils.h"
+#include "./header/elfload.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
 uint8_t *mrpMem;  // 模拟器的全部内存
+static uc_engine *uc = NULL;
 
-// 返回的内存不能free
+// 返回的内存禁止free
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE
 #endif
@@ -65,40 +67,6 @@ static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, 
     return false;
 }
 
-static int32_t loadCode(uc_engine *uc, char *filename) {
-    char *extFilename = "cfunction.ext";
-    uint32_t value, length;
-    uint8_t *code;
-    int32_t ret = readMrpFileEx(filename, extFilename, (int32 *)&value, (int32 *)&length, &code);
-    if (ret == MR_FAILED) {
-        LOG("load %s failed", extFilename);
-        return ret;
-    }
-    LOG("load %s suc: offset:%d, length:%d", extFilename, value, length);
-
-    uc_mem_write(uc, CODE_ADDRESS, code, length);
-    free(code);
-    return ret;
-}
-
-static bool mem_init(uc_engine *uc, char *filename) {
-    mrpMem = malloc(TOTAL_MEMORY);
-
-    // unicorn存在BUG，UC_HOOK_MEM_INVALID只能拦截第一次UC_MEM_FETCH_PROT，所以干脆设置成可执行，统一在UC_HOOK_CODE事件中处理
-    uc_err err = uc_mem_map_ptr(uc, START_ADDRESS, TOTAL_MEMORY, UC_PROT_ALL, mrpMem);
-    if (err) {
-        printf("Failed mem map: %u (%s)\n", err, uc_strerror(err));
-        return false;
-    }
-
-    if (loadCode(uc, filename) == MR_FAILED) {
-        return false;
-    }
-
-    initMemoryManager(MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE);
-    return true;
-}
-
 int freeVmrp(uc_engine *uc) {
     free(mrpMem);
     uc_close(uc);
@@ -116,8 +84,18 @@ uc_engine *initVmrp(char *filename) {
         return NULL;
     }
 
-    if (!mem_init(uc, filename)) {
-        printf("mem_init() fail\n");
+    mrpMem = malloc(TOTAL_MEMORY);
+    // unicorn存在BUG，UC_HOOK_MEM_INVALID只能拦截第一次UC_MEM_FETCH_PROT，所以干脆设置成可执行，统一在UC_HOOK_CODE事件中处理
+    err = uc_mem_map_ptr(uc, START_ADDRESS, TOTAL_MEMORY, UC_PROT_ALL, mrpMem);
+    if (err) {
+        printf("Failed mem map: %u (%s)\n", err, uc_strerror(err));
+        goto end;
+    }
+    initMemoryManager(MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE);
+
+    uint32_t entryPoint;
+    if (elfLoad(filename, &entryPoint) == MR_FAILED) {
+        printf("load %s fail\n", filename);
         goto end;
     }
 
@@ -128,8 +106,8 @@ uc_engine *initVmrp(char *filename) {
     }
 
 #ifdef DEBUG
-    // uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
-    // uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
+    uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
+    uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
     uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
     // uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE);
 #else
@@ -141,29 +119,26 @@ uc_engine *initVmrp(char *filename) {
     uint32_t value = STACK_ADDRESS + STACK_SIZE;  // 满递减
     uc_reg_write(uc, UC_ARM_REG_SP, &value);
 
-    // 调用第一个函数
-    value = 1;
-    uc_reg_write(uc, UC_ARM_REG_R0, &value);  // 传参数值1
-    runCode(uc, CODE_ADDRESS + 8, CODE_ADDRESS, false);
+    if (bridge_dsm_init(uc, entryPoint) == MR_SUCCESS) {
+        printf("bridge_dsm_init success\n");
+        dumpREG(uc);
 
-    printf("\n ----------------------------init done.--------------------------------------- \n");
+        char *filename = "dsm_gm.mrp";
+        // char *filename = "winmine.mrp";
+        char *extName = "start.mr";
+        // char *extName = "cfunction.ext";
+
+        uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
+        printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
+    }
+
     return uc;
 end:
     uc_close(uc);
     return NULL;
 }
 
-static uc_engine *uc;
-static int32_t (*eventFunc)(int32_t code, int32_t p1, int32_t p2);
-
-static int32_t eventFuncV1(int32_t code, int32_t p1, int32_t p2) {
-    if (uc) {
-        return bridge_mr_event(uc, code, p1, p2);
-    }
-    return MR_FAILED;
-}
-
-static int32_t eventFuncV2(int32_t code, int32_t p1, int32_t p2) {
+static int32_t eventFunc(int32_t code, int32_t p1, int32_t p2) {
     if (uc) {
         return bridge_dsm_mr_event(uc, code, p1, p2);
     }
@@ -173,18 +148,12 @@ static int32_t eventFuncV2(int32_t code, int32_t p1, int32_t p2) {
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE
 int32_t c_event(int32_t code, int32_t p1, int32_t p2) {
-    if (eventFunc) {
-        return eventFunc(code, p1, p2);
-    }
-    return MR_FAILED;
+    return eventFunc(code, p1, p2);
 }
 #endif
 
 int32_t event(int32_t code, int32_t p1, int32_t p2) {
-    if (eventFunc) {
-        return eventFunc(code, p1, p2);
-    }
-    return MR_FAILED;
+    return eventFunc(code, p1, p2);
 }
 
 int32_t timer() {
@@ -196,40 +165,11 @@ int32_t timer() {
 
 int startVmrp() {
     fileLib_init();
-    eventFunc = eventFuncV1;
 
-    uc = initVmrp("vmrp.mrp");
+    uc = initVmrp("vmrp.elf");
     if (uc == NULL) {
         printf("initVmrp() fail.\n");
-        return 1;
+        return MR_FAILED;
     }
-
-    int32_t ret = bridge_mr_init(uc);
-    if (ret > CODE_ADDRESS) {
-        printf("bridge_mr_init:0x%X try vmrp loader\n", ret);
-
-        if (bridge_dsm_init(uc, ret) == MR_SUCCESS) {
-            eventFunc = eventFuncV2;
-            printf("bridge_dsm_init success\n");
-            dumpREG(uc);
-
-            char *filename = "dsm_gm.mrp";
-            // char *filename = "winmine.mrp";
-            char *extName = "start.mr";
-            // char *extName = "cfunction.ext";
-
-            uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
-            printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
-        }
-    }
-
-    // bridge_mr_pauseApp(uc);
-    // bridge_mr_resumeApp(uc);
-
-    // mrc_exitApp() 可能由MR_EVENT_EXIT event之后自动调用
-    // bridge_mr_event(uc, MR_EVENT_EXIT, 0, 0);
-
-    // freeVmrp(uc);
-    // printf("exit.\n");
-    return 0;
+    return MR_SUCCESS;
 }

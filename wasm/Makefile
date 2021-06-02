@@ -1,8 +1,8 @@
 
 
 main:
-	emcc -Os -Wall ../main.c ../fileLib.c ../network.c ../font16_st.c ../gb2unicode.c ../vmrp.c ../tsf_font.c \
-		../utils.c ../debug.c ../rbtree.c ../bridge.c ../memory.c ../baseLib_cfunction.ext.c \
+	emcc -Os -Wall ../main.c ../fileLib.c ../network.c ../vmrp.c ../utils.c ../debug.c ../rbtree.c ../bridge.c ../memory.c  \
+		../elfload.c ../elfloader.c \
 		./unicorn/libunicorn.a \
 		-s EXPORTED_FUNCTIONS="['_main', '_malloc', '_free']" \
 		-s ALLOW_MEMORY_GROWTH=1 \
