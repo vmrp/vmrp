@@ -9,9 +9,7 @@
 
 #include "./header/dsm.h"
 #include "./header/fileLib.h"
-#include "./header/gb2unicode.h"
 #include "./header/memory.h"
-#include "./header/tsf_font.h"
 #include "./header/vmrp.h"
 #include "./header/network.h"
 
