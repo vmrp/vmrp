@@ -1,5 +1,7 @@
 
+#include <pthread.h>
 #include <stdio.h>
+#include <string.h>
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 // https://docs.microsoft.com/en-us/windows/win32/api/winsock2/
@@ -7,10 +9,10 @@
 #include <ws2tcpip.h>
 #include <windows.h>
 
-// #define NETWORK
+#define NETWORK
 #endif
 
-#include "./header/types.h"
+#include "./header/network.h"
 
 enum {
     MR_SOCK_STREAM,
@@ -27,6 +29,101 @@ enum {
     MR_SOCKET_NONBLOCK
 };
 
+typedef struct {
+    SOCKET s;
+    uint32_t sendCounter;
+    int32_t realState;  // 真正的连接状态
+    int32_t state;      // cmwap模式下是一个伪状态，cmnet模式下与realState的值始终相同
+} mSocket;
+
+static boolean isCMWAP = false;
+static struct rb_root sockets = RB_ROOT;
+
+static int parseHostPort(char* str, char* outHost, int outHostLen, uint16_t* outPort) {
+    int i;
+    char* h = strstr(str, "://");
+    if (h == NULL) {
+        return -1;
+    }
+    h += 3;  // 跳过'://'
+
+    for (i = 0; i < outHostLen; i++) {
+        if (*h == '\0' || *h == ':' || *h == '/') {
+            break;
+        }
+        outHost[i] = *h;
+        h++;
+    }
+    outHost[i] = '\0';
+
+    char* p = strstr(h, ":");
+    if (p == NULL) {
+        *outPort = 80;
+    } else {
+        char port[6];
+        p += 1;  // 跳过':'
+        for (i = 0; i < sizeof(port); i++) {
+            if (*p == '\0' || *p == '/') {
+                break;
+            }
+            port[i] = *p;
+            p++;
+        }
+        port[i] = '\0';
+        *outPort = (uint16_t)atoi(port);
+    }
+    return 0;
+}
+
+static void my_readLine(char* src, char* dst, size_t dstlen) {
+    if (src != NULL) {
+        dstlen--;
+        while (dstlen > 0) {
+            if (*src == '\0' || *src == '\r') {
+                break;
+            }
+            *dst = *src;
+            src++;
+            dst++;
+            dstlen--;
+        }
+    }
+    *dst = '\0';
+}
+
+typedef struct {
+    pthread_t th;
+    mSocket* s;
+    uint32_t ip;
+    uint16_t port;
+} connectData_t;
+
+static int32 my_connectSync(SOCKET s, int32 ip, uint16 port) {
+    struct sockaddr_in clientService;
+    clientService.sin_family = AF_INET;
+    clientService.sin_port = htons(port);
+    clientService.sin_addr.s_addr = htonl(ip);  //inet_addr("127.0.0.1");
+
+    printf("my_connect('%s', %d)\n", inet_ntoa(clientService.sin_addr), port);
+
+    if (connect(s, (SOCKADDR*)&clientService, sizeof(clientService)) != 0) {
+        printf("my_connect(0x%X) fail\n", ip);
+        return MR_FAILED;
+    }
+    printf("my_connect(0x%X) suc\n", ip);
+    return MR_SUCCESS;
+}
+
+static void* my_connectAsync(void* arg) {
+    connectData_t* data = (connectData_t*)arg;
+    int32_t r = my_connectSync(data->s->s, data->ip, data->port);
+    data->s->realState = r;
+    if (!isCMWAP) {  // cmnet模式下保持相同的连接状态
+        data->s->state = r;
+    }
+    free(data);
+    return NULL;
+}
 /*
    MR_SUCCESS 成功
    MR_FAILED 失败
@@ -36,28 +133,46 @@ enum {
 */
 int32 my_connect(int32 s, int32 ip, uint16 port, int32 type) {
 #ifdef NETWORK
-    struct sockaddr_in clientService;
-    clientService.sin_family = AF_INET;
-    clientService.sin_port = htons(port);
-
-    clientService.sin_addr.s_addr = htonl(ip);  //inet_addr("127.0.0.1");
-    printf("my_connect(%s)\n", inet_ntoa(clientService.sin_addr));
-
-    if (ip == 0x0A0000AC) {  // 10.0.0.172
+    uIntMap* obj = uIntMap_search(&sockets, (uint32_t)s);
+    mSocket* data = (mSocket*)obj->data;
+    if (ip == 0x0A0000AC) {        // 10.0.0.172 cmwap代理地址
+        data->state = MR_SUCCESS;  // cmwap下设置一个伪状态
         return MR_SUCCESS;
     }
-
-    if (connect((SOCKET)s, (SOCKADDR *)&clientService, sizeof(clientService)) != 0) {
-        printf("my_connect(%d) fail\n", ip);
-        return MR_FAILED;
+    printf("my_connect() type: %s\n", type == MR_SOCKET_BLOCK ? "block" : "async");
+    if (type == MR_SOCKET_NONBLOCK) {
+        connectData_t* d = malloc(sizeof(connectData_t));
+        d->s = data;
+        d->ip = ip;
+        d->port = port;
+        int ret = pthread_create(&d->th, NULL, my_connectAsync, d);
+        if (ret != 0) {
+            data->state = MR_FAILED;
+            data->realState = MR_FAILED;
+            return MR_FAILED;
+        }
+        return MR_WAITING;
     }
-    printf("my_connect(%d) suc\n", ip);
-    return MR_SUCCESS;
+    return my_connectSync(data->s, ip, port);
 #else
     return MR_FAILED;
 #endif
 }
 
+/*
+   MR_SUCCESS ： 连接成功
+   MR_FAILED ： 连接失败
+   MR_WAITING ： 连接中
+   MR_IGNORE ： 不支持该功能
+*/
+int32 my_getSocketState(int32 s) {
+    uIntMap* obj = uIntMap_search(&sockets, (uint32_t)s);
+    mSocket* p = ((mSocket*)obj->data);
+    printf("my_getSocketState(%d): %d\n", s, p->state);
+    return p->state;
+}
+
+static int32_t socketCounter = 0;
 /*
  >=0 返回的Socket句柄 
    MR_FAILED 失败 
@@ -71,8 +186,19 @@ int32 my_socket(int32 type, int32 protocol) {
         printf("my_socket() fail\n");
         return MR_FAILED;
     }
-    printf("my_socket(): %d\n", (int)sock);
-    return (int)sock;
+    socketCounter++;
+
+    mSocket* data = malloc(sizeof(mSocket));
+    data->s = sock;
+    data->realState = MR_WAITING;
+    data->state = MR_WAITING;
+    data->sendCounter = 0;
+
+    uIntMap* obj = malloc(sizeof(uIntMap));
+    obj->key = socketCounter;
+    obj->data = (void*)data;
+    uIntMap_insert(&sockets, obj);
+    return socketCounter;
 #else
     return MR_FAILED;
 #endif
@@ -80,10 +206,18 @@ int32 my_socket(int32 type, int32 protocol) {
 
 int32 my_closeSocket(int32 s) {
 #ifdef NETWORK
-    if (shutdown((SOCKET)s, SD_BOTH) != 0) {
+    uIntMap* obj = uIntMap_delete(&sockets, (uint32_t)s);
+    if (obj == NULL) {
         return MR_FAILED;
     }
-    if (closesocket((SOCKET)s) != 0) {
+    mSocket* data = (mSocket*)obj->data;
+    SOCKET sock = data->s;
+    free(data);
+    free(obj);
+    if (shutdown(sock, SD_BOTH) != 0) {
+        return MR_FAILED;
+    }
+    if (closesocket(sock) != 0) {
         return MR_FAILED;
     }
     return MR_SUCCESS;
@@ -94,6 +228,11 @@ int32 my_closeSocket(int32 s) {
 
 int32 my_closeNetwork(void) {
 #ifdef NETWORK
+    struct rb_node* p;
+    while ((p = rb_first(&sockets)) != NULL) {
+        uIntMap* obj = rb_entry(p, uIntMap, node);
+        my_closeSocket((int32)obj->key);
+    }
     WSACleanup();
     return MR_SUCCESS;
 #else
@@ -101,13 +240,13 @@ int32 my_closeNetwork(void) {
 #endif
 }
 
-/*  
-   MR_SUCCESS 同步模式，初始化成功，不再调用cb
-   MR_FAILED （立即感知的）失败，不再调用cb
-   MR_WAITING 使用回调函数通知引擎初始化结果 
-*/
-int32 my_initNetwork(MR_INIT_NETWORK_CB cb, const char *mode) {
-#ifdef NETWORK
+typedef struct {
+    MR_INIT_NETWORK_CB cb;
+    uc_engine* uc;
+    pthread_t th;
+} initNetworkAsyncData_t;
+
+static int32 my_initNetworkSync() {
     WSADATA wsaData;
     int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
@@ -120,31 +259,99 @@ int32 my_initNetwork(MR_INIT_NETWORK_CB cb, const char *mode) {
         return MR_FAILED;
     }
     return MR_SUCCESS;
+}
+
+static void* my_initNetworkAsync(void* arg) {
+    initNetworkAsyncData_t* data = (initNetworkAsyncData_t*)arg;
+    int32 r = my_initNetworkSync();
+    printf("my_initNetworkAsync(): %d\n", r);
+    bridge_dsm_network_cb(data->uc, (uint32_t)data->cb, r);
+    free(data);
+    return NULL;
+}
+
+/*  
+   MR_SUCCESS 同步模式，初始化成功，不再调用cb
+   MR_FAILED （立即感知的）失败，不再调用cb
+   MR_WAITING 使用回调函数通知引擎初始化结果 
+*/
+int32 my_initNetwork(uc_engine* uc, MR_INIT_NETWORK_CB cb, const char* mode) {
+#ifdef NETWORK
+    printf("my_initNetwork(0x%p, '%s')\n", cb, mode);
+    if (strncasecmp("cmwap", mode, 5) == 0) {
+        isCMWAP = TRUE;
+    }
+    if (cb != NULL) {
+        initNetworkAsyncData_t* data = malloc(sizeof(initNetworkAsyncData_t));
+        data->cb = cb;
+        data->uc = uc;
+        int ret = pthread_create(&data->th, NULL, my_initNetworkAsync, data);
+        if (ret != 0) {
+            return MR_FAILED;
+        }
+        return MR_WAITING;
+    }
+    return my_initNetworkSync();
 #else
     return MR_FAILED;
 #endif
 }
-/*
-   MR_FAILED （立即感知的）失败，不再调用cb
-   MR_WAITING 使用回调函数通知引擎获取IP的结果
-   其他值 同步模式，立即返回的IP地址，不再调用cb 
-*/
-int32 my_getHostByName(const char *name, MR_GET_HOST_CB cb) {
-#ifdef NETWORK
-    printf("my_getHostByName(%s)\n", name);
-    struct hostent *remoteHost = gethostbyname(name);
+
+typedef struct {
+    char* name;
+    MR_GET_HOST_CB cb;
+    uc_engine* uc;
+    pthread_t th;
+} getHostByNameAsyncData_t;
+
+static int32 my_getHostByNameSync(const char* name) {
+    struct hostent* remoteHost = gethostbyname(name);
     if (remoteHost != NULL) {
         if (remoteHost->h_addrtype == AF_INET) {
             if (remoteHost->h_addr_list[0] != NULL) {
                 struct in_addr addr;
-                addr.s_addr = *(u_long *)remoteHost->h_addr_list[0];
-                // printf("%d\n", addr.S_un.S_addr);
+                addr.s_addr = *(u_long*)remoteHost->h_addr_list[0];
                 printf("%s\n", inet_ntoa(addr));
                 return ntohl(addr.S_un.S_addr);
             }
         }
     }
     return MR_FAILED;
+}
+
+static void* my_getHostByNameAsync(void* arg) {
+    getHostByNameAsyncData_t* data = (getHostByNameAsyncData_t*)arg;
+    int32 r = my_getHostByNameSync(data->name);
+    printf("my_getHostByNameAsync(): 0x%X\n", r);
+    bridge_dsm_network_cb(data->uc, (uint32_t)data->cb, r);
+    free(data->name);
+    free(data);
+    return NULL;
+}
+
+/*
+   MR_FAILED （立即感知的）失败，不再调用cb
+   MR_WAITING 使用回调函数通知引擎获取IP的结果
+   其他值 同步模式，立即返回的IP地址，不再调用cb 
+*/
+int32 my_getHostByName(uc_engine* uc, const char* name, MR_GET_HOST_CB cb) {
+#ifdef NETWORK
+    printf("my_getHostByName('%s', 0x%p)\n", name, cb);
+    if (cb != NULL) {
+        getHostByNameAsyncData_t* data = malloc(sizeof(getHostByNameAsyncData_t));
+        int len = strlen(name);
+        data->name = malloc(len + 1);
+        strcpy(data->name, name);
+        data->name[len] = '\0';
+        data->cb = cb;
+        data->uc = uc;
+        int ret = pthread_create(&data->th, NULL, my_getHostByNameAsync, data);
+        if (ret != 0) {
+            return MR_FAILED;
+        }
+        return MR_WAITING;
+    }
+    return my_getHostByNameSync(name);
 #else
     return MR_FAILED;
 #endif
@@ -154,9 +361,63 @@ int32 my_getHostByName(const char *name, MR_GET_HOST_CB cb) {
    >=0 实际发送的数据字节个数
    MR_FAILED Socket已经被关闭或遇到了无法修复的错误。 
 */
-int32 my_send(int32 s, const char *buf, int len) {
+int32 my_send(int32 s, const char* buf, int len) {
 #ifdef NETWORK
-    int32 ret = send((SOCKET)s, buf, len, 0);
+    uIntMap* obj = uIntMap_search(&sockets, (uint32_t)s);
+    mSocket* data = (mSocket*)obj->data;
+
+    data->sendCounter++;
+    if (isCMWAP) {  // cmwap模式需要通过代理，这里模拟代理的功能
+        if (data->realState == MR_WAITING) {
+            if (data->sendCounter == 1) {  // 第一次发送数据，尝试连接
+                char tmp[256];
+                char host[256];
+                uint16_t port;
+                my_readLine((char*)buf, tmp, sizeof(tmp));
+                if (parseHostPort(tmp, host, sizeof(host), &port) == MR_FAILED) {
+                    return MR_FAILED;
+                }
+                int32 ip = my_getHostByNameSync(host);
+                if (ip == MR_FAILED) {
+                    return MR_FAILED;
+                }
+                if (my_connect(s, ip, port, MR_SOCKET_NONBLOCK) == MR_FAILED) {
+                    return MR_FAILED;
+                }
+            }
+            return 0;  // 还没连接上，因此返回0表示发送了0字节
+        } else if (data->realState == MR_FAILED) {
+            return MR_FAILED;
+        }
+    }
+    fd_set writefds;
+    FD_ZERO(&writefds);
+    FD_SET(data->s, &writefds);
+
+    TIMEVAL timeout = {
+        tv_sec : 0,
+        tv_usec : 1000 * 50  // 50ms
+    };
+
+    SOCKET max_sd = data->s;
+    printf("---my_send() select fd: %d.\n", max_sd);
+    int ret = select(max_sd + 1, NULL, &writefds, NULL, &timeout);
+    if (ret == 0) {  // timeout
+        printf("---my_send() select timeout.\n");
+        return 0;
+    } else if (ret == SOCKET_ERROR) {
+        printf("---my_send() select error.\n");
+        return MR_FAILED;
+    }
+
+    if (FD_ISSET(data->s, &writefds)) {
+        printf("---my_send() select result writeable.\n");
+    } else {
+        printf("---my_send() select result not writeable.\n");
+        return 0;
+    }
+
+    ret = send(data->s, buf, len, 0);
     if (ret == SOCKET_ERROR) {
         return MR_FAILED;
     }
@@ -170,9 +431,39 @@ int32 my_send(int32 s, const char *buf, int len) {
    >=0的整数 实际接收的数据字节个数
    MR_FAILED Socket已经被关闭或遇到了无法修复的错误。 
 */
-int32 my_recv(int32 s, char *buf, int len) {
+int32 my_recv(int32 s, char* buf, int len) {
 #ifdef NETWORK
-    int32 ret = recv((SOCKET)s, buf, len, 0);
+    uIntMap* obj = uIntMap_search(&sockets, (uint32_t)s);
+    mSocket* data = (mSocket*)obj->data;
+
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(data->s, &readfds);
+
+    TIMEVAL timeout = {
+        tv_sec : 0,
+        tv_usec : 1000 * 50  // 50ms
+    };
+
+    SOCKET max_sd = data->s;
+    printf("mr_recv() select fd: %d.\n", max_sd);
+    int ret = select(max_sd + 1, &readfds, NULL, NULL, &timeout);
+    if (ret == 0) {  // timeout
+        printf("mr_recv() select timeout.\n");
+        return 0;
+    } else if (ret == SOCKET_ERROR) {
+        printf("mr_recv() select error.\n");
+        return MR_FAILED;
+    }
+
+    if (FD_ISSET(data->s, &readfds)) {
+        printf("mr_recv() select result readable.\n");
+    } else {
+        printf("mr_recv() select result not readable.\n");
+        return 0;
+    }
+
+    ret = recv(data->s, buf, len, 0);
     if (ret == SOCKET_ERROR) {
         return MR_FAILED;
     }
@@ -182,21 +473,18 @@ int32 my_recv(int32 s, char *buf, int len) {
 #endif
 }
 
+/*
 int test() {
 #ifdef NETWORK
-    my_initNetwork(NULL, "cmnet");
+    my_initNetwork(NULL, NULL, "cmnet");
 
-    // gcc -Wall a.c -m32 -lws2_32 && ./a.exe
-    int ip = my_getHostByName("qq.com", NULL);
-    printf("ip:0x%X\n", ip);
-
+    // gcc -Wall network.c -m32 -lws2_32 && ./a.exe
+    int ip = my_getHostByNameSync("3g.sina.com.cn");
     int sh = my_socket(MR_SOCK_STREAM, MR_IPPROTO_TCP);
-    printf("sh:0x%X\n", sh);
-
     int ret = my_connect(sh, ip, 80, MR_SOCKET_NONBLOCK);
-    printf("ret:%d\n", ret);
+    char* sendData = "GET /?wm=4015 HTTP/1.1\r\nHost: 3g.sina.com.cn\r\nUser-Agent: MAUI WAP Browser\r\n\r\n";
+    // char *sendData = "GET http://3g.sina.com.cn/?wm=4015 HTTP/1.1\r\nHost: 3g.sina.com.cn\r\nUser-Agent: MAUI WAP Browser\r\n\r\n";
 
-    char *sendData = "GET / HTTP/1.1\r\nHost: qq.com\r\nAccept: */*\r\nConnection: close\r\n\r\n";
     ret = my_send(sh, sendData, strlen(sendData));
     printf("len:%d, ret:%d\n", strlen(sendData), ret);
 
@@ -217,3 +505,4 @@ int test() {
 #endif
     return 0;
 }
+*/

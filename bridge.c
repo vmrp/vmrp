@@ -9,9 +9,7 @@
 
 #include "./header/dsm.h"
 #include "./header/fileLib.h"
-#include "./header/gb2unicode.h"
 #include "./header/memory.h"
-#include "./header/tsf_font.h"
 #include "./header/vmrp.h"
 #include "./header/network.h"
 
@@ -331,7 +329,10 @@ static void br_getDatetime(BridgeMap *o, uc_engine *uc) {
 static void br_mr_initNetwork(BridgeMap *o, uc_engine *uc) {
     // int32 (*mr_initNetwork)(MR_INIT_NETWORK_CB cb, const char *mode);
     LOG("ext call %s()\n", o->name);
-    SET_RET_V(my_initNetwork(NULL, NULL));
+    uint32_t cb, mode;
+    uc_reg_read(uc, UC_ARM_REG_R0, &cb);
+    uc_reg_read(uc, UC_ARM_REG_R1, &mode);
+    SET_RET_V(my_initNetwork(uc, (void *)cb, getMrpMemPtr(mode)));
 }
 
 static void br_mr_socket(BridgeMap *o, uc_engine *uc) {
@@ -375,7 +376,7 @@ static void br_mr_getHostByName(BridgeMap *o, uc_engine *uc) {
     uint32_t name, cb;
     uc_reg_read(uc, UC_ARM_REG_R0, &name);
     uc_reg_read(uc, UC_ARM_REG_R1, &cb);
-    SET_RET_V(my_getHostByName(getMrpMemPtr(name), NULL));
+    SET_RET_V(my_getHostByName(uc, getMrpMemPtr(name), (void *)cb));
 }
 
 static void br_mr_send(BridgeMap *o, uc_engine *uc) {
@@ -417,7 +418,7 @@ static void br_mr_getSocketState(BridgeMap *o, uc_engine *uc) {
     int32_t s;
     uc_reg_read(uc, UC_ARM_REG_R0, &s);
     LOG("ext call %s(%d)\n", o->name, s);
-    SET_RET_V(MR_IGNORE);
+    SET_RET_V(my_getSocketState(s));
 }
 
 enum {
@@ -787,6 +788,7 @@ static BridgeMap dsm_require_funcs_funcMap[51] = {
     BRIDGE_FUNC_MAP(0x60, MAP_FUNC, closedir, NULL, br_closedir, 0),
     BRIDGE_FUNC_MAP(0x64, MAP_FUNC, getLen, NULL, br_mr_getLen, 0),
     BRIDGE_FUNC_MAP(0x68, MAP_FUNC, drawBitmap, NULL, br_mr_drawBitmap, 0),
+
     BRIDGE_FUNC_MAP(0x6c, MAP_FUNC, mr_initNetwork, NULL, br_mr_initNetwork, 0),
     BRIDGE_FUNC_MAP(0x70, MAP_FUNC, mr_closeNetwork, NULL, br_mr_closeNetwork, 0),
     BRIDGE_FUNC_MAP(0x74, MAP_FUNC, mr_getHostByName, NULL, br_mr_getHostByName, 0),
@@ -798,6 +800,7 @@ static BridgeMap dsm_require_funcs_funcMap[51] = {
     BRIDGE_FUNC_MAP(0x8c, MAP_FUNC, mr_send, NULL, br_mr_send, 0),
     BRIDGE_FUNC_MAP(0x90, MAP_FUNC, mr_recvfrom, NULL, NULL, 0),
     BRIDGE_FUNC_MAP(0x94, MAP_FUNC, mr_sendto, NULL, NULL, 0),
+
     BRIDGE_FUNC_MAP(0x98, MAP_FUNC, mr_startShake, NULL, br_mr_startShake, 0),
     BRIDGE_FUNC_MAP(0x9c, MAP_FUNC, mr_stopShake, NULL, br_mr_stopShake, 0),
     BRIDGE_FUNC_MAP(0xa0, MAP_FUNC, mr_playSound, NULL, br_mr_playSound, 0),
@@ -911,6 +914,9 @@ unsigned int mr_helper_get_ro_len() {
     return Image$$ER_RO$$Length;
 }
 */
+
+static const char MUTEX_LOCK_FAIL[] = "mutex lock fail";
+static const char MUTEX_UNLOCK_FAIL[] = "mutex unlock fail";
 static pthread_mutex_t mutex;
 static uint32_t dsm_export_funcs;
 
@@ -919,9 +925,25 @@ static int32_t bridge_dsm_version(uc_engine *uc) {
     return *(int32_t *)getMrpMemPtr(dsm_export_funcs + 0x00);
 }
 
+int32_t bridge_dsm_network_cb(uc_engine *uc, uint32_t addr, int32_t p1) {
+    if (pthread_mutex_lock(&mutex) != 0) {
+        perror(MUTEX_LOCK_FAIL);
+        exit(EXIT_FAILURE);
+    }
+    uc_reg_write(uc, UC_ARM_REG_R0, &p1);
+    runCode(uc, addr, CODE_ADDRESS, false);
+    uint32_t v;
+    uc_reg_read(uc, UC_ARM_REG_R0, &v);
+    if (pthread_mutex_unlock(&mutex) != 0) {
+        perror(MUTEX_UNLOCK_FAIL);
+        exit(EXIT_FAILURE);
+    }
+    return (int32_t)v;
+}
+
 int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, char *filename, char *ext, char *entry) {
     if (pthread_mutex_lock(&mutex) != 0) {
-        perror("mutex lock fail");
+        perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     // int32 (*mr_start_dsm)(char *filename, char *ext, char *entry); // 0x04
@@ -950,7 +972,7 @@ int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, char *filename, char *ext, char *
     uint32_t v;
     uc_reg_read(uc, UC_ARM_REG_R0, &v);
     if (pthread_mutex_unlock(&mutex) != 0) {
-        perror("mutex unlock fail");
+        perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     return (int32_t)v;
@@ -958,7 +980,7 @@ int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, char *filename, char *ext, char *
 
 int32_t bridge_dsm_mr_pauseApp(uc_engine *uc) {
     if (pthread_mutex_lock(&mutex) != 0) {
-        perror("mutex lock fail");
+        perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     //     int32 (*mr_pauseApp)(void); // 0x08
@@ -967,7 +989,7 @@ int32_t bridge_dsm_mr_pauseApp(uc_engine *uc) {
     uint32_t v;
     uc_reg_read(uc, UC_ARM_REG_R0, &v);
     if (pthread_mutex_unlock(&mutex) != 0) {
-        perror("mutex unlock fail");
+        perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     return (int32_t)v;
@@ -975,7 +997,7 @@ int32_t bridge_dsm_mr_pauseApp(uc_engine *uc) {
 
 int32_t bridge_dsm_mr_resumeApp(uc_engine *uc) {
     if (pthread_mutex_lock(&mutex) != 0) {
-        perror("mutex lock fail");
+        perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     //     int32 (*mr_resumeApp)(void); // 0x0c
@@ -984,7 +1006,7 @@ int32_t bridge_dsm_mr_resumeApp(uc_engine *uc) {
     uint32_t v;
     uc_reg_read(uc, UC_ARM_REG_R0, &v);
     if (pthread_mutex_unlock(&mutex) != 0) {
-        perror("mutex unlock fail");
+        perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     return (int32_t)v;
@@ -992,7 +1014,7 @@ int32_t bridge_dsm_mr_resumeApp(uc_engine *uc) {
 
 int32_t bridge_dsm_mr_timer(uc_engine *uc) {
     if (pthread_mutex_lock(&mutex) != 0) {
-        perror("mutex lock fail");
+        perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     //     int32 (*mr_timer)(void); // 0x10
@@ -1001,7 +1023,7 @@ int32_t bridge_dsm_mr_timer(uc_engine *uc) {
     uint32_t v;
     uc_reg_read(uc, UC_ARM_REG_R0, &v);
     if (pthread_mutex_unlock(&mutex) != 0) {
-        perror("mutex unlock fail");
+        perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     return (int32_t)v;
@@ -1009,7 +1031,7 @@ int32_t bridge_dsm_mr_timer(uc_engine *uc) {
 
 int32_t bridge_dsm_mr_event(uc_engine *uc, int32_t code, int32_t p1, int32_t p2) {
     if (pthread_mutex_lock(&mutex) != 0) {
-        perror("mutex lock fail");
+        perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     //     int32 (*mr_event)(int16 type, int32 param1, int32 param2); // 0x14
@@ -1022,7 +1044,7 @@ int32_t bridge_dsm_mr_event(uc_engine *uc, int32_t code, int32_t p1, int32_t p2)
     uint32_t v;
     uc_reg_read(uc, UC_ARM_REG_R0, &v);
     if (pthread_mutex_unlock(&mutex) != 0) {
-        perror("mutex unlock fail");
+        perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     return (int32_t)v;
@@ -1034,7 +1056,7 @@ int32_t bridge_dsm_init(uc_engine *uc, uint32_t addr) {
         exit(EXIT_FAILURE);
     }
     if (pthread_mutex_lock(&mutex) != 0) {
-        perror("mutex lock fail");
+        perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
 
@@ -1049,7 +1071,7 @@ int32_t bridge_dsm_init(uc_engine *uc, uint32_t addr) {
     v = bridge_dsm_version(uc);
 
     if (pthread_mutex_unlock(&mutex) != 0) {
-        perror("mutex unlock fail");
+        perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
     }
     if (v == VMRP_VER) {

@@ -9,7 +9,6 @@
 #include "./header/debug.h"
 #include "./header/fileLib.h"
 #include "./header/memory.h"
-#include "./header/tsf_font.h"
 #include "./header/utils.h"
 #include "./header/elfload.h"
 
@@ -138,22 +137,21 @@ end:
     return NULL;
 }
 
-static int32_t eventFunc(int32_t code, int32_t p1, int32_t p2) {
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+int32_t c_event(int32_t code, int32_t p1, int32_t p2) {
     if (uc) {
         return bridge_dsm_mr_event(uc, code, p1, p2);
     }
     return MR_FAILED;
 }
-
-#ifdef __EMSCRIPTEN__
-EMSCRIPTEN_KEEPALIVE
-int32_t c_event(int32_t code, int32_t p1, int32_t p2) {
-    return eventFunc(code, p1, p2);
-}
 #endif
 
 int32_t event(int32_t code, int32_t p1, int32_t p2) {
-    return eventFunc(code, p1, p2);
+    if (uc) {
+        return bridge_dsm_mr_event(uc, code, p1, p2);
+    }
+    return MR_FAILED;
 }
 
 int32_t timer() {
