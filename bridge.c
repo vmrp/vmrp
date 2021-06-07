@@ -788,6 +788,7 @@ static BridgeMap dsm_require_funcs_funcMap[51] = {
     BRIDGE_FUNC_MAP(0x60, MAP_FUNC, closedir, NULL, br_closedir, 0),
     BRIDGE_FUNC_MAP(0x64, MAP_FUNC, getLen, NULL, br_mr_getLen, 0),
     BRIDGE_FUNC_MAP(0x68, MAP_FUNC, drawBitmap, NULL, br_mr_drawBitmap, 0),
+
     BRIDGE_FUNC_MAP(0x6c, MAP_FUNC, mr_initNetwork, NULL, br_mr_initNetwork, 0),
     BRIDGE_FUNC_MAP(0x70, MAP_FUNC, mr_closeNetwork, NULL, br_mr_closeNetwork, 0),
     BRIDGE_FUNC_MAP(0x74, MAP_FUNC, mr_getHostByName, NULL, br_mr_getHostByName, 0),
@@ -799,6 +800,7 @@ static BridgeMap dsm_require_funcs_funcMap[51] = {
     BRIDGE_FUNC_MAP(0x8c, MAP_FUNC, mr_send, NULL, br_mr_send, 0),
     BRIDGE_FUNC_MAP(0x90, MAP_FUNC, mr_recvfrom, NULL, NULL, 0),
     BRIDGE_FUNC_MAP(0x94, MAP_FUNC, mr_sendto, NULL, NULL, 0),
+
     BRIDGE_FUNC_MAP(0x98, MAP_FUNC, mr_startShake, NULL, br_mr_startShake, 0),
     BRIDGE_FUNC_MAP(0x9c, MAP_FUNC, mr_stopShake, NULL, br_mr_stopShake, 0),
     BRIDGE_FUNC_MAP(0xa0, MAP_FUNC, mr_playSound, NULL, br_mr_playSound, 0),

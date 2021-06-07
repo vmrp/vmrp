@@ -118,7 +118,7 @@ static void* my_connectAsync(void* arg) {
     connectData_t* data = (connectData_t*)arg;
     int32_t r = my_connectSync(data->s->s, data->ip, data->port);
     data->s->realState = r;
-    if (!isCMWAP) {
+    if (!isCMWAP) {  // cmnet模式下保持相同的连接状态
         data->s->state = r;
     }
     free(data);
@@ -166,9 +166,9 @@ int32 my_connect(int32 s, int32 ip, uint16 port, int32 type) {
    MR_IGNORE ： 不支持该功能
 */
 int32 my_getSocketState(int32 s) {
-    printf("my_getSocketState(%d)\n", s);
     uIntMap* obj = uIntMap_search(&sockets, (uint32_t)s);
     mSocket* p = ((mSocket*)obj->data);
+    printf("my_getSocketState(%d): %d\n", s, p->state);
     return p->state;
 }
 
@@ -367,7 +367,7 @@ int32 my_send(int32 s, const char* buf, int len) {
     mSocket* data = (mSocket*)obj->data;
 
     data->sendCounter++;
-    if (isCMWAP) {
+    if (isCMWAP) {  // cmwap模式需要通过代理，这里模拟代理的功能
         if (data->realState == MR_WAITING) {
             if (data->sendCounter == 1) {  // 第一次发送数据，尝试连接
                 char tmp[256];
@@ -377,7 +377,10 @@ int32 my_send(int32 s, const char* buf, int len) {
                 if (parseHostPort(tmp, host, sizeof(host), &port) == MR_FAILED) {
                     return MR_FAILED;
                 }
-                int ip = my_getHostByNameSync(host);
+                int32 ip = my_getHostByNameSync(host);
+                if (ip == MR_FAILED) {
+                    return MR_FAILED;
+                }
                 if (my_connect(s, ip, port, MR_SOCKET_NONBLOCK) == MR_FAILED) {
                     return MR_FAILED;
                 }
@@ -387,7 +390,34 @@ int32 my_send(int32 s, const char* buf, int len) {
             return MR_FAILED;
         }
     }
-    int32 ret = send(data->s, buf, len, 0);
+    fd_set writefds;
+    FD_ZERO(&writefds);
+    FD_SET(data->s, &writefds);
+
+    TIMEVAL timeout = {
+        tv_sec : 0,
+        tv_usec : 1000 * 50  // 50ms
+    };
+
+    SOCKET max_sd = data->s;
+    printf("---my_send() select fd: %d.\n", max_sd);
+    int ret = select(max_sd + 1, NULL, &writefds, NULL, &timeout);
+    if (ret == 0) {  // timeout
+        printf("---my_send() select timeout.\n");
+        return 0;
+    } else if (ret == SOCKET_ERROR) {
+        printf("---my_send() select error.\n");
+        return MR_FAILED;
+    }
+
+    if (FD_ISSET(data->s, &writefds)) {
+        printf("---my_send() select result writeable.\n");
+    } else {
+        printf("---my_send() select result not writeable.\n");
+        return 0;
+    }
+
+    ret = send(data->s, buf, len, 0);
     if (ret == SOCKET_ERROR) {
         return MR_FAILED;
     }
@@ -405,7 +435,35 @@ int32 my_recv(int32 s, char* buf, int len) {
 #ifdef NETWORK
     uIntMap* obj = uIntMap_search(&sockets, (uint32_t)s);
     mSocket* data = (mSocket*)obj->data;
-    int32 ret = recv(data->s, buf, len, 0);
+
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(data->s, &readfds);
+
+    TIMEVAL timeout = {
+        tv_sec : 0,
+        tv_usec : 1000 * 50  // 50ms
+    };
+
+    SOCKET max_sd = data->s;
+    printf("mr_recv() select fd: %d.\n", max_sd);
+    int ret = select(max_sd + 1, &readfds, NULL, NULL, &timeout);
+    if (ret == 0) {  // timeout
+        printf("mr_recv() select timeout.\n");
+        return 0;
+    } else if (ret == SOCKET_ERROR) {
+        printf("mr_recv() select error.\n");
+        return MR_FAILED;
+    }
+
+    if (FD_ISSET(data->s, &readfds)) {
+        printf("mr_recv() select result readable.\n");
+    } else {
+        printf("mr_recv() select result not readable.\n");
+        return 0;
+    }
+
+    ret = recv(data->s, buf, len, 0);
     if (ret == SOCKET_ERROR) {
         return MR_FAILED;
     }
