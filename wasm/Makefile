@@ -13,6 +13,7 @@ main:
 		-s FORCE_FILESYSTEM=1 \
 		-o dist/vmrp.js
 
-		#--preload-file ./fs@/
+		# 目前添加网络功能还有问题 https://github.com/emscripten-core/emscripten/issues/6009
+		# -lwebsocket.js -s PROXY_POSIX_SOCKETS=1 -s USE_PTHREADS=1 -s PROXY_TO_PTHREAD=1 \
 
-		
+

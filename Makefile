@@ -1,13 +1,13 @@
 CC := gcc
 
+CFLAGS := -Wall -DNETWORK_SUPPORT
+OBJS := 
+CAPSTONE := 
+
 ifeq ($(DEBUG),1)
-	CFLAGS := -g -Wall -DDEBUG
+	CFLAGS += -g -DDEBUG
 	OBJS := debug.o
 	CAPSTONE := ./windows/capstone-4.0.1-win32/capstone.dll
-else
-	CFLAGS := -Wall
-	OBJS := 
-	CAPSTONE := 
 endif
 
 OBJS += network.o fileLib.o vmrp.o utils.o rbtree.o bridge.o memory.o  elfload.o elfloader.o
