@@ -396,6 +396,58 @@ int32 my_getHostByName(uc_engine* uc, const char* name, MR_GET_HOST_CB cb) {
 #endif
 }
 
+// 返回-1表示失败，0表示不可写，1表示可写
+int checkWritable(SOCKET_T socket) {
+    fd_set writefds;
+    FD_ZERO(&writefds);
+    FD_SET(socket, &writefds);
+
+    struct timeval timeout = {
+        .tv_sec = 0,
+        .tv_usec = 1000 * 50  // 50ms
+    };
+
+    SOCKET_T max_sd = socket;
+    // printf("---checkWritable() select fd: %d.\n", max_sd);
+    int ret = select(max_sd + 1, NULL, &writefds, NULL, &timeout);
+    if (ret == 0) {  // timeout
+        // printf("---checkWritable() select timeout.\n");
+        return 0;
+    } else if (ret == -1) {
+        // printf("---checkWritable() select error.\n");
+        return -1;
+    }
+
+    if (FD_ISSET(socket, &writefds)) {
+        // printf("---checkWritable() select result writeable.\n");
+        return 1;
+    }
+    // printf("---checkWritable() select result not writeable.\n");
+    return 0;
+}
+
+int32 my_sendto(int32 s, const char* buf, int len, int32 ip, uint16 port) {
+#ifdef NETWORK_SUPPORT
+    uIntMap* obj = uIntMap_search(&sockets, (uint32_t)s);
+    mSocket* data = (mSocket*)obj->data;
+
+    struct sockaddr_in to;
+    to.sin_family = AF_INET;
+    to.sin_port = htons(port);
+    to.sin_addr.s_addr = htonl(ip);
+
+    printf("my_sendto(len:%d, '%s:%d')\n", len, inet_ntoa(to.sin_addr), port);
+
+    int ret = sendto(data->s, buf, len, 0, (struct sockaddr*)&to, sizeof(to));
+    if (ret == -1) {
+        return MR_FAILED;
+    }
+    return ret;
+#else
+    return MR_FAILED;
+#endif
+}
+
 /*
    >=0 实际发送的数据字节个数
    MR_FAILED Socket已经被关闭或遇到了无法修复的错误。 
@@ -429,37 +481,75 @@ int32 my_send(int32 s, const char* buf, int len) {
             return MR_FAILED;
         }
     }
-    fd_set writefds;
-    FD_ZERO(&writefds);
-    FD_SET(data->s, &writefds);
+    int ret = checkWritable(data->s);
+    if (ret == -1) {
+        return MR_FAILED;
+    } else if (ret == 0) {
+        return 0;
+    }
+    ret = send(data->s, buf, len, 0);
+    if (ret == -1) {
+        return MR_FAILED;
+    }
+    return ret;
+#else
+    return MR_FAILED;
+#endif
+}
+
+// 返回-1表示失败，0表示不可读，1表示可读
+int checkReadable(SOCKET_T socket) {
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(socket, &readfds);
 
     struct timeval timeout = {
         .tv_sec = 0,
         .tv_usec = 1000 * 50  // 50ms
     };
 
-    SOCKET_T max_sd = data->s;
-    printf("---my_send() select fd: %d.\n", max_sd);
-    int ret = select(max_sd + 1, NULL, &writefds, NULL, &timeout);
+    SOCKET_T max_sd = socket;
+    // printf("checkReadable() select fd: %d.\n", max_sd);
+    int ret = select(max_sd + 1, &readfds, NULL, NULL, &timeout);
     if (ret == 0) {  // timeout
-        printf("---my_send() select timeout.\n");
+        // printf("checkReadable() select timeout.\n");
         return 0;
     } else if (ret == -1) {
-        printf("---my_send() select error.\n");
-        return MR_FAILED;
+        // printf("checkReadable() select error.\n");
+        return -1;
     }
+    if (FD_ISSET(socket, &readfds)) {
+        // printf("checkReadable() select result readable.\n");
+        return 1;
+    }
+    // printf("checkReadable() select result not readable.\n");
+    return 0;
+}
 
-    if (FD_ISSET(data->s, &writefds)) {
-        printf("---my_send() select result writeable.\n");
-    } else {
-        printf("---my_send() select result not writeable.\n");
+int32 my_recvfrom(int32 s, char* buf, int len, int32* ip, uint16* port) {
+#ifdef NETWORK_SUPPORT
+    uIntMap* obj = uIntMap_search(&sockets, (uint32_t)s);
+    mSocket* data = (mSocket*)obj->data;
+    int ret = checkReadable(data->s);
+    if (ret == -1) {
+        return MR_FAILED;
+    } else if (ret == 0) {
         return 0;
     }
-
-    ret = send(data->s, buf, len, 0);
+    struct sockaddr_in from;
+    int fromLen = sizeof(from);
+    ret = recvfrom(data->s, buf, len, 0, (struct sockaddr*)&from, &fromLen);
     if (ret == -1) {
         return MR_FAILED;
     }
+
+    if (from.sin_family != AF_INET) {
+        printf("warning my_recvfrom() recv not ipv4\n");
+    }
+    *port = ntohs(from.sin_port);
+    *ip = ntohl(from.sin_addr.s_addr);
+    printf("my_recvfrom(len:%d, '%s:%d')\n", len, inet_ntoa(from.sin_addr), *port);
+
     return ret;
 #else
     return MR_FAILED;
@@ -474,34 +564,12 @@ int32 my_recv(int32 s, char* buf, int len) {
 #ifdef NETWORK_SUPPORT
     uIntMap* obj = uIntMap_search(&sockets, (uint32_t)s);
     mSocket* data = (mSocket*)obj->data;
-
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(data->s, &readfds);
-
-    struct timeval timeout = {
-        .tv_sec = 0,
-        .tv_usec = 1000 * 50  // 50ms
-    };
-
-    SOCKET_T max_sd = data->s;
-    printf("mr_recv() select fd: %d.\n", max_sd);
-    int ret = select(max_sd + 1, &readfds, NULL, NULL, &timeout);
-    if (ret == 0) {  // timeout
-        printf("mr_recv() select timeout.\n");
-        return 0;
-    } else if (ret == -1) {
-        printf("mr_recv() select error.\n");
+    int ret = checkReadable(data->s);
+    if (ret == -1) {
         return MR_FAILED;
-    }
-
-    if (FD_ISSET(data->s, &readfds)) {
-        printf("mr_recv() select result readable.\n");
-    } else {
-        printf("mr_recv() select result not readable.\n");
+    } else if (ret == 0) {
         return 0;
     }
-
     ret = recv(data->s, buf, len, 0);
     if (ret == -1) {
         return MR_FAILED;

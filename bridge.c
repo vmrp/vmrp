@@ -37,6 +37,22 @@ static guiDrawBitmap_t guiDrawBitmap;
 static timerStart_t timerStart;
 static timerStop_t timerStop;
 
+// 获取参数的工具方法，第一个参数n=0
+static uint32_t getArg(uc_engine *uc, uint32_t n) {
+    uint32_t v;
+    if (n <= 3) {  // 前四个参数直接从寄存器读
+        uc_reg_read(uc, UC_ARM_REG_R0 + n, &v);
+        return v;
+    }
+
+    uint32_t addr;
+    uc_reg_read(uc, UC_ARM_REG_SP, &addr);
+
+    addr += (n - 4) * 4;
+    uc_mem_read(uc, addr, &v, 4);
+    return v;
+}
+
 // 实际上mrc_refreshScreen()是调用的这个方法
 static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
     // typedef void (*T_mr_drawBitmap)(uint16* bmp, int16 x, int16 y, uint16 w, uint16 h);
@@ -379,6 +395,18 @@ static void br_mr_getHostByName(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(my_getHostByName(uc, getMrpMemPtr(name), (void *)cb));
 }
 
+static void br_mr_sendto(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_sendto)(int32 s, const char *buf, int len, int32 ip, uint16 port);
+    LOG("ext call %s()\n", o->name);
+    uint32_t s, buf, len, ip, port;
+    uc_reg_read(uc, UC_ARM_REG_R0, &s);
+    uc_reg_read(uc, UC_ARM_REG_R1, &buf);
+    uc_reg_read(uc, UC_ARM_REG_R2, &len);
+    uc_reg_read(uc, UC_ARM_REG_R3, &ip);
+    port = getArg(uc, 4);
+    SET_RET_V(my_sendto(s, getMrpMemPtr(buf), len, ip, (uint16_t)port));
+}
+
 static void br_mr_send(BridgeMap *o, uc_engine *uc) {
     // int32 (*mr_send)(int32 s, const char *buf, int len);
     LOG("ext call %s()\n", o->name);
@@ -387,6 +415,18 @@ static void br_mr_send(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R1, &buf);
     uc_reg_read(uc, UC_ARM_REG_R2, &len);
     SET_RET_V(my_send(s, getMrpMemPtr(buf), len));
+}
+
+static void br_mr_recvfrom(BridgeMap *o, uc_engine *uc) {
+    // int32 (*mr_recvfrom)(int32 s, char *buf, int len, int32 *ip, uint16 *port);
+    LOG("ext call %s()\n", o->name);
+    uint32_t s, buf, len, ip, port;
+    uc_reg_read(uc, UC_ARM_REG_R0, &s);
+    uc_reg_read(uc, UC_ARM_REG_R1, &buf);
+    uc_reg_read(uc, UC_ARM_REG_R2, &len);
+    uc_reg_read(uc, UC_ARM_REG_R3, &ip);
+    port = getArg(uc, 4);
+    SET_RET_V(my_recvfrom(s, getMrpMemPtr(buf), len, getMrpMemPtr(ip), (uint16_t *)getMrpMemPtr(port)));
 }
 
 static void br_mr_recv(BridgeMap *o, uc_engine *uc) {
@@ -798,8 +838,8 @@ static BridgeMap dsm_require_funcs_funcMap[51] = {
     BRIDGE_FUNC_MAP(0x84, MAP_FUNC, mr_closeSocket, NULL, br_mr_closeSocket, 0),
     BRIDGE_FUNC_MAP(0x88, MAP_FUNC, mr_recv, NULL, br_mr_recv, 0),
     BRIDGE_FUNC_MAP(0x8c, MAP_FUNC, mr_send, NULL, br_mr_send, 0),
-    BRIDGE_FUNC_MAP(0x90, MAP_FUNC, mr_recvfrom, NULL, NULL, 0),
-    BRIDGE_FUNC_MAP(0x94, MAP_FUNC, mr_sendto, NULL, NULL, 0),
+    BRIDGE_FUNC_MAP(0x90, MAP_FUNC, mr_recvfrom, NULL, br_mr_recvfrom, 0),
+    BRIDGE_FUNC_MAP(0x94, MAP_FUNC, mr_sendto, NULL, br_mr_sendto, 0),
 
     BRIDGE_FUNC_MAP(0x98, MAP_FUNC, mr_startShake, NULL, br_mr_startShake, 0),
     BRIDGE_FUNC_MAP(0x9c, MAP_FUNC, mr_stopShake, NULL, br_mr_stopShake, 0),
