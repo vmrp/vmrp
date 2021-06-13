@@ -1,11 +1,11 @@
 CC := gcc
 
-CFLAGS := -Wall -DNETWORK_SUPPORT
+CFLAGS := -g -Wall -DNETWORK_SUPPORT
 OBJS := 
 CAPSTONE := 
 
 ifeq ($(DEBUG),1)
-	CFLAGS += -g -DDEBUG
+	CFLAGS += -DDEBUG
 	OBJS := debug.o
 	CAPSTONE := ./windows/capstone-4.0.1-win32/capstone.dll
 endif

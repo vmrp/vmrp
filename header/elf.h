@@ -34,7 +34,7 @@
 #include "types.h"
 
 #define EM_THIS EM_ARM
-// #define EL_ARCH_USES_RELA
+#define EL_ARCH_USES_RELA
 #define EL_ARCH_USES_REL
 
 #define ELFSIZE 32

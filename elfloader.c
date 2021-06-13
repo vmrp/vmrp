@@ -3,9 +3,8 @@
 #include "./header/elfload.h"
 #include "./header/fileLib.h"
 
-#define R_AARCH64_NONE 0
-// #define R_AARCH64_RELATIVE 1027
-#define R_AARCH64_RELATIVE 23
+#define R_ARM_NONE 0
+#define R_ARM_RELATIVE 23
 
 el_status el_applyrela(el_ctx* ctx, Elf_RelA* rel) {
     uintptr_t* p = (uintptr_t*)(rel->r_offset + ctx->base_load_paddr);
@@ -13,19 +12,19 @@ el_status el_applyrela(el_ctx* ctx, Elf_RelA* rel) {
     uint32_t sym = ELF_R_SYM(rel->r_info);
 
     switch (type) {
-        case R_AARCH64_NONE:
-            EL_DEBUG("%s", "R_AARCH64_NONE\n");
-            break;
-        case R_AARCH64_RELATIVE:
+        case R_ARM_RELATIVE:
             if (sym) {
-                EL_DEBUG("%s", "R_AARCH64_RELATIVE with symbol ref!\n");
+                EL_DEBUG("%s", "R_ARM_RELATIVE with symbol ref!\n");
                 return EL_BADREL;
             }
 
-            EL_DEBUG("1Applying R_AARCH64_RELATIVE reloc @%p\n", p);
+            EL_DEBUG("el_applyrela Applying R_ARM_RELATIVE reloc @%p\n", p);
             *p = rel->r_addend + ctx->base_load_vaddr;
             break;
 
+        case R_ARM_NONE:
+            EL_DEBUG("%s", "R_ARM_NONE\n");
+            // break;
         default:
             EL_DEBUG("Bad relocation %u\n", type);
             return EL_BADREL;
@@ -40,19 +39,19 @@ el_status el_applyrel(el_ctx* ctx, Elf_Rel* rel) {
     uint32_t sym = ELF_R_SYM(rel->r_info);
 
     switch (type) {
-        case R_AARCH64_NONE:
-            EL_DEBUG("%s", "R_AARCH64_NONE\n");
-            break;
-        case R_AARCH64_RELATIVE:
+        case R_ARM_RELATIVE:
             if (sym) {
-                EL_DEBUG("%s", "R_AARCH64_RELATIVE with symbol ref!\n");
+                EL_DEBUG("%s", "R_ARM_RELATIVE with symbol ref!\n");
                 return EL_BADREL;
             }
 
-            EL_DEBUG("2Applying R_AARCH64_RELATIVE reloc @%p\n", p);
+            EL_DEBUG("el_applyrel Applying R_ARM_RELATIVE reloc @%p\n", p);
             *p += ctx->base_load_vaddr;
             break;
 
+        case R_ARM_NONE:
+            EL_DEBUG("%s", "R_ARM_NONE\n");
+            // break;
         default:
             EL_DEBUG("Bad relocation %u\n", type);
             return EL_BADREL;

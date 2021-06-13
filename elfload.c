@@ -39,11 +39,8 @@ el_status el_findphdr(el_ctx *ctx, Elf_Phdr *phdr, uint32 type, unsigned *i) {
 
 el_status el_init(el_ctx *ctx) {
     el_status rv = EL_OK;
-    /* load phdrs */
-    Elf_Phdr ph;
-    unsigned i = 0;
 
-    rv = el_pread(ctx, &ctx->ehdr, sizeof ctx->ehdr, 0);
+    rv = el_pread(ctx, &ctx->ehdr, sizeof(ctx->ehdr), 0);
     if (rv) return rv;
 
     /* validate header */
@@ -60,16 +57,6 @@ el_status el_init(el_ctx *ctx) {
     if (ctx->ehdr.e_ident[EI_VERSION] != EV_CURRENT)
         return EL_NOTELF;
 
-#if 0
-    /* gandr binaries use the STANDALONE ABI */
-    if (ctx->ehdr.e_ident[EI_OSABI] != ELFOSABI_STANDALONE)
-        return EL_WRONGOS;
-
-    /* G is for Gandr
-    if (ctx->ehdr.e_ident[EI_ABIVERSION] != 'G')
-        return EL_WRONGOS; */
-#endif
-
     if (ctx->ehdr.e_type != ET_EXEC && ctx->ehdr.e_type != ET_DYN)
         return EL_NOTEXEC;
 
@@ -84,26 +71,34 @@ el_status el_init(el_ctx *ctx) {
     ctx->align = 1;
     ctx->memsz = 0;
 
-    for (;;) {
-        Elf_Addr phend;
+    if (ctx->ehdr.e_phentsize != sizeof(Elf_Phdr))
+        return EL_NOTELF;
 
-        rv = el_findphdr(ctx, &ph, PT_LOAD, &i);
-        if (rv) return rv;
+    { /* load phdrs */
+        unsigned i = 0;
+        for (;;) {
+            Elf_Phdr ph;
+            Elf_Addr phend;
 
-        if (i == (unsigned)-1)
-            break;
+            rv = el_findphdr(ctx, &ph, PT_LOAD, &i);
+            if (rv) return rv;
 
-        phend = ph.p_vaddr + ph.p_memsz;
-        if (phend > ctx->memsz)
-            ctx->memsz = phend;
+            if (i == (unsigned)-1)
+                break;
 
-        if (ph.p_align > ctx->align)
-            ctx->align = ph.p_align;
+            phend = ph.p_vaddr + ph.p_memsz;
+            if (phend > ctx->memsz)
+                ctx->memsz = phend;
 
-        i++;
+            if (ph.p_align > ctx->align)
+                ctx->align = ph.p_align;
+
+            i++;
+        }
     }
     if (ctx->ehdr.e_type == ET_DYN) {
-        i = 0;
+        Elf_Phdr ph;
+        unsigned i = 0;
         rv = el_findphdr(ctx, &ph, PT_DYNAMIC, &i);
         if (rv) return rv;
 
@@ -116,7 +111,6 @@ el_status el_init(el_ctx *ctx) {
         ctx->dynoff = 0;
         ctx->dynsize = 0;
     }
-
     return rv;
 }
 
@@ -152,7 +146,7 @@ el_status el_load(el_ctx *ctx, el_alloc_cb alloc) {
         rv = el_pread(ctx, dest, ph.p_filesz, ph.p_offset);
         if (rv) return rv;
 
-        /* zero mem-only portion */
+        /* zero mem-only portion */ // 0初始化全局变量
         memset(dest + ph.p_filesz, 0, ph.p_memsz - ph.p_filesz);
 
         i++;
