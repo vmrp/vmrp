@@ -16,7 +16,7 @@
 #include <emscripten.h>
 #endif
 
-uint8_t *mrpMem;  // 模拟器的全部内存
+static uint8_t *mrpMem;  // 模拟器的全部内存
 static uc_engine *uc = NULL;
 
 // 返回的内存禁止free
@@ -72,7 +72,7 @@ int freeVmrp(uc_engine *uc) {
     return 0;
 }
 
-uc_engine *initVmrp(char *filename) {
+uc_engine *initVmrp() {
     uc_engine *uc;
     uc_err err;
     uc_hook trace;
@@ -91,12 +91,6 @@ uc_engine *initVmrp(char *filename) {
         goto end;
     }
     initMemoryManager(MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE);
-
-    uint32_t entryPoint;
-    if (elfLoad(filename, &entryPoint) == MR_FAILED) {
-        printf("load %s fail\n", filename);
-        goto end;
-    }
 
     err = bridge_init(uc);
     if (err) {
@@ -117,19 +111,6 @@ uc_engine *initVmrp(char *filename) {
     // 设置栈
     uint32_t value = STACK_ADDRESS + STACK_SIZE;  // 满递减
     uc_reg_write(uc, UC_ARM_REG_SP, &value);
-
-    if (bridge_dsm_init(uc, entryPoint) == MR_SUCCESS) {
-        printf("bridge_dsm_init success\n");
-        dumpREG(uc);
-
-        char *filename = "dsm_gm.mrp";
-        // char *filename = "winmine.mrp";
-        char *extName = "start.mr";
-        // char *extName = "cfunction.ext";
-
-        uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
-        printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
-    }
 
     return uc;
 end:
@@ -161,13 +142,37 @@ int32_t timer() {
     return MR_FAILED;
 }
 
+int32_t loadCode(uint32_t *entryPoint) {
+    return elfLoad("vmrp.elf", entryPoint);
+}
+
 int startVmrp() {
     fileLib_init();
 
-    uc = initVmrp("vmrp.elf");
+    uc = initVmrp();
     if (uc == NULL) {
         printf("initVmrp() fail.\n");
         return MR_FAILED;
     }
+
+    uint32_t entryPoint;
+    if (loadCode(&entryPoint) == MR_FAILED) {
+        printf("loadCode fail.\n");
+        return MR_FAILED;
+    }
+
+    if (bridge_dsm_init(uc, entryPoint) == MR_SUCCESS) {
+        printf("bridge_dsm_init success\n");
+        dumpREG(uc);
+
+        char *filename = "dsm_gm.mrp";
+        // char *filename = "winmine.mrp";
+        char *extName = "start.mr";
+        // char *extName = "cfunction.ext";
+
+        uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
+        printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
+    }
+
     return MR_SUCCESS;
 }
