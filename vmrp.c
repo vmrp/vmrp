@@ -6,11 +6,9 @@
 #include <string.h>
 
 #include "./header/bridge.h"
-#include "./header/debug.h"
 #include "./header/fileLib.h"
 #include "./header/memory.h"
 #include "./header/utils.h"
-#include "./header/elfload.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -48,16 +46,12 @@ static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, in
         printf("PC:0x%X,read:0x%X\n", pc, v);
     }
 }
-#endif
 
 static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
-#ifdef DEBUG
     hook_code_debug(uc, address, size);
-#endif
-    if (address >= BRIDGE_TABLE_ADDRESS && address <= BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE) {
-        bridge(uc, UC_MEM_FETCH, address);
-    }
 }
+
+#endif
 
 static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     printf(">>> Tracing mem_invalid mem_type:%s at 0x%" PRIx64 ", size:0x%x, value:0x%" PRIx64 "\n",
@@ -101,10 +95,7 @@ uc_engine *initVmrp() {
 #ifdef DEBUG
     uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
     uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
-    uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, 1, 0);
-    // uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE);
-#else
-    uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, BRIDGE_TABLE_ADDRESS, BRIDGE_TABLE_ADDRESS + BRIDGE_TABLE_SIZE, 0);
+    uc_hook_add(uc, NULL, UC_HOOK_CODE, hook_code, NULL, 1, 0);
 #endif
     uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0, 0);
 
@@ -142,8 +133,15 @@ int32_t timer() {
     return MR_FAILED;
 }
 
-int32_t loadCode(uint32_t *entryPoint) {
-    return elfLoad("vmrp.elf", entryPoint);
+int32_t loadCode() {
+    char *filename = "cfunction.ext";
+    int32_t len = my_getLen(filename);
+    char *buf = readFile(filename);
+    if (buf == NULL) {
+        return MR_FAILED;
+    }
+    uc_mem_write(uc, CODE_ADDRESS, buf, len);
+    return MR_SUCCESS;
 }
 
 int startVmrp() {
@@ -155,13 +153,13 @@ int startVmrp() {
         return MR_FAILED;
     }
 
-    uint32_t entryPoint;
-    if (loadCode(&entryPoint) == MR_FAILED) {
+    if (loadCode() == MR_FAILED) {
         printf("loadCode fail.\n");
         return MR_FAILED;
     }
+    bridge_ext_init(uc);
 
-    if (bridge_dsm_init(uc, entryPoint) == MR_SUCCESS) {
+    if (bridge_dsm_init(uc) == MR_SUCCESS) {
         printf("bridge_dsm_init success\n");
         dumpREG(uc);
 
@@ -173,6 +171,5 @@ int startVmrp() {
         uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
         printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
     }
-
     return MR_SUCCESS;
 }

@@ -1,12 +1,25 @@
 #ifndef _DSM_H
 #define _DSM_H
 
+#ifdef VMRP
 #include "types.h"
+#else
+#include "mrporting.h"
+#endif
 
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
 
-#define VMRP_VER 20210101
+#define VMRP_VER 20210617
+
+enum {
+    DSM_INIT = -100,
+    MR_START_DSM,
+    MR_PAUSEAPP,
+    MR_RESUMEAPP,
+    MR_TIMER,
+    MR_EVENT
+};
 
 // 需要平台实现的函数
 typedef struct {
@@ -64,16 +77,18 @@ typedef struct {
 
 } DSM_REQUIRE_FUNCS;
 
-// 平台可以调用的函数
-typedef struct {
-    int32 version;
-    int32 (*mr_start_dsm)(char *filename, char *ext, char *entry);
-    int32 (*mr_pauseApp)(void);
-    int32 (*mr_resumeApp)(void);
-    int32 (*mr_timer)(void);
-    int32 (*mr_event)(int16 type, int32 param1, int32 param2);
-} DSM_EXPORT_FUNCS;
+typedef struct event_t {
+    int32 code;
+    int32 p0;
+    int32 p1;
+} event_t;
 
-DSM_EXPORT_FUNCS *dsm_init(DSM_REQUIRE_FUNCS *inFuncs);
+typedef struct start_t {
+    char *filename;
+    char *ext;
+    char *entry;
+} start_t;
+
+int32 dsm_init(DSM_REQUIRE_FUNCS *inFuncs);
 
 #endif

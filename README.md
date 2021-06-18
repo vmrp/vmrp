@@ -18,33 +18,21 @@ mrpoid是安卓上的mrp模拟器，c语言开发的mrp是编译后的arm架构�
 
 vmrp实现原理与mrpoid基本相同，参考了mrpoid早期的实现原理，不同的地方是vmrp借助unicorn engine实现真正的模拟器，不再依赖arm架构cpu。
 
-![工作流程](https://github.com/zengming00/vmrp/raw/master/doc/images/2.0.jpg)
+以下是工作流程图，经过改进后自身实现的mythroad只用于加载ext，因此多余的部分目前已经被删除，自身实现的mythroad层已经没有运行简单mrp的能力
+
+![工作流程](/doc/images/2.0.jpg)
 
 ## 自身实现的mythroad层：
 
-实现的事件： MR_KEY_PRESS, MR_KEY_RELEASE, MR_MOUSE_MOVE, MR_MOUSE_DOWN, MR_MOUSE_UP
-
-按键： 上下左右或wsad键控制方向，回车键是ok, q键是左功能键, e键是右功能键
-
-初始版本实现的函数：
-|                 |                 |                |                    | 
-|-----------------|-----------------|----------------|--------------------|
-| mrc_malloc()    | mrc_free()      | mrc_memcpy()   | mrc_memmove()      |
-| mrc_strcpy()    | mrc_strncpy()   | mrc_strcat()   | mrc_strncat()      |
-| mrc_memcmp()    | mrc_strcmp()    | mrc_strncmp()  | mrc_memchr()       |
-| mrc_memset()    | mrc_strlen()    | mrc_strstr()   | mrc_sprintf()      |
-| mrc_atoi()      | mrc_open()      | mrc_close()    | mrc_write()        |
-| mrc_read()      | mrc_seek()      | mrc_getLen()   | mrc_remove()       |
-| mrc_rename()    | mrc_mkDir()     | mrc_rmDir()    | mrc_clearScreen()  |
-| mrc_drawRect()  | mrc_drawPoint() | mrc_drawText() | mrc_refreshScreen()|
-
-如果mrp仅使用上面列出的函数开发则可以直接运行，注意入口函数是mrc_init()，如果是MRC_EXT_INIT()则是插件化开发的mrp，目前不支持。建议参考mrc/baseLib或res/asm/asm.zip这两个mrp项目。
+最早的模拟器实现的功能非常有限，于是将整个mythroad层交给arm代码去实现，尝试了ELF加载器的方式加载mythroad层发现有潜在的bug（gcc编译时在mythroad层主要问题是elfloader没有实现对GOT的处理，在gcc编译mrp的功能上主要是r9和r10寄存器的问题，因此放弃ELF加载器，仍然采用ext加载方式。
 
 完整版模拟器将借助mythroad层代码实现，代码在vmrp_arm项目中。
 
 # R9寄存器导致的BUG
 
 因为ext中的mr_c_function_load()函数是第一个函数，在mythroad层调用此函数其实相当于仍然在mythroad层调用mythroad层的东西，它会回调_mr_c_function_new()将mr_extHelper()或mr_helper()函数的地址传回mythroad，所有的事件传递都是通过这个helper函数，helper函数进去的第一件事就是备份r9寄存到r10，然后设置r9寄存器的值，在ext内的所有全局变量的读写都是基于这个寄存器提供的基地址，而在ext内调用mythroad层的函数时，r9和r10寄存器的值并没有恢复，这可能导致严重的问题，这可能就是安卓上mrpoid运行不稳定的原因，从反编译的结果来看，插件化mrp内的ext之间是有恢复r9寄存器的功能，但是没有恢复r10寄存器的功能，在目前能获得的mythroad层代码中没有看到任何恢复r9和r10的操作。
+
+注意，如果想采用elf加载器来实现gcc编译mrp仍然需要解决r9和r10寄存器的问题，因为斯凯使用armcc编译的elf与gcc编译的elf是不同的，虽然都是静态PIE，但是gcc编译的结果仍然保留了GOT表
 
 # 编译方法
 

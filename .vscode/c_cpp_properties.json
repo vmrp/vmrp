@@ -21,12 +21,13 @@
                 "DEBUG",
                 "UNICODE",
                 "_UNICODE",
+                "VMRP",
                 "NETWORK_SUPPORT"
             ],
             "compilerPath": "C:/x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0/mingw64/bin/gcc.exe",
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "clang-x64"
+            "intelliSenseMode": "windows-gcc-x86"
         }
     ],
     "version": 4

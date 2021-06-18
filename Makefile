@@ -1,6 +1,6 @@
 CC := gcc
 
-CFLAGS := -g -Wall -DNETWORK_SUPPORT
+CFLAGS := -g -Wall -DNETWORK_SUPPORT -DVMRP
 OBJS := 
 CAPSTONE := 
 
@@ -10,7 +10,7 @@ ifeq ($(DEBUG),1)
 	CAPSTONE := ./windows/capstone-4.0.1-win32/capstone.dll
 endif
 
-OBJS += network.o fileLib.o vmrp.o utils.o rbtree.o bridge.o memory.o  elfload.o elfloader.o
+OBJS += network.o fileLib.o vmrp.o utils.o rbtree.o bridge.o memory.o
 
 UNICORN = ./windows/unicorn-1.0.2-win32/unicorn.lib
 
