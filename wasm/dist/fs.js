@@ -3,22 +3,24 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     function runWithFS() {
         const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) + '/fs/';
 
-        const files = [
-            "/mythroad/dsm_gm.mrp",
-            "/mythroad/mpc.mrp",
-            "/mythroad/ydqtwo.mrp",
-            "/mythroad/plugins/netpay.mrp",
-            "/mythroad/plugins/ose/brwcore.mrp",
-            "/mythroad/system/gb12.uc2",
-            "/mythroad/system/gb16.uc2",
-            "/cfunction.ext",
-        ];
         const dirs = [
             "/mythroad",
             "/mythroad/plugins",
             "/mythroad/plugins/ose",
             "/mythroad/system",
-        ]
+        ];
+
+        const files = [
+            "/mythroad/dsm_gm.mrp", // 入口mrp
+            "/mythroad/mpc.mrp",
+            "/mythroad/ydqtwo.mrp", // 电子书阅读器
+            "/mythroad/plugins/netpay.mrp", // 支付模块
+            "/mythroad/plugins/flaengine.mrp", // flash播放器
+            "/mythroad/plugins/ose/brwcore.mrp", // 冒泡浏览器插件
+            "/mythroad/system/gb12.uc2",  // 12号字体
+            "/mythroad/system/gb16.uc2",  // 16号字体
+            "/cfunction.ext",  // mythroad层
+        ];
 
 
         for (const v of dirs) {
