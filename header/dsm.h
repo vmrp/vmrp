@@ -10,7 +10,7 @@
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
 
-#define VMRP_VER 20210617
+#define VMRP_VER 20210619
 
 enum {
     DSM_INIT = -100,
@@ -20,6 +20,8 @@ enum {
     MR_TIMER,
     MR_EVENT
 };
+
+#define FLAG_USE_UTF8_FS 1
 
 // 需要平台实现的函数
 typedef struct {
@@ -75,6 +77,7 @@ typedef struct {
     int32 (*mr_editRelease)(int32 edit);
     const char *(*mr_editGetText)(int32 edit);
 
+    int32 flags;  // 变量放在最后
 } DSM_REQUIRE_FUNCS;
 
 typedef struct event_t {

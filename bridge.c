@@ -1121,17 +1121,16 @@ static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
     }
 }
 
-static void *hooks_init(uc_engine *uc, BridgeMap *map, uint32_t mapCount) {
+static void *hooks_init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32_t size) {
     uc_err err;
     uc_hook trace;
     BridgeMap *obj;
     uIntMap *mobj;
     uint32_t addr;
-    uint32_t len = 4 * mapCount;  // 因为都是指针，所以直接可以算出来总内存大小
-    void *ptr = my_mallocExt(len);
+    void *ptr = my_mallocExt(size);
     uint32_t startAddress = toMrpMemAddr(ptr);
 
-    err = uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, startAddress, startAddress + len, 0);
+    err = uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, startAddress, startAddress + size, 0);
     if (err != UC_ERR_OK) {
         printf("add hook err %u (%s)\n", err, uc_strerror(err));
         goto end;
@@ -1180,8 +1179,16 @@ uc_err bridge_init(uc_engine *uc) {
         perror("mutex init fail");
         exit(EXIT_FAILURE);
     }
-    mr_table = hooks_init(uc, mr_table_funcMap, countof(mr_table_funcMap));
-    dsm_require_funcs = hooks_init(uc, dsm_require_funcs_funcMap, countof(dsm_require_funcs_funcMap));
+    uint32_t len = 4 * countof(mr_table_funcMap);  // 因为都是指针，所以直接可以算出来总内存大小
+    mr_table = hooks_init(uc, mr_table_funcMap, countof(mr_table_funcMap), len);
+
+    dsm_require_funcs = hooks_init(uc, dsm_require_funcs_funcMap, countof(dsm_require_funcs_funcMap), sizeof(DSM_REQUIRE_FUNCS));
+#ifdef __EMSCRIPTEN__
+    ((DSM_REQUIRE_FUNCS *)dsm_require_funcs)->flags = FLAG_USE_UTF8_FS;
+#else
+    ((DSM_REQUIRE_FUNCS *)dsm_require_funcs)->flags = 0;
+#endif
+
     mr_c_event = my_mallocExt(sizeof(event_t));
     dsm_event = my_mallocExt(sizeof(event_t));
     mr_start_dsm_param = my_mallocExt(sizeof(start_t));
