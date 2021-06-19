@@ -9,6 +9,7 @@
 #include "./header/fileLib.h"
 #include "./header/memory.h"
 #include "./header/utils.h"
+#include "./header/debug.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -45,10 +46,6 @@ static void hook_mem_valid(uc_engine *uc, uc_mem_type type, uint64_t address, in
         uc_reg_read(uc, UC_ARM_REG_PC, &pc);
         printf("PC:0x%X,read:0x%X\n", pc, v);
     }
-}
-
-static void hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
-    hook_code_debug(uc, address, size);
 }
 
 #endif
@@ -92,10 +89,22 @@ uc_engine *initVmrp() {
         goto end;
     }
 
+#if 0 
+    // 一些游戏检测内存时会去读写0-CODE_ADDRESS地址的值, 不清楚为什么要这样做，如果这块内存没有映射到unicorn会因为无效的内存访问导致程序退出
+    // 映射一块内存后那些无法运行的游戏就能打开了，没有深入去研究，先记录在这里
+    char *ppp = malloc(CODE_ADDRESS);
+    // memset(ppp, 0xFF, CODE_ADDRESS);
+    memset(ppp, 0, CODE_ADDRESS);
+    uc_mem_map_ptr(uc, 0, CODE_ADDRESS, UC_PROT_ALL, ppp);
+
+    // uc_mem_map(uc, 0, CODE_ADDRESS, UC_PROT_ALL);
+    // uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 0, CODE_ADDRESS);
+#endif
+
 #ifdef DEBUG
     uc_hook_add(uc, &trace, UC_HOOK_BLOCK, hook_block, NULL, 1, 0);
     uc_hook_add(uc, &trace, UC_HOOK_MEM_VALID, hook_mem_valid, NULL, 1, 0);
-    uc_hook_add(uc, NULL, UC_HOOK_CODE, hook_code, NULL, 1, 0);
+    uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code_debug, NULL, 1, 0);
 #endif
     uc_hook_add(uc, &trace, UC_HOOK_MEM_INVALID, hook_mem_invalid, NULL, 1, 0, 0);
 

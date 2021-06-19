@@ -61,7 +61,7 @@ static void dumpFile(uc_engine *uc, char *str) {
 static uint32_t brkAddress = 0;
 static bool run = false;
 
-void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size) {
+void hook_code_debug(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     char str[60];
     char *ptr;
     int eqPos;
