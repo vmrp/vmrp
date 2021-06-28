@@ -34,7 +34,6 @@ int32_t my_opendir(const char *name);
 char *my_readdir(int32_t f);
 int32_t my_closedir(int32_t f);
 
-void fileLib_init();
 void writeFile(const char *filename, void *data, uint32 length);
 char *readFile(const char *filename);
 #endif

@@ -154,8 +154,6 @@ int32_t loadCode() {
 }
 
 int startVmrp() {
-    fileLib_init();
-
     uc = initVmrp();
     if (uc == NULL) {
         printf("initVmrp() fail.\n");

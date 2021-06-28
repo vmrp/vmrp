@@ -1,4 +1,5 @@
 #include "./header/fileLib.h"
+#include "./header/utils.h"
 
 #include <string.h>
 #include <dirent.h>
@@ -7,43 +8,13 @@
 #include <sys/stat.h>
 #include <zlib.h>
 
-/////////////////////////////////////////////////////////////////
-#define HANDLE_NUM 64
+// mrc_open需要返回0表示失败
+static struct rb_root filef_map = RB_ROOT;
+static uint32_t filef_count = 0;
 
-// 因为系统句柄转成int32可能是负数，导致mrp编程不规范只判断是否大于0时出现遍历文件夹为空的bug，需要有一种转换机制避免返回负数
-// 0号下标不使用，下标作为mrp使用的句柄，值为系统的句柄，值为-1时表示未使用
-static uint32_t handles[HANDLE_NUM + 1];
-
-static void handleInit() {
-    for (int i = 1; i <= HANDLE_NUM; i++) {
-        handles[i] = -1;
-    }
-}
-// 注意： mrc_open需要返回0表示失败， mrc_findStart需要返回-1表示失败，这里没做区分
-static int32_t handle2int32(uint32_t v) {
-    for (int i = 1; i <= HANDLE_NUM; i++) {
-        if (handles[i] == -1) {
-            handles[i] = v;
-            return i;
-        }
-    }
-    return -1;  // 失败
-}
-
-static uint32_t int32ToHandle(int32_t v) {
-    if (v <= 0 || v > HANDLE_NUM) {
-        return -1;
-    }
-    return handles[v];
-}
-
-static void handleDel(int32_t v) {
-    if (v <= 0 || v > HANDLE_NUM) {
-        return;
-    }
-    handles[v] = -1;
-}
-/////////////////////////////////////////////////////////////////
+// mrc_findStart需要返回-1表示失败
+static struct rb_root dirf_map = RB_ROOT;
+static uint32_t dirf_count = 0;
 
 int32_t my_open(const char *filename, uint32_t mode) {
     int f;
@@ -62,40 +33,62 @@ int32_t my_open(const char *filename, uint32_t mode) {
     if (f == -1) {
         return 0;
     }
-    return handle2int32(f);
+
+    filef_count++;
+    uIntMap *obj = malloc(sizeof(uIntMap));
+    obj->key = filef_count;
+    obj->data = (void *)f;
+    uIntMap_insert(&filef_map, obj);
+    return filef_count;
 }
 
 int32_t my_close(int32_t f) {
-    if (f == 0)
+    uIntMap *obj = uIntMap_delete(&filef_map, f);
+    if (obj == NULL) {
         return MR_FAILED;
-
-    int ret = close(int32ToHandle(f));
-    handleDel(f);
-    if (ret != 0) {
+    }
+    if (f == filef_count) {
+        filef_count--;
+    }
+    int fh = (int)obj->data;
+    free(obj);
+    if (close(fh) != 0) {
         return MR_FAILED;
     }
     return MR_SUCCESS;
 }
 
 int32_t my_seek(int32_t f, int32_t pos, int method) {
-    off_t ret = lseek(int32ToHandle(f), (off_t)pos, method);
-    if (ret < 0) {
+    uIntMap *obj = uIntMap_search(&filef_map, f);
+    if (obj == NULL) {
+        return MR_FAILED;
+    }
+    off_t ret = lseek((int)obj->data, (off_t)pos, method);
+    if (ret == -1) {
         return MR_FAILED;
     }
     return MR_SUCCESS;
 }
 
 int32_t my_read(int32_t f, void *p, uint32_t l) {
-    int32_t readnum = read(int32ToHandle(f), p, (size_t)l);
-    if (readnum < 0) {
+    uIntMap *obj = uIntMap_search(&filef_map, f);
+    if (obj == NULL) {
+        return MR_FAILED;
+    }
+    int32_t readnum = read((int)obj->data, p, (size_t)l);
+    if (readnum == -1) {
         return MR_FAILED;
     }
     return readnum;
 }
 
 int32_t my_write(int32_t f, void *p, uint32_t l) {
-    int32_t writenum = write(int32ToHandle(f), p, (size_t)l);
-    if (writenum < 0) {
+    uIntMap *obj = uIntMap_search(&filef_map, f);
+    if (obj == NULL) {
+        return MR_FAILED;
+    }
+    int32_t writenum = write((int)obj->data, p, (size_t)l);
+    if (writenum == -1) {
         return MR_FAILED;
     }
     return writenum;
@@ -168,14 +161,22 @@ int32_t my_info(const char *filename) {
 int32_t my_opendir(const char *name) {
     DIR *pDir = opendir(name);
     if (pDir != NULL) {
-        return handle2int32((uint32_t)pDir);
+        dirf_count++;
+        uIntMap *obj = malloc(sizeof(uIntMap));
+        obj->key = dirf_count;
+        obj->data = (void *)pDir;
+        uIntMap_insert(&dirf_map, obj);
+        return dirf_count;
     }
     return MR_FAILED;
 }
 
 char *my_readdir(int32_t f) {
-    DIR *pDir = (DIR *)int32ToHandle(f);
-    struct dirent *pDt = readdir(pDir);
+    uIntMap *obj = uIntMap_search(&dirf_map, f);
+    if (obj == NULL) {
+        return NULL;
+    }
+    struct dirent *pDt = readdir((DIR *)obj->data);
     if (pDt != NULL) {
         return pDt->d_name;
     }
@@ -183,9 +184,18 @@ char *my_readdir(int32_t f) {
 }
 
 int32_t my_closedir(int32_t f) {
-    DIR *pDir = (DIR *)int32ToHandle(f);
-    closedir(pDir);
-    handleDel(f);
+    uIntMap *obj = uIntMap_delete(&dirf_map, f);
+    if (obj == NULL) {
+        return MR_FAILED;
+    }
+    if (f == dirf_count) {
+        dirf_count--;
+    }
+    DIR *pDir = (DIR *)obj->data;
+    free(obj);
+    if (closedir(pDir) != 0) {
+        return MR_FAILED;
+    }
     return MR_SUCCESS;
 }
 
@@ -227,8 +237,4 @@ char *readFile(const char *filename) {
         return p;
     }
     return NULL;
-}
-
-void fileLib_init() {
-    handleInit();
 }
