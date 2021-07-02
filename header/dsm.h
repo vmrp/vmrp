@@ -10,7 +10,7 @@
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
 
-#define VMRP_VER 20210619
+#define VMRP_VER 20210701
 
 enum {
     DSM_INIT = -100,
@@ -23,7 +23,9 @@ enum {
 
 #define FLAG_USE_UTF8_FS 1
 
-// 需要平台实现的函数
+typedef int32 (*NETWORK_CB)(int32 result, void *userData);
+
+// 需要平台实现的函数(注意！调整定义的顺序必需相应调整vmrp中funcMap的顺序和偏移量)
 typedef struct {
     void (*test)(void);
     void (*log)(char *msg);  // msg末尾不带\n
@@ -52,9 +54,9 @@ typedef struct {
     int32 (*closedir)(int32 f);
     int32 (*getLen)(const char *filename);
     void (*drawBitmap)(uint16 *bmp, int16 x, int16 y, uint16 w, uint16 h);
-    int32 (*mr_initNetwork)(MR_INIT_NETWORK_CB cb, const char *mode);
+    int32 (*getHostByName)(const char *ptr, NETWORK_CB cb, void *userData);
+    int32 (*initNetwork)(NETWORK_CB cb, const char *mode, void *userData);
     int32 (*mr_closeNetwork)();
-    int32 (*mr_getHostByName)(const char *ptr, MR_GET_HOST_CB cb);
     int32 (*mr_socket)(int32 type, int32 protocol);
     int32 (*mr_connect)(int32 s, int32 ip, uint16 port, int32 type);
     int32 (*mr_getSocketState)(int32 s);
@@ -77,7 +79,8 @@ typedef struct {
     int32 (*mr_editRelease)(int32 edit);
     const char *(*mr_editGetText)(int32 edit);
 
-    int32 flags;  // 变量放在最后
+    // 变量放在最后
+    int32 flags;  // 调整运行时的一些参数，目前只有调整文件系统路径名是否使用UTF8编码这一个功能
 } DSM_REQUIRE_FUNCS;
 
 typedef struct event_t {

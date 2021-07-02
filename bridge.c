@@ -434,12 +434,13 @@ static void br_getDatetime(BridgeMap *o, uc_engine *uc) {
 }
 
 static void br_mr_initNetwork(BridgeMap *o, uc_engine *uc) {
-    // int32 (*mr_initNetwork)(MR_INIT_NETWORK_CB cb, const char *mode);
+    // int32 (*initNetwork)(NETWORK_CB cb, const char *mode, void *userData);
     LOG("ext call %s()\n", o->name);
-    uint32_t cb, mode;
+    uint32_t cb, mode, userData;
     uc_reg_read(uc, UC_ARM_REG_R0, &cb);
     uc_reg_read(uc, UC_ARM_REG_R1, &mode);
-    SET_RET_V(my_initNetwork(uc, (void *)cb, getMrpMemPtr(mode)));
+    uc_reg_read(uc, UC_ARM_REG_R2, &userData);
+    SET_RET_V(my_initNetwork(uc, (void *)cb, getMrpMemPtr(mode), (void *)userData));
 }
 
 static void br_mr_socket(BridgeMap *o, uc_engine *uc) {
@@ -478,12 +479,13 @@ static void br_mr_closeNetwork(BridgeMap *o, uc_engine *uc) {
 }
 
 static void br_mr_getHostByName(BridgeMap *o, uc_engine *uc) {
-    // int32 (*mr_getHostByName)(const char *ptr, MR_GET_HOST_CB cb);
+    // int32 (*getHostByName)(const char *ptr, NETWORK_CB cb, void *userData);
     LOG("ext call %s()\n", o->name);
-    uint32_t name, cb;
+    uint32_t name, cb, userData;
     uc_reg_read(uc, UC_ARM_REG_R0, &name);
     uc_reg_read(uc, UC_ARM_REG_R1, &cb);
-    SET_RET_V(my_getHostByName(uc, getMrpMemPtr(name), (void *)cb));
+    uc_reg_read(uc, UC_ARM_REG_R2, &userData);
+    SET_RET_V(my_getHostByName(uc, getMrpMemPtr(name), (void *)cb, (void *)userData));
 }
 
 static void br_mr_sendto(BridgeMap *o, uc_engine *uc) {
@@ -1069,9 +1071,9 @@ static BridgeMap dsm_require_funcs_funcMap[] = {
     BRIDGE_FUNC_MAP(0x64, MAP_FUNC, getLen, NULL, br_mr_getLen, 0),
     BRIDGE_FUNC_MAP(0x68, MAP_FUNC, drawBitmap, NULL, br_mr_drawBitmap, 0),
 
-    BRIDGE_FUNC_MAP(0x6c, MAP_FUNC, mr_initNetwork, NULL, br_mr_initNetwork, 0),
-    BRIDGE_FUNC_MAP(0x70, MAP_FUNC, mr_closeNetwork, NULL, br_mr_closeNetwork, 0),
-    BRIDGE_FUNC_MAP(0x74, MAP_FUNC, mr_getHostByName, NULL, br_mr_getHostByName, 0),
+    BRIDGE_FUNC_MAP(0x6c, MAP_FUNC, getHostByName, NULL, br_mr_getHostByName, 0),
+    BRIDGE_FUNC_MAP(0x70, MAP_FUNC, initNetwork, NULL, br_mr_initNetwork, 0),
+    BRIDGE_FUNC_MAP(0x74, MAP_FUNC, mr_closeNetwork, NULL, br_mr_closeNetwork, 0),
     BRIDGE_FUNC_MAP(0x78, MAP_FUNC, mr_socket, NULL, br_mr_socket, 0),
     BRIDGE_FUNC_MAP(0x7c, MAP_FUNC, mr_connect, NULL, br_mr_connect, 0),
     BRIDGE_FUNC_MAP(0x80, MAP_FUNC, mr_getSocketState, NULL, br_mr_getSocketState, 0),
@@ -1231,20 +1233,30 @@ static inline int32_t bridge_mr_event(uc_engine *uc, int32_t code, int32_t param
 }
 
 // 执行网络通信的回调
-int32_t bridge_dsm_network_cb(uc_engine *uc, uint32_t addr, int32_t p0) {
+int32_t bridge_dsm_network_cb(uc_engine *uc, uint32_t addr, int32_t p0, uint32_t p1) {
     if (pthread_mutex_lock(&mutex) != 0) {
         perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
+    uint32_t ret, r9;
+    uc_reg_read(uc, UC_ARM_REG_R9, &r9);
+
+    // 因为回调不是从mr_extHelper调用，因此需要手动设置r9
+    uc_reg_write(uc, UC_ARM_REG_R9, &mr_c_function_P->start_of_ER_RW);
+    // 实际上这个r9值被设置成mythroad层的，因为mythroad层的lua部分也会调用
+    // 因此由mythroad层去区分是mythroad层的回调函数还是mrp层的回调函数，这就是userData存在的意义
+
     uc_reg_write(uc, UC_ARM_REG_R0, &p0);
+    uc_reg_write(uc, UC_ARM_REG_R1, &p1);
     runCode(uc, addr, CODE_ADDRESS, false);
-    uint32_t v;
-    uc_reg_read(uc, UC_ARM_REG_R0, &v);
+
+    uc_reg_write(uc, UC_ARM_REG_R9, &r9);  // 恢复r9
+    uc_reg_read(uc, UC_ARM_REG_R0, &ret);
     if (pthread_mutex_unlock(&mutex) != 0) {
         perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
     }
-    return v;
+    return ret;
 }
 
 int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, char *filename, char *ext, char *entry) {
