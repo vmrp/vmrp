@@ -20,13 +20,6 @@
 #include "./h/mr_vm.h"
 
 
-/*
-const char mrp_ident[] =
-  "$Mr: " MR_VERSION " " MR_COPYRIGHT " $\n"
-  "$Authors: " MR_AUTHORS " $\n";
-*/
-
-
 #ifndef api_check
 #define api_check(L, o)		/*{ assert(o); }*/
 #endif
@@ -842,12 +835,6 @@ MRP_API void mrp_setgcthreshold (mrp_State *L, int newthreshold) {
 /*
 ** miscellaneous functions
 */
-
-
-MRP_API uint32 mrp_version (void) {
-  return MR_VERSION;
-}
-
 
 MRP_API int mrp_error (mrp_State *L) {
   mrp_lock(L);

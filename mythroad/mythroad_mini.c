@@ -15,6 +15,8 @@
 #include "./include/string.h"
 #include "./include/encode.h"
 
+#define MR_VERSION 2011
+
 typedef struct _mini_mr_c_event_st {
     int32 code;
     int32 param0;

@@ -1,6 +1,6 @@
 
 
-LOCAL_CFLAGS_FULL := -DDSM_FULL -DTARGET_MOD -DMTK_MOD -DMR_VERSION=1968 -DMR_PLAT_DRAWTEXT
+LOCAL_CFLAGS_FULL := -DDSM_FULL -DTARGET_MOD -DMTK_MOD -DMR_PLAT_DRAWTEXT
 
 LOCAL_SRC_FILES_FULL := src/mr_api.c \
                   src/mr_debug.c  \
@@ -51,7 +51,7 @@ full:
 
 #####################################################################
 
-LOCAL_CFLAGS := -g -Wall -DTARGET_MOD -DMTK_MOD -DMR_VERSION=2011 -DMR_PLAT_DRAWTEXT
+LOCAL_CFLAGS := -g -Wall -DTARGET_MOD -DMTK_MOD -DMR_PLAT_DRAWTEXT
 LOCAL_SRC_FILES := mythroad_mini.c \
                     encode.c     \
                     mr_unzip.c	\

@@ -136,11 +136,6 @@ extern int32 mr_state;
 
 #define STRTOL strtol2
 
-//#ifdef MR_V2000
-//#define MR_VERSION	2009     //升级版本前进行版本备份
-//#else
-//#define MR_VERSION	 1966     //升级版本前进行版本备份
-//#endif
 
 #define MR_COPYRIGHT "Copyright (C) "
 #define MR_AUTHORS " "
@@ -196,9 +191,7 @@ typedef int (*mrp_Chunkwriter)(mrp_State *L, const void *p,
 ** generic extra include file
 */
 
-#ifndef MR_V2000
 #include "../src/h/mr_user_number.h"
-#endif
 
 /* type of numbers in Lua */
 #ifndef MRP_NUMBER
@@ -322,8 +315,6 @@ MRP_API void mrp_setgcthreshold(mrp_State *L, int newthreshold);
 /*
 ** miscellaneous functions
 */
-
-MRP_API uint32 mrp_version(void);
 
 MRP_API int mrp_error(mrp_State *L);
 

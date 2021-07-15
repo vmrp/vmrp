@@ -21,6 +21,8 @@
 #include "./tomr/tomr.h"
 #include "./luadec/luadec.h"
 
+#define MR_VERSION 1968
+
 const unsigned char* mr_m0_files[50];
 
 #define MRDBGPRINTF mr_printf
