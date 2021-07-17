@@ -15,7 +15,7 @@ config=mtk240
 
 [config_mtk240]
 optimiza=2
-define=TARGET_MOD,MTK_MOD,MR_PLAT_DRAWTEXT,DSM_FULL,LUADEC,MRP_OPNAMES
+define=TARGET_MOD,MTK_MOD,MR_PLAT_DRAWTEXT,DSM_FULL,LUADEC
 output=.\vmrp.mrp
 bmp_mode=normal
 plat=mtk

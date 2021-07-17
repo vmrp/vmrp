@@ -6,7 +6,6 @@
 #include "./h/mr_object.h"
 #include "./h/mr_opcodes.h"
 
-#ifdef MRP_OPNAMES
 
 const char *mr_P_opnames[39];
 
@@ -56,7 +55,6 @@ void init_mr_opcodes(void) {
 #endif
 }
 
-#endif
 
 #define opmode(t,b,bk,ck,sa,k,m) (((t)<<OpModeT) | \
    ((b)<<OpModeBreg) | ((bk)<<OpModeBrk) | ((ck)<<OpModeCrk) | \
