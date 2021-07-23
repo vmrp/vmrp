@@ -741,12 +741,12 @@ static int32 network_cb(int32 result, void *userData) {
     register int32 ret = MR_FAILED;
     register MR_NETWORK_CB cb = data->cb;
     if (data->isExtCB) {  // ext的回调，需要设置r9
-        extern mr_c_function_st *mr_c_function_P;
-        register void *oldR9 = getR9();
-        fixR9_saveMythroad();
-        setR9(mr_c_function_P->start_of_ER_RW);
+        // extern mr_c_function_st *mr_c_function_P;
+        // register void *oldR9 = getR9();
+        // fixR9_saveMythroad();
+        // setR9(mr_c_function_P->start_of_ER_RW);
         ret = cb(result);
-        setR9(oldR9);
+        // setR9(oldR9);
     } else {
         ret = cb(result);
     }

@@ -135,6 +135,7 @@ int32 _mr_load_sms_cfg(void);
 int32 _mr_save_sms_cfg(int32 f);
 int32 _mr_newSIMInd(int16 type, uint8* old_IMSI);
 int _mr_isMr(char* input);
+int32 _DispUpEx(int16 x, int16 y, uint16 w, uint16 h);
 void _DrawPoint(int16 x, int16 y, uint16 nativecolor);
 void _DrawBitmap(uint16* p, int16 x, int16 y, uint16 w, uint16 h, uint16 rop, uint16 transcoler, int16 sx, int16 sy, int16 mw);
 void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b);
@@ -169,83 +170,83 @@ static void _mr_c_internal_table_init() {
     _mr_c_internal_table[10] = (void*)&LG_gzoutcnt;
 
     _mr_c_internal_table[11] = (void*)&mr_sms_cfg_need_save;
-    _mr_c_internal_table[12] = (void*)asm_mr_smsSetBytes;
-    _mr_c_internal_table[13] = (void*)asm_mr_smsAddNum;
-    _mr_c_internal_table[14] = (void*)asm_mr_newSIMInd;
+    _mr_c_internal_table[12] = (void*)_mr_smsSetBytes;
+    _mr_c_internal_table[13] = (void*)_mr_smsAddNum;
+    _mr_c_internal_table[14] = (void*)mr_newSIMInd;
 
-    _mr_c_internal_table[15] = (void*)asm_mr_isMr;
+    _mr_c_internal_table[15] = (void*)_mr_isMr;
 
-    _mr_c_internal_table[16] = (void*)asm_mrp_gettop;  //1937
-    _mr_c_internal_table[17] = (void*)asm_mrp_settop;
-    _mr_c_internal_table[18] = (void*)asm_mrp_pushvalue;
-    _mr_c_internal_table[19] = (void*)asm_mrp_remove;
-    _mr_c_internal_table[20] = (void*)asm_mrp_insert;
-    _mr_c_internal_table[21] = (void*)asm_mrp_replace;
+    _mr_c_internal_table[16] = (void*)mrp_gettop;  //1937
+    _mr_c_internal_table[17] = (void*)mrp_settop;
+    _mr_c_internal_table[18] = (void*)mrp_pushvalue;
+    _mr_c_internal_table[19] = (void*)mrp_remove;
+    _mr_c_internal_table[20] = (void*)mrp_insert;
+    _mr_c_internal_table[21] = (void*)mrp_replace;
 
-    _mr_c_internal_table[22] = (void*)asm_mrp_isnumber;
-    _mr_c_internal_table[23] = (void*)asm_mrp_isstring;
-    _mr_c_internal_table[24] = (void*)asm_mrp_iscfunction;
-    _mr_c_internal_table[25] = (void*)asm_mrp_isuserdata;
-    _mr_c_internal_table[26] = (void*)asm_mrp_type;
-    _mr_c_internal_table[27] = (void*)asm_mrp_typename;
-    _mr_c_internal_table[28] = (void*)asm_mrp_shorttypename;
+    _mr_c_internal_table[22] = (void*)mrp_isnumber;
+    _mr_c_internal_table[23] = (void*)mrp_isstring;
+    _mr_c_internal_table[24] = (void*)mrp_iscfunction;
+    _mr_c_internal_table[25] = (void*)mrp_isuserdata;
+    _mr_c_internal_table[26] = (void*)mrp_type;
+    _mr_c_internal_table[27] = (void*)mrp_typename;
+    _mr_c_internal_table[28] = (void*)mrp_shorttypename;
 
-    _mr_c_internal_table[29] = (void*)asm_mrp_equal;
-    _mr_c_internal_table[30] = (void*)asm_mrp_rawequal;
-    _mr_c_internal_table[31] = (void*)asm_mrp_lessthan;
+    _mr_c_internal_table[29] = (void*)mrp_equal;
+    _mr_c_internal_table[30] = (void*)mrp_rawequal;
+    _mr_c_internal_table[31] = (void*)mrp_lessthan;
 
-    _mr_c_internal_table[32] = (void*)asm_mrp_tonumber;
-    _mr_c_internal_table[33] = (void*)asm_mrp_toboolean;
-    _mr_c_internal_table[34] = (void*)asm_mrp_tostring;
-    _mr_c_internal_table[35] = (void*)asm_mrp_strlen;
-    _mr_c_internal_table[36] = (void*)asm_mrp_tostring_t;
-    _mr_c_internal_table[37] = (void*)asm_mrp_strlen_t;
-    _mr_c_internal_table[38] = (void*)asm_mrp_tocfunction;
-    _mr_c_internal_table[39] = (void*)asm_mrp_touserdata;
-    _mr_c_internal_table[40] = (void*)asm_mrp_tothread;
-    _mr_c_internal_table[41] = (void*)asm_mrp_topointer;
+    _mr_c_internal_table[32] = (void*)mrp_tonumber;
+    _mr_c_internal_table[33] = (void*)mrp_toboolean;
+    _mr_c_internal_table[34] = (void*)mrp_tostring;
+    _mr_c_internal_table[35] = (void*)mrp_strlen;
+    _mr_c_internal_table[36] = (void*)mrp_tostring_t;
+    _mr_c_internal_table[37] = (void*)mrp_strlen_t;
+    _mr_c_internal_table[38] = (void*)mrp_tocfunction;
+    _mr_c_internal_table[39] = (void*)mrp_touserdata;
+    _mr_c_internal_table[40] = (void*)mrp_tothread;
+    _mr_c_internal_table[41] = (void*)mrp_topointer;
 
-    _mr_c_internal_table[42] = (void*)asm_mrp_pushnil;
-    _mr_c_internal_table[43] = (void*)asm_mrp_pushnumber;
-    _mr_c_internal_table[44] = (void*)asm_mrp_pushlstring;
-    _mr_c_internal_table[45] = (void*)asm_mrp_pushstring;
-    _mr_c_internal_table[46] = (void*)asm_mrp_pushvfstring;
-    _mr_c_internal_table[47] = (void*)asm_mrp_pushfstring;
-    _mr_c_internal_table[48] = (void*)asm_mrp_pushboolean;
-    _mr_c_internal_table[49] = (void*)asm_mrp_pushcclosure;
+    _mr_c_internal_table[42] = (void*)mrp_pushnil;
+    _mr_c_internal_table[43] = (void*)mrp_pushnumber;
+    _mr_c_internal_table[44] = (void*)mrp_pushlstring;
+    _mr_c_internal_table[45] = (void*)mrp_pushstring;
+    _mr_c_internal_table[46] = (void*)mrp_pushvfstring;
+    _mr_c_internal_table[47] = (void*)mrp_pushfstring;
+    _mr_c_internal_table[48] = (void*)mrp_pushboolean;
+    _mr_c_internal_table[49] = (void*)mrp_pushcclosure;
 
-    _mr_c_internal_table[50] = (void*)asm_mrp_gettable;
-    _mr_c_internal_table[51] = (void*)asm_mrp_rawget;
-    _mr_c_internal_table[52] = (void*)asm_mrp_rawgeti;
-    _mr_c_internal_table[53] = (void*)asm_mrp_newtable;
-    _mr_c_internal_table[54] = (void*)asm_mrp_getmetatable;
+    _mr_c_internal_table[50] = (void*)mrp_gettable;
+    _mr_c_internal_table[51] = (void*)mrp_rawget;
+    _mr_c_internal_table[52] = (void*)mrp_rawgeti;
+    _mr_c_internal_table[53] = (void*)mrp_newtable;
+    _mr_c_internal_table[54] = (void*)mrp_getmetatable;
 
-    _mr_c_internal_table[55] = (void*)asm_mrp_settable;
-    _mr_c_internal_table[56] = (void*)asm_mrp_rawset;
-    _mr_c_internal_table[57] = (void*)asm_mrp_rawseti;
+    _mr_c_internal_table[55] = (void*)mrp_settable;
+    _mr_c_internal_table[56] = (void*)mrp_rawset;
+    _mr_c_internal_table[57] = (void*)mrp_rawseti;
 
-    _mr_c_internal_table[58] = (void*)asm_mrp_call;
-    _mr_c_internal_table[59] = (void*)asm_mrp_pcall;
-    _mr_c_internal_table[60] = (void*)asm_mrp_load;
+    _mr_c_internal_table[58] = (void*)mrp_call;
+    _mr_c_internal_table[59] = (void*)mrp_pcall;
+    _mr_c_internal_table[60] = (void*)mrp_load;
 
-    _mr_c_internal_table[61] = (void*)asm_mrp_getgcthreshold;
-    _mr_c_internal_table[62] = (void*)asm_mrp_setgcthreshold;
+    _mr_c_internal_table[61] = (void*)mrp_getgcthreshold;
+    _mr_c_internal_table[62] = (void*)mrp_setgcthreshold;
 
-    _mr_c_internal_table[63] = (void*)asm_mrp_error;
+    _mr_c_internal_table[63] = (void*)mrp_error;
 
-    _mr_c_internal_table[64] = (void*)asm_mrp_checkstack;
-    _mr_c_internal_table[65] = (void*)asm_mrp_newuserdata;
-    _mr_c_internal_table[66] = (void*)asm_mrp_getfenv;
-    _mr_c_internal_table[67] = (void*)asm_mrp_setfenv;
-    _mr_c_internal_table[68] = (void*)asm_mrp_setmetatable;
-    _mr_c_internal_table[69] = (void*)asm_mrp_cpcall;
-    _mr_c_internal_table[70] = (void*)asm_mrp_next;
-    _mr_c_internal_table[71] = (void*)asm_mrp_concat;
-    _mr_c_internal_table[72] = (void*)asm_mrp_pushlightuserdata;
-    _mr_c_internal_table[73] = (void*)asm_mrp_getgccount;
-    _mr_c_internal_table[74] = (void*)asm_mrp_dump;
-    _mr_c_internal_table[75] = (void*)asm_mrp_yield;
-    _mr_c_internal_table[76] = (void*)asm_mrp_resume;
+    _mr_c_internal_table[64] = (void*)mrp_checkstack;
+    _mr_c_internal_table[65] = (void*)mrp_newuserdata;
+    _mr_c_internal_table[66] = (void*)mrp_getfenv;
+    _mr_c_internal_table[67] = (void*)mrp_setfenv;
+    _mr_c_internal_table[68] = (void*)mrp_setmetatable;
+    _mr_c_internal_table[69] = (void*)mrp_cpcall;
+    _mr_c_internal_table[70] = (void*)mrp_next;
+    _mr_c_internal_table[71] = (void*)mrp_concat;
+    _mr_c_internal_table[72] = (void*)mrp_pushlightuserdata;
+    _mr_c_internal_table[73] = (void*)mrp_getgccount;
+    _mr_c_internal_table[74] = (void*)mrp_dump;
+    _mr_c_internal_table[75] = (void*)mrp_yield;
+    _mr_c_internal_table[76] = (void*)mrp_resume;
     _mr_c_internal_table[77] = NULL;
 }
 
@@ -253,9 +254,9 @@ static void* _mr_c_port_table[4];
 static const void* _mr_c_function_table[150];
 
 static void _mr_c_function_table_init() {
-    _mr_c_function_table[0] = (void*)asm_mr_malloc;
-    _mr_c_function_table[1] = (void*)asm_mr_free;
-    _mr_c_function_table[2] = (void*)asm_mr_realloc;  // 3
+    _mr_c_function_table[0] = (void*)mr_malloc;
+    _mr_c_function_table[1] = (void*)mr_free;
+    _mr_c_function_table[2] = (void*)mr_realloc;  // 3
 
     _mr_c_function_table[3] = (void*)memcpy2;
     _mr_c_function_table[4] = (void*)memmove2;
@@ -274,55 +275,55 @@ static void _mr_c_function_table_init() {
     _mr_c_function_table[17] = (void*)sprintf_;
     _mr_c_function_table[18] = (void*)atoi2;
     _mr_c_function_table[19] = (void*)strtoul2;  // 20
-    _mr_c_function_table[20] = (void*)asm_mr_rand;
+    _mr_c_function_table[20] = (void*)mr_rand;
 
     _mr_c_function_table[21] = (void*)NULL;
-    _mr_c_function_table[22] = (void*)asm_mr_stop_ex;  //V1939
+    _mr_c_function_table[22] = (void*)mr_stop_ex;  //V1939
     _mr_c_function_table[23] = (void*)_mr_c_internal_table;
 
     _mr_c_function_table[24] = (void*)_mr_c_port_table;
     _mr_c_function_table[25] = (void*)_mr_c_function_new;  //26
-    _mr_c_function_table[26] = (void*)asm_mr_printf;
-    _mr_c_function_table[27] = (void*)asm_mr_mem_get;
-    _mr_c_function_table[28] = (void*)asm_mr_mem_free;
-    _mr_c_function_table[29] = (void*)asm_mr_drawBitmap;
-    _mr_c_function_table[30] = (void*)asm_mr_getCharBitmap;
-    _mr_c_function_table[31] = (void*)asm_mr_timerStart;
-    _mr_c_function_table[32] = (void*)asm_mr_timerStop;
-    _mr_c_function_table[33] = (void*)asm_mr_getTime;
-    _mr_c_function_table[34] = (void*)asm_mr_getDatetime;
-    _mr_c_function_table[35] = (void*)asm_mr_getUserInfo;
-    _mr_c_function_table[36] = (void*)asm_mr_sleep;  //37
+    _mr_c_function_table[26] = (void*)mr_printf;
+    _mr_c_function_table[27] = (void*)mr_mem_get;
+    _mr_c_function_table[28] = (void*)mr_mem_free;
+    _mr_c_function_table[29] = (void*)mr_drawBitmap;
+    _mr_c_function_table[30] = (void*)mr_getCharBitmap;
+    _mr_c_function_table[31] = (void*)mr_timerStart;
+    _mr_c_function_table[32] = (void*)mr_timerStop;
+    _mr_c_function_table[33] = (void*)mr_getTime;
+    _mr_c_function_table[34] = (void*)mr_getDatetime;
+    _mr_c_function_table[35] = (void*)mr_getUserInfo;
+    _mr_c_function_table[36] = (void*)mr_sleep;  //37
 
-    _mr_c_function_table[37] = (void*)asm_mr_plat;
-    _mr_c_function_table[38] = (void*)asm_mr_platEx;  //39
+    _mr_c_function_table[37] = (void*)mr_plat;
+    _mr_c_function_table[38] = (void*)mr_platEx;  //39
 
     _mr_c_function_table[39] = (void*)mr_ferrno;
-    _mr_c_function_table[40] = (void*)asm_mr_open;
-    _mr_c_function_table[41] = (void*)asm_mr_close;
-    _mr_c_function_table[42] = (void*)asm_mr_info;
-    _mr_c_function_table[43] = (void*)asm_mr_write;
-    _mr_c_function_table[44] = (void*)asm_mr_read;
-    _mr_c_function_table[45] = (void*)asm_mr_seek;
-    _mr_c_function_table[46] = (void*)asm_mr_getLen;
-    _mr_c_function_table[47] = (void*)asm_mr_remove;
-    _mr_c_function_table[48] = (void*)asm_mr_rename;
-    _mr_c_function_table[49] = (void*)asm_mr_mkDir;
-    _mr_c_function_table[50] = (void*)asm_mr_rmDir;
-    _mr_c_function_table[51] = (void*)asm_mr_findStart;
-    _mr_c_function_table[52] = (void*)asm_mr_findGetNext;
-    _mr_c_function_table[53] = (void*)asm_mr_findStop;  //54
+    _mr_c_function_table[40] = (void*)mr_open;
+    _mr_c_function_table[41] = (void*)mr_close;
+    _mr_c_function_table[42] = (void*)mr_info;
+    _mr_c_function_table[43] = (void*)mr_write;
+    _mr_c_function_table[44] = (void*)mr_read;
+    _mr_c_function_table[45] = (void*)mr_seek;
+    _mr_c_function_table[46] = (void*)mr_getLen;
+    _mr_c_function_table[47] = (void*)mr_remove;
+    _mr_c_function_table[48] = (void*)mr_rename;
+    _mr_c_function_table[49] = (void*)mr_mkDir;
+    _mr_c_function_table[50] = (void*)mr_rmDir;
+    _mr_c_function_table[51] = (void*)mr_findStart;
+    _mr_c_function_table[52] = (void*)mr_findGetNext;
+    _mr_c_function_table[53] = (void*)mr_findStop;  //54
 
-    _mr_c_function_table[54] = (void*)asm_mr_exit;
-    _mr_c_function_table[55] = (void*)asm_mr_startShake;
-    _mr_c_function_table[56] = (void*)asm_mr_stopShake;
-    _mr_c_function_table[57] = (void*)asm_mr_playSound;
-    _mr_c_function_table[58] = (void*)asm_mr_stopSound;  //59
+    _mr_c_function_table[54] = (void*)mr_exit;
+    _mr_c_function_table[55] = (void*)mr_startShake;
+    _mr_c_function_table[56] = (void*)mr_stopShake;
+    _mr_c_function_table[57] = (void*)mr_playSound;
+    _mr_c_function_table[58] = (void*)mr_stopSound;  //59
 
-    _mr_c_function_table[59] = (void*)asm_mr_sendSms;
-    _mr_c_function_table[60] = (void*)asm_mr_call;
+    _mr_c_function_table[59] = (void*)mr_sendSms;
+    _mr_c_function_table[60] = (void*)mr_call;
     _mr_c_function_table[61] = (void*)mr_getNetworkID;
-    _mr_c_function_table[62] = (void*)asm_mr_connectWAP;
+    _mr_c_function_table[62] = (void*)mr_connectWAP;
 
     _mr_c_function_table[63] = (void*)mr_menuCreate;
     _mr_c_function_table[64] = (void*)mr_menuSetItem;
@@ -330,30 +331,30 @@ static void _mr_c_function_table_init() {
     _mr_c_function_table[66] = (void*)NULL;  //mr_menuSetFocus,
     _mr_c_function_table[67] = (void*)mr_menuRelease;
     _mr_c_function_table[68] = (void*)mr_menuRefresh;
-    _mr_c_function_table[69] = (void*)asm_mr_dialogCreate;
-    _mr_c_function_table[70] = (void*)asm_mr_dialogRelease;
-    _mr_c_function_table[71] = (void*)asm_mr_dialogRefresh;
-    _mr_c_function_table[72] = (void*)asm_mr_textCreate;
-    _mr_c_function_table[73] = (void*)asm_mr_textRelease;
-    _mr_c_function_table[74] = (void*)asm_mr_textRefresh;
-    _mr_c_function_table[75] = (void*)asm_mr_editCreate;
-    _mr_c_function_table[76] = (void*)asm_mr_editRelease;
-    _mr_c_function_table[77] = (void*)asm_mr_editGetText;
+    _mr_c_function_table[69] = (void*)mr_dialogCreate;
+    _mr_c_function_table[70] = (void*)mr_dialogRelease;
+    _mr_c_function_table[71] = (void*)mr_dialogRefresh;
+    _mr_c_function_table[72] = (void*)mr_textCreate;
+    _mr_c_function_table[73] = (void*)mr_textRelease;
+    _mr_c_function_table[74] = (void*)mr_textRefresh;
+    _mr_c_function_table[75] = (void*)mr_editCreate;
+    _mr_c_function_table[76] = (void*)mr_editRelease;
+    _mr_c_function_table[77] = (void*)mr_editGetText;
     _mr_c_function_table[78] = (void*)mr_winCreate;
     _mr_c_function_table[79] = (void*)mr_winRelease;
 
-    _mr_c_function_table[80] = (void*)asm_mr_getScreenInfo;
+    _mr_c_function_table[80] = (void*)mr_getScreenInfo;
 
-    _mr_c_function_table[81] = (void*)asm_mr_initNetwork;
-    _mr_c_function_table[82] = (void*)asm_mr_closeNetwork;
-    _mr_c_function_table[83] = (void*)asm_mr_getHostByName;
-    _mr_c_function_table[84] = (void*)asm_mr_socket;
-    _mr_c_function_table[85] = (void*)asm_mr_connect;
-    _mr_c_function_table[86] = (void*)asm_mr_closeSocket;
-    _mr_c_function_table[87] = (void*)asm_mr_recv;
-    _mr_c_function_table[88] = (void*)asm_mr_recvfrom;
-    _mr_c_function_table[89] = (void*)asm_mr_send;
-    _mr_c_function_table[90] = (void*)asm_mr_sendto;
+    _mr_c_function_table[81] = (void*)mr_initNetwork;
+    _mr_c_function_table[82] = (void*)mr_closeNetwork;
+    _mr_c_function_table[83] = (void*)mr_getHostByName;
+    _mr_c_function_table[84] = (void*)mr_socket;
+    _mr_c_function_table[85] = (void*)mr_connect;
+    _mr_c_function_table[86] = (void*)mr_closeSocket;
+    _mr_c_function_table[87] = (void*)mr_recv;
+    _mr_c_function_table[88] = (void*)mr_recvfrom;
+    _mr_c_function_table[89] = (void*)mr_send;
+    _mr_c_function_table[90] = (void*)mr_sendto;
 
     _mr_c_function_table[91] = (void*)&mr_screenBuf;
     _mr_c_function_table[92] = (void*)&mr_screen_w;
@@ -385,42 +386,42 @@ static void _mr_c_function_table_init() {
     _mr_c_function_table[113] = (void*)mr_md5_init;
     _mr_c_function_table[114] = (void*)mr_md5_append;
     _mr_c_function_table[115] = (void*)mr_md5_finish;
-    _mr_c_function_table[116] = (void*)asm_mr_load_sms_cfg;
-    _mr_c_function_table[117] = (void*)asm_mr_save_sms_cfg;
-    _mr_c_function_table[118] = (void*)asm_DispUpEx;
+    _mr_c_function_table[116] = (void*)_mr_load_sms_cfg;
+    _mr_c_function_table[117] = (void*)_mr_save_sms_cfg;
+    _mr_c_function_table[118] = (void*)_DispUpEx;
 
-    _mr_c_function_table[119] = (void*)asm_DrawPoint;
-    _mr_c_function_table[120] = (void*)asm_DrawBitmap;
-    _mr_c_function_table[121] = (void*)asm_DrawBitmapEx;
-    _mr_c_function_table[122] = (void*)asm_DrawRect;
-    _mr_c_function_table[123] = (void*)asm_DrawText;
-    _mr_c_function_table[124] = (void*)asm_BitmapCheck;
-    _mr_c_function_table[125] = (void*)asm_mr_readFile;
+    _mr_c_function_table[119] = (void*)_DrawPoint;
+    _mr_c_function_table[120] = (void*)_DrawBitmap;
+    _mr_c_function_table[121] = (void*)_DrawBitmapEx;
+    _mr_c_function_table[122] = (void*)DrawRect;
+    _mr_c_function_table[123] = (void*)_DrawText;
+    _mr_c_function_table[124] = (void*)_BitmapCheck;
+    _mr_c_function_table[125] = (void*)_mr_readFile;
     _mr_c_function_table[126] = (void*)wstrlen;
-    _mr_c_function_table[127] = (void*)asm_mr_registerAPP;
-    _mr_c_function_table[128] = (void*)asm_DrawTextEx;  //1936
-    _mr_c_function_table[129] = (void*)asm_mr_EffSetCon;
-    _mr_c_function_table[130] = (void*)asm_mr_TestCom;
-    _mr_c_function_table[131] = (void*)asm_mr_TestCom1;  //1938
-    _mr_c_function_table[132] = (void*)asm_c2u;          //1939
+    _mr_c_function_table[127] = (void*)mr_registerAPP;
+    _mr_c_function_table[128] = (void*)_DrawTextEx;  //1936
+    _mr_c_function_table[129] = (void*)_mr_EffSetCon;
+    _mr_c_function_table[130] = (void*)_mr_TestCom;
+    _mr_c_function_table[131] = (void*)_mr_TestCom1;  //1938
+    _mr_c_function_table[132] = (void*)c2u;          //1939
     _mr_c_function_table[133] = (void*)_mr_div;          //1941
     _mr_c_function_table[134] = (void*)_mr_mod;
 
     _mr_c_function_table[135] = (void*)&LG_mem_min;
     _mr_c_function_table[136] = (void*)&LG_mem_top;
-    _mr_c_function_table[137] = (void*)asm_mr_updcrc;        //1943
+    _mr_c_function_table[137] = (void*)mr_updcrc;        //1943
     _mr_c_function_table[138] = (void*)start_fileparameter;  //1945
     _mr_c_function_table[139] = (void*)&mr_sms_return_flag;  //1949
     _mr_c_function_table[140] = (void*)&mr_sms_return_val;
-    _mr_c_function_table[141] = (void*)asm_mr_unzip;         //1950
+    _mr_c_function_table[141] = (void*)mr_unzip;         //1950
     _mr_c_function_table[142] = (void*)&mr_exit_cb;          //1951
     _mr_c_function_table[143] = (void*)&mr_exit_cb_data;     //1951
     _mr_c_function_table[144] = (void*)mr_entry;             //1952
-    _mr_c_function_table[145] = (void*)asm_mr_platDrawChar;  //1961
+    _mr_c_function_table[145] = (void*)mr_platDrawChar;  //1961
     _mr_c_function_table[146] = (void*)&LG_mem_free;         //1967,2009
 
-    _mr_c_function_table[147] = (void*)asm_mr_transbitmapDraw;
-    _mr_c_function_table[148] = (void*)asm_mr_drawRegion;
+    _mr_c_function_table[147] = (void*)mr_transbitmapDraw;
+    _mr_c_function_table[148] = (void*)mr_drawRegion;
     _mr_c_function_table[149] = NULL;
 }
 
@@ -3539,7 +3540,7 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
             mr_cacheSync((void*)((uint32)(input1) & (~0x0000001F)), ((len + 0x0000001F * 3) & (~0x0000001F)));
 
             MRDBGPRINTF("--- ext: @%p", input1);
-            fixR9_saveMythroad();
+            // fixR9_saveMythroad();
             ret = mr_load_c_function(code);
             mrp_pushnumber(L, ret);
             MRDBGPRINTF("--- r9: mr_c_function_P.start_of_ER_RW = @%p", mr_c_function_P->start_of_ER_RW);
@@ -3554,7 +3555,7 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
             output_len = 0;
 
             // mr_printf("before mr_c_function------r9:%p  r10:%p code:%d %p---",  getR9(),getR10(), code, input1);
-            fixR9_saveMythroad();
+            // fixR9_saveMythroad();
             // mr_printf("801 mr_c_function");
             ret = mr_c_function(mr_c_function_P, code, (uint8*)input1, len, (uint8**)&output, &output_len);
             // mr_printf("after mr_c_function------r9:%p r10:%p---",  getR9(),getR10());
@@ -3574,7 +3575,7 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
             mr_load_c_function = (MR_LOAD_C_FUNCTION)(input1 + 8);
             *((void**)(mr_c_function_fix_p)) = (void*)_mr_c_function_table;
             mr_cacheSync((void*)((uint32)(input1) & (~0x0000001F)), ((len + 0x0000001F * 3) & (~0x0000001F)));
-            fixR9_saveMythroad();
+            // fixR9_saveMythroad();
             // mr_printf("802 mr_load_c_function");
             ret = mr_load_c_function(code);
             mrp_pushnumber(L, ret);

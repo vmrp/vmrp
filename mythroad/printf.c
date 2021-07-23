@@ -35,6 +35,8 @@
 
 #include "./include/printf.h"
 
+typedef long long intmax_t;      // int64
+
 
 // define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H ...) to include the
 // printf_config.h header file

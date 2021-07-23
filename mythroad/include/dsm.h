@@ -1,11 +1,7 @@
 #ifndef _DSM_H
 #define _DSM_H
 
-#ifdef VMRP
-#include "types.h"
-#else
 #include "mrporting.h"
-#endif
 
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
