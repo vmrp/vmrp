@@ -1,5 +1,9 @@
+#include <stdio.h>
 #include "./include/dsm.h"
-
+#include "./include/vmrp.h"
+#include "./include/bridge.h"
+#include "./include/fileLib.h"
+#include "./include/network.h"
 #include "./include/encode.h"
 #include "./include/fixR9.h"
 #include "./include/mem.h"
@@ -47,7 +51,7 @@
 
 static int32 use_utf8_fs;
 static DSM_REQUIRE_FUNCS *dsmInFuncs;
-static uint32 dsmStartTime;  //虚拟机初始化时间，用来计算系统运行时间
+static uint64 dsmStartTime;  //虚拟机初始化时间，用来计算系统运行时间
 
 //////////////////////////////////////////////////////////////////
 
@@ -58,7 +62,7 @@ void mr_printf(const char *format, ...) {
     va_start(params, format);
     vsnprintf_(printfBuf, sizeof(printfBuf), format, params);
     va_end(params);
-    dsmInFuncs->log(printfBuf);
+    puts(printfBuf);
 }
 
 #define LOGI(fmt, ...) mr_printf("[INFO]" fmt, ##__VA_ARGS__)
@@ -136,7 +140,7 @@ static void xl_font_sky16_charWidthHeight(uint16 id, int32 *width, int32 *height
 int32 mr_exit(void) {
     LOGD("%s", "mr_exit() called by mythroad!");
     xl_font_sky16_close();
-    dsmInFuncs->exit();
+    vmrp_onStop();
     return MR_SUCCESS;
 }
 
@@ -180,23 +184,24 @@ int32 mr_mem_free(char *mem, uint32 mem_len) {
 }
 
 int32 mr_timerStart(uint16 t) {
-    return dsmInFuncs->timerStart(t);
+    return _timerStart(t);
 }
 
 int32 mr_timerStop(void) {
-    return dsmInFuncs->timerStop();
+    return _timerStop();
 }
 
 uint32 mr_getTime(void) {
-    return dsmInFuncs->get_uptime_ms() - dsmStartTime;
+    return (uint32_t)((uint64_t)get_uptime_ms() - dsmStartTime);
 }
 
 int32 mr_getDatetime(mr_datetime *datetime) {
-    return dsmInFuncs->getDatetime(datetime);
+    return getDatetime(datetime);
 }
 
 int32 mr_sleep(uint32 ms) {
-    return dsmInFuncs->sleep(ms);
+    usleep(ms * 1000);
+    return MR_SUCCESS;
 }
 
 ///////////////////////// 文件操作接口 //////////////////////////////////////
@@ -338,40 +343,37 @@ char *get_filename(char *outputbuf, const char *filename) {
 
 int32 mr_open(const char *filename, uint32 mode) {
     char fullpathname[DSM_MAX_FILE_LEN];
-    int32 ret = dsmInFuncs->open(get_filename(fullpathname, filename), mode);
+    int32 ret = my_open(get_filename(fullpathname, filename), mode);
     LOGI("mr_open(%s,%d) fd is: %d", fullpathname, mode, ret);
     return ret;
 }
 
 int32 mr_close(int32 f) {
-    int32 ret;
-    ret = dsmInFuncs->close(f);
+    int32 ret = my_close(f);
     LOGI("mr_close(%d): ret:%d", f, ret);
     return ret;
 }
 
 int32 mr_read(int32 f, void *p, uint32 l) {
-    return dsmInFuncs->read(f, p, l);
+    return my_read(f, p, l);
 }
 
 int32 mr_write(int32 f, void *p, uint32 l) {
-    // LOGI("mr_write %d,%p,%d", f, p, l);
-    return dsmInFuncs->write(f, p, l);
+    return my_write(f, p, l);
 }
 
 int32 mr_seek(int32 f, int32 pos, int method) {
-    return dsmInFuncs->seek(f, pos, method);
+    return my_seek(f, pos, method);
 }
 
 int32 mr_info(const char *filename) {
     char fullpathname[DSM_MAX_FILE_LEN];
-    return dsmInFuncs->info(get_filename(fullpathname, filename));
+    return my_info(get_filename(fullpathname, filename));
 }
 
 int32 mr_remove(const char *filename) {
     char fullpathname[DSM_MAX_FILE_LEN];
-    int32 ret;
-    ret = dsmInFuncs->remove(get_filename(fullpathname, filename));
+    int32 ret = my_remove(get_filename(fullpathname, filename));
     LOGI("mr_remove(%s) ret:%d", fullpathname, ret);
     return ret;
 }
@@ -382,25 +384,25 @@ int32 mr_rename(const char *oldname, const char *newname) {
     get_filename(fullpathname_1, oldname);
     get_filename(fullpathname_2, newname);
     LOGI("mr_rename(%s to %s)", fullpathname_1, fullpathname_2);
-    return dsmInFuncs->rename(fullpathname_1, fullpathname_2);
+    return my_rename(fullpathname_1, fullpathname_2);
 }
 
 int32 mr_mkDir(const char *name) {
     char fullpathname[DSM_MAX_FILE_LEN];
     get_filename(fullpathname, name);
     LOGI("mr_mkDir(%s)", fullpathname);
-    return dsmInFuncs->mkDir(fullpathname);
+    return my_mkDir(fullpathname);
 }
 
 int32 mr_rmDir(const char *name) {
     char fullpathname[DSM_MAX_FILE_LEN];
     get_filename(fullpathname, name);
     LOGI("mr_rmDir(%s)", fullpathname);
-    return dsmInFuncs->rmDir(fullpathname);
+    return my_rmDir(fullpathname);
 }
 
 int32 mr_findGetNext(int32 search_handle, char *buffer, uint32 len) {
-    char *d_name = dsmInFuncs->readdir(search_handle);
+    char *d_name = my_readdir(search_handle);
     if (d_name != NULL) {
         if (use_utf8_fs) {
             char *gb = UTF8StrToGBStr((uint8 *)d_name, NULL);
@@ -417,7 +419,7 @@ int32 mr_findGetNext(int32 search_handle, char *buffer, uint32 len) {
 }
 
 int32 mr_findStop(int32 search_handle) {
-    return dsmInFuncs->closedir(search_handle);
+    return my_closedir(search_handle);
 }
 
 int32 mr_findStart(const char *name, char *buffer, uint32 len) {
@@ -427,7 +429,7 @@ int32 mr_findStart(const char *name, char *buffer, uint32 len) {
     get_filename(fullpathname, name);
     LOGI("mr_findStart(%s)", fullpathname);
 
-    ret = dsmInFuncs->opendir(fullpathname);
+    ret = my_opendir(fullpathname);
     if (ret != MR_FAILED) {
         mr_findGetNext(ret, buffer, len);
         return ret;
@@ -442,7 +444,7 @@ int32 mr_ferrno(void) {
 
 int32 mr_getLen(const char *filename) {
     char fullpathname[DSM_MAX_FILE_LEN];
-    return dsmInFuncs->getLen(get_filename(fullpathname, filename));
+    return my_getLen(get_filename(fullpathname, filename));
 }
 
 int32 mr_getScreenInfo(mr_screeninfo *s) {
@@ -455,7 +457,7 @@ int32 mr_getScreenInfo(mr_screeninfo *s) {
 }
 
 void mr_drawBitmap(uint16 *bmp, int16 x, int16 y, uint16 w, uint16 h) {
-    dsmInFuncs->drawBitmap(bmp, x, y, w, h);
+    _guiDrawBitmap(bmp, x, y, w, h);
 }
 
 const char *mr_getCharBitmap(uint16 ch, uint16 fontSize, int *width, int *height) {
@@ -568,7 +570,7 @@ int32 mr_winRelease(int32 win) {
 }
 
 int32 mr_rand(void) {
-    return dsmInFuncs->rand();
+    return rand();
 }
 //----------------------------------------------------
 /*平台扩展接口*/
@@ -577,8 +579,8 @@ int32 mr_plat(int32 code, int32 param) {
         case MR_CONNECT:  //1001
             return mr_getSocketState(param);
         case MR_GET_RAND:  //1211
-            dsmInFuncs->srand(mr_getTime());
-            return (MR_PLAT_VALUE_BASE + dsmInFuncs->rand() % param);
+            srand(mr_getTime());
+            return (MR_PLAT_VALUE_BASE + rand() % param);
         case MR_CHECK_TOUCH:  //1205是否支持触屏
             return MR_TOUCH_SCREEN;
         case MR_GET_HANDSET_LG:  //1206获取语言
@@ -763,7 +765,7 @@ static int32 initNetwork(MR_INIT_NETWORK_CB cb, const char *mode, int isExtCB) {
     // MR_SUCCESS 同步模式，初始化成功，不再调用cb
     // MR_FAILED （立即感知的）失败，不再调用cb
     // MR_WAITING 使用回调函数通知引擎初始化结果
-    ret = dsmInFuncs->initNetwork(network_cb, mode, data);
+    ret = my_initNetwork(network_cb, mode, data);
     if (ret != MR_WAITING) {
         mr_freeExt(data);
     }
@@ -778,7 +780,7 @@ static int32 getHostByName(const char *ptr, MR_GET_HOST_CB cb, int isExtCB) {
     // MR_FAILED （立即感知的）失败，不再调用cb
     // MR_WAITING 使用回调函数通知引擎获取IP的结果
     // 其他值 同步模式，立即返回的IP地址，不再调用cb
-    ret = dsmInFuncs->getHostByName(ptr, network_cb, data);
+    ret = my_getHostByName(ptr, network_cb, data);
     if (ret != MR_WAITING) {
         mr_freeExt(data);
     }
@@ -787,67 +789,67 @@ static int32 getHostByName(const char *ptr, MR_GET_HOST_CB cb, int isExtCB) {
 
 // 此函数只能由mythroad层自身调用
 int32 mythroad_initNetwork(MR_INIT_NETWORK_CB cb, const char *mode) {
-    return initNetwork(cb, mode, 0);
+    return initNetwork(cb, mode, FALSE);
 }
 
 // 此函数由ext调用，需要注意回调函数执行时r9寄存器的问题
 int32 mr_initNetwork(MR_INIT_NETWORK_CB cb, const char *mode) {
-    return initNetwork(cb, mode, 1);
+    return initNetwork(cb, mode, TRUE);
 }
 
 // 此函数只能由mythroad层自身调用
 int32 mythroad_getHostByName(const char *ptr, MR_GET_HOST_CB cb) {
-    return getHostByName(ptr, cb, 0);
+    return getHostByName(ptr, cb, FALSE);
 }
 
 // 此函数由ext调用，需要注意回调函数执行时r9寄存器的问题
 int32 mr_getHostByName(const char *ptr, MR_GET_HOST_CB cb) {
-    return getHostByName(ptr, cb, 1);
+    return getHostByName(ptr, cb, TRUE);
 }
 
 int32 mr_closeNetwork() {
     LOGI("%s", "mr_closeNetwork");
-    return dsmInFuncs->mr_closeNetwork();
+    return my_closeNetwork();
 }
 
 int32 mr_socket(int32 type, int32 protocol) {
     LOGI("mr_socket(type:%d, protocol:%d)", type, protocol);
-    return dsmInFuncs->mr_socket(type, protocol);
+    return my_socket(type, protocol);
 }
 
 int32 mr_connect(int32 s, int32 ip, uint16 port, int32 type) {
     LOGI("mr_connect(s:%d, ip:%d, port:%d, type:%d)", s, ip, port, type);
-    return dsmInFuncs->mr_connect(s, ip, port, type);
+    return my_connect(s, ip, port, type);
 }
 
 int32 mr_getSocketState(int32 s) {
     LOGI("getSocketState(%d)", s);
-    return dsmInFuncs->mr_getSocketState(s);
+    return my_getSocketState(s);
 }
 
 int32 mr_closeSocket(int32 s) {
     LOGI("mr_closeSocket(%d)", s);
-    return dsmInFuncs->mr_closeSocket(s);
+    return my_closeSocket(s);
 }
 
 int32 mr_recv(int32 s, char *buf, int len) {
     LOGI("mr_recv(%d)", s);
-    return dsmInFuncs->mr_recv(s, buf, len);
+    return my_recv(s, buf, len);
 }
 
 int32 mr_send(int32 s, const char *buf, int len) {
     LOGI("mr_send %d %s", s, buf);
-    return dsmInFuncs->mr_send(s, buf, len);
+    return my_send(s, buf, len);
 }
 
 int32 mr_recvfrom(int32 s, char *buf, int len, int32 *ip, uint16 *port) {
     LOGI("mr_recvfrom(%d,%s,%d,%d,%d)", s, buf, len, *ip, *port);
-    return dsmInFuncs->mr_recvfrom(s, buf, len, ip, port);
+    return my_recvfrom(s, buf, len, ip, port);
 }
 
 int32 mr_sendto(int32 s, const char *buf, int len, int32 ip, uint16 port) {
     LOGI("mr_sendto(%d,%s,%d,%d,%d)", s, buf, len, ip, port);
-    return dsmInFuncs->mr_sendto(s, buf, len, ip, port);
+    return my_sendto(s, buf, len, ip, port);
 }
 
 // Anti-Apple
@@ -857,11 +859,11 @@ int32 mr_sendto(int32 s, const char *buf, int len, int32 ip, uint16 port) {
 #endif
 
 void dsm_prepare(void) {
-    dsmInFuncs->mkDir(MYTHROAD_PATH);
-    dsmInFuncs->mkDir(DSM_HIDE_DRIVE);
-    dsmInFuncs->mkDir(DSM_DRIVE_A);
-    dsmInFuncs->mkDir(DSM_DRIVE_B);
-    dsmInFuncs->mkDir(DSM_DRIVE_X);
+    my_mkDir(MYTHROAD_PATH);
+    my_mkDir(DSM_HIDE_DRIVE);
+    my_mkDir(DSM_DRIVE_A);
+    my_mkDir(DSM_DRIVE_B);
+    my_mkDir(DSM_DRIVE_X);
     xl_font_sky16_init();
 }
 
@@ -870,7 +872,7 @@ void dsm_prepare(void) {
 int32 dsm_init(DSM_REQUIRE_FUNCS *inFuncs) {
     // 注意！这里面只能做一些不涉及malloc()的操作
     dsmInFuncs = inFuncs;
-    dsmStartTime = dsmInFuncs->get_uptime_ms();
+    dsmStartTime = (uint64_t)get_uptime_ms();
     use_utf8_fs = inFuncs->flags & FLAG_USE_UTF8_FS;
 
 #ifdef DSM_FULL

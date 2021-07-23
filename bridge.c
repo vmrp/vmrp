@@ -48,21 +48,21 @@ static uint32_t mr_extHelper_addr;
 static const char MUTEX_LOCK_FAIL[] = "mutex lock fail";
 static const char MUTEX_UNLOCK_FAIL[] = "mutex unlock fail";
 static pthread_mutex_t mutex;
-static guiDrawBitmap_t guiDrawBitmap;
-static timerStart_t timerStart;
-static timerStop_t timerStop;
+guiDrawBitmap_t _guiDrawBitmap;
+timerStart_t _timerStart;
+timerStop_t _timerStop;
 
 static void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void bridge_set_guiDrawBitmap(guiDrawBitmap_t cb) {
-    guiDrawBitmap = cb;
+    _guiDrawBitmap = cb;
 }
 
 void bridge_set_timer(timerStart_t start, timerStop_t stop) {
-    timerStart = start;
-    timerStop = stop;
+    _timerStart = start;
+    _timerStop = stop;
 }
 
 static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
@@ -155,7 +155,7 @@ static void br_mr_drawBitmap(BridgeMap *o, uc_engine *uc) {
     uc_mem_read(uc, sp, &h, 4);
 
     LOG("ext call %s(0x%X, %d, %d, %u, %u)\n", o->name, bmp, x, y, w, h);
-    guiDrawBitmap(getMrpMemPtr(bmp), x, y, w, h);
+    _guiDrawBitmap(getMrpMemPtr(bmp), x, y, w, h);
 }
 
 static void br_mr_open(BridgeMap *o, uc_engine *uc) {
@@ -267,20 +267,6 @@ static void br_mr_rmDir(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(my_rmDir(nameStr));
 }
 
-static uint64_t uptime_ms;
-static void br_get_uptime_ms_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
-    LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
-    uptime_ms = (uint64_t)get_uptime_ms();
-    uc_mem_write(uc, addr, &addr, 4);
-}
-
-static void br_get_uptime_ms(BridgeMap *o, uc_engine *uc) {
-    // uint32 (*get_uptime_ms)(void);
-    uint32_t ret = (uint32_t)((uint64_t)get_uptime_ms() - uptime_ms);
-    LOG("ext call %s(): 0x%X[%u]\n", o->name, ret, ret);
-    SET_RET_V(ret);
-}
-
 static void br_log(BridgeMap *o, uc_engine *uc) {
     // void (*log)(char *msg);
     uint32_t msg;
@@ -327,7 +313,7 @@ static void br_mem_free(BridgeMap *o, uc_engine *uc) {
 static void br_timerStop(BridgeMap *o, uc_engine *uc) {
     // int32 (*timerStop)(void);
     LOG("ext call %s()\n", o->name);
-    SET_RET_V(timerStop());
+    SET_RET_V(_timerStop());
 }
 
 static void br_timerStart(BridgeMap *o, uc_engine *uc) {
@@ -335,7 +321,7 @@ static void br_timerStart(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s()\n", o->name);
     int32_t t;
     uc_reg_read(uc, UC_ARM_REG_R0, &t);
-    SET_RET_V(timerStart(t));
+    SET_RET_V(_timerStart(t));
 }
 
 static void br_test(BridgeMap *o, uc_engine *uc) {
@@ -429,16 +415,6 @@ static void br_getDatetime(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(getDatetime(getMrpMemPtr(datetime)));
 }
 
-static void br_mr_initNetwork(BridgeMap *o, uc_engine *uc) {
-    // int32 (*initNetwork)(NETWORK_CB cb, const char *mode, void *userData);
-    LOG("ext call %s()\n", o->name);
-    uint32_t cb, mode, userData;
-    uc_reg_read(uc, UC_ARM_REG_R0, &cb);
-    uc_reg_read(uc, UC_ARM_REG_R1, &mode);
-    uc_reg_read(uc, UC_ARM_REG_R2, &userData);
-    SET_RET_V(my_initNetwork(uc, (void *)cb, getMrpMemPtr(mode), (void *)userData));
-}
-
 static void br_mr_socket(BridgeMap *o, uc_engine *uc) {
     // int32 (*mr_socket)(int32 type, int32 protocol);
     int32_t type, protocol;
@@ -472,16 +448,6 @@ static void br_mr_closeNetwork(BridgeMap *o, uc_engine *uc) {
     // int32 (*mr_closeNetwork)();
     LOG("ext call %s()\n", o->name);
     SET_RET_V(my_closeNetwork());
-}
-
-static void br_mr_getHostByName(BridgeMap *o, uc_engine *uc) {
-    // int32 (*getHostByName)(const char *ptr, NETWORK_CB cb, void *userData);
-    LOG("ext call %s()\n", o->name);
-    uint32_t name, cb, userData;
-    uc_reg_read(uc, UC_ARM_REG_R0, &name);
-    uc_reg_read(uc, UC_ARM_REG_R1, &cb);
-    uc_reg_read(uc, UC_ARM_REG_R2, &userData);
-    SET_RET_V(my_getHostByName(uc, getMrpMemPtr(name), (void *)cb, (void *)userData));
 }
 
 static void br_mr_sendto(BridgeMap *o, uc_engine *uc) {
@@ -636,7 +602,6 @@ static void br_mr_stopShake(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(MR_SUCCESS);
 #endif
 }
-
 
 /*
 创建一个对话框，并返回对话框句柄。当对话框显示时，如果用户按了对话框上的某个键，系统将构造Mythroad应用消息，通过mrc_event函数传送给Mythroad应用，
@@ -1024,7 +989,7 @@ static BridgeMap dsm_require_funcs_funcMap[] = {
     BRIDGE_FUNC_MAP(0x18, MAP_FUNC, mem_free, NULL, br_mem_free, 0),
     BRIDGE_FUNC_MAP(0x1c, MAP_FUNC, timerStart, NULL, br_timerStart, 0),
     BRIDGE_FUNC_MAP(0x20, MAP_FUNC, timerStop, NULL, br_timerStop, 0),
-    BRIDGE_FUNC_MAP(0x24, MAP_FUNC, get_uptime_ms, br_get_uptime_ms_init, br_get_uptime_ms, 0),
+    BRIDGE_FUNC_MAP(0x24, MAP_FUNC, get_uptime_ms, NULL, NULL, 0),
     BRIDGE_FUNC_MAP(0x28, MAP_FUNC, getDatetime, NULL, br_getDatetime, 0),
     BRIDGE_FUNC_MAP(0x2c, MAP_FUNC, sleep, NULL, br_sleep, 0),
     BRIDGE_FUNC_MAP(0x30, MAP_FUNC, open, NULL, br_mr_open, 0),
@@ -1043,8 +1008,8 @@ static BridgeMap dsm_require_funcs_funcMap[] = {
     BRIDGE_FUNC_MAP(0x64, MAP_FUNC, getLen, NULL, br_mr_getLen, 0),
     BRIDGE_FUNC_MAP(0x68, MAP_FUNC, drawBitmap, NULL, br_mr_drawBitmap, 0),
 
-    BRIDGE_FUNC_MAP(0x6c, MAP_FUNC, getHostByName, NULL, br_mr_getHostByName, 0),
-    BRIDGE_FUNC_MAP(0x70, MAP_FUNC, initNetwork, NULL, br_mr_initNetwork, 0),
+    BRIDGE_FUNC_MAP(0x6c, MAP_FUNC, getHostByName, NULL, NULL, 0),
+    BRIDGE_FUNC_MAP(0x70, MAP_FUNC, initNetwork, NULL, NULL, 0),
     BRIDGE_FUNC_MAP(0x74, MAP_FUNC, mr_closeNetwork, NULL, br_mr_closeNetwork, 0),
     BRIDGE_FUNC_MAP(0x78, MAP_FUNC, mr_socket, NULL, br_mr_socket, 0),
     BRIDGE_FUNC_MAP(0x7c, MAP_FUNC, mr_connect, NULL, br_mr_connect, 0),

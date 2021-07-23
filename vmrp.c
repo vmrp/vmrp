@@ -18,7 +18,6 @@
 static uint8_t *mrpMem;  // 模拟器的全部内存
 static uc_engine *uc = NULL;
 
-// 返回的内存禁止free
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE
 #endif
@@ -57,13 +56,7 @@ static bool hook_mem_invalid(uc_engine *uc, uc_mem_type type, uint64_t address, 
     return false;
 }
 
-int freeVmrp(uc_engine *uc) {
-    free(mrpMem);
-    uc_close(uc);
-    return 0;
-}
-
-uc_engine *initVmrp() {
+static uc_engine *initVmrp() {
     uc_engine *uc;
     uc_err err;
     uc_hook trace;
@@ -120,29 +113,22 @@ end:
 
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE
-int32_t c_event(int32_t code, int32_t p1, int32_t p2) {
-    if (uc) {
-        return bridge_dsm_mr_event(uc, code, p1, p2);
-    }
-    return MR_FAILED;
-}
 #endif
-
-int32_t event(int32_t code, int32_t p1, int32_t p2) {
+int32_t vmrp_onEvent(int32_t code, int32_t p1, int32_t p2) {
     if (uc) {
         return bridge_dsm_mr_event(uc, code, p1, p2);
     }
     return MR_FAILED;
 }
 
-int32_t timer() {
+int32_t vmrp_onTimer() {
     if (uc) {
         return bridge_dsm_mr_timer(uc);
     }
     return MR_FAILED;
 }
 
-int32_t loadCode() {
+static int32_t loadCode() {
     char *filename = "cfunction.ext";
     int32_t len = my_getLen(filename);
     char *buf = readFile(filename);
@@ -153,7 +139,7 @@ int32_t loadCode() {
     return MR_SUCCESS;
 }
 
-int startVmrp() {
+int vmrp_start() {
     uc = initVmrp();
     if (uc == NULL) {
         printf("initVmrp() fail.\n");
@@ -179,4 +165,13 @@ int startVmrp() {
         printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
     }
     return MR_SUCCESS;
+}
+
+int freeVmrp(uc_engine *uc) {
+    free(mrpMem);
+    uc_close(uc);
+    return 0;
+}
+
+void vmrp_onStop() {
 }

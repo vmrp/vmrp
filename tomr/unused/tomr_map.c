@@ -197,7 +197,7 @@ TO_MR_API void to_mr_open (mrp_State* L)
 */
 TO_MR_API void* to_mr_copy (mrp_State* L, void* value, unsigned int size)
 {
-	void* clone = (void*)MR_MALLOC(size);
+	void* clone = (void*)mr_malloc(size);
 	if (clone)
 	 MEMCPY(clone,value,size);//ouli brew
 	else
@@ -210,7 +210,7 @@ TO_MR_API void* to_mr_copy (mrp_State* L, void* value, unsigned int size)
 static int to_mr_default_collect (mrp_State* to_mr_S)
 {
  void* self = to_mr_tousertype(to_mr_S,1,0);
- MR_FREE(self, 0);  //ouli important
+ mr_free(self, 0);  //ouli important
  return 0;
 }
 

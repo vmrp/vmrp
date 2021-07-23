@@ -67,7 +67,7 @@ void setEventEnable(int v) {
 uint32_t th2(uint32_t interval, void *param) {
     SDL_RemoveTimer(timeId);
     timeId = 0;
-    timer();
+    vmrp_onTimer();
     return 0;
 }
 
@@ -92,79 +92,79 @@ int32_t timerStop() {
 static void keyEvent(int16 type, SDL_Keycode code) {
     if (code >= SDLK_0 && code <= SDLK_9) {
         int32_t key = MR_KEY_0 + (code - SDLK_0);
-        event(type, key, 0);  // 按键 0-9
+        vmrp_onEvent(type, key, 0);  // 按键 0-9
         return;
     }
     switch (code) {
         case SDLK_KP_0:
-            event(type, MR_KEY_0, 0);
+            vmrp_onEvent(type, MR_KEY_0, 0);
             break;
         case SDLK_KP_1:
-            event(type, MR_KEY_1, 0);
+            vmrp_onEvent(type, MR_KEY_1, 0);
             break;
         case SDLK_KP_2:
-            event(type, MR_KEY_2, 0);
+            vmrp_onEvent(type, MR_KEY_2, 0);
             break;
         case SDLK_KP_3:
-            event(type, MR_KEY_3, 0);
+            vmrp_onEvent(type, MR_KEY_3, 0);
             break;
         case SDLK_KP_4:
-            event(type, MR_KEY_4, 0);
+            vmrp_onEvent(type, MR_KEY_4, 0);
             break;
         case SDLK_KP_5:
-            event(type, MR_KEY_5, 0);
+            vmrp_onEvent(type, MR_KEY_5, 0);
             break;
         case SDLK_KP_6:
-            event(type, MR_KEY_6, 0);
+            vmrp_onEvent(type, MR_KEY_6, 0);
             break;
         case SDLK_KP_7:
-            event(type, MR_KEY_7, 0);
+            vmrp_onEvent(type, MR_KEY_7, 0);
             break;
         case SDLK_KP_8:
-            event(type, MR_KEY_8, 0);
+            vmrp_onEvent(type, MR_KEY_8, 0);
             break;
         case SDLK_KP_9:
-            event(type, MR_KEY_9, 0);
+            vmrp_onEvent(type, MR_KEY_9, 0);
             break;
         case SDLK_KP_ENTER:
-        case SDLK_RETURN:                   // 回车键
-            event(type, MR_KEY_SELECT, 0);  // 确认/选择/ok
+        case SDLK_RETURN:                          // 回车键
+            vmrp_onEvent(type, MR_KEY_SELECT, 0);  // 确认/选择/ok
             break;
-        case SDLK_EQUALS:                  // 等号
-            event(type, MR_KEY_POUND, 0);  // 按键 #
+        case SDLK_EQUALS:                         // 等号
+            vmrp_onEvent(type, MR_KEY_POUND, 0);  // 按键 #
             break;
-        case SDLK_MINUS:                  // 减号
-            event(type, MR_KEY_STAR, 0);  // 按键 *
+        case SDLK_MINUS:                         // 减号
+            vmrp_onEvent(type, MR_KEY_STAR, 0);  // 按键 *
             break;
         case SDLK_w:
         case SDLK_UP:  // 上
-            event(type, MR_KEY_UP, 0);
+            vmrp_onEvent(type, MR_KEY_UP, 0);
             break;
         case SDLK_s:
         case SDLK_DOWN:  // 下
-            event(type, MR_KEY_DOWN, 0);
+            vmrp_onEvent(type, MR_KEY_DOWN, 0);
             break;
         case SDLK_a:
         case SDLK_LEFT:  // 左
-            event(type, MR_KEY_LEFT, 0);
+            vmrp_onEvent(type, MR_KEY_LEFT, 0);
             break;
         case SDLK_d:
         case SDLK_RIGHT:  // 右
-            event(type, MR_KEY_RIGHT, 0);
+            vmrp_onEvent(type, MR_KEY_RIGHT, 0);
             break;
         case SDLK_q:
-        case SDLK_LEFTBRACKET:                // 左中括号
-            event(type, MR_KEY_SOFTLEFT, 0);  // 左功能键
+        case SDLK_LEFTBRACKET:                       // 左中括号
+            vmrp_onEvent(type, MR_KEY_SOFTLEFT, 0);  // 左功能键
             break;
         case SDLK_e:
-        case SDLK_RIGHTBRACKET:                // 右中括号
-            event(type, MR_KEY_SOFTRIGHT, 0);  // 右功能键
+        case SDLK_RIGHTBRACKET:                       // 右中括号
+            vmrp_onEvent(type, MR_KEY_SOFTRIGHT, 0);  // 右功能键
             break;
         case SDLK_TAB:
-            event(type, MR_KEY_SEND, 0);  // 接听键
+            vmrp_onEvent(type, MR_KEY_SEND, 0);  // 接听键
             break;
         case SDLK_ESCAPE:
-            event(type, MR_KEY_POWER, 0);  // 挂机键
+            vmrp_onEvent(type, MR_KEY_POWER, 0);  // 挂机键
             break;
         default:
             printf("key:%d\n", code);
@@ -210,16 +210,16 @@ void loop() {
                     break;
                 case SDL_MOUSEMOTION:
                     if (isMouseDown) {
-                        event(MR_MOUSE_MOVE, ev.motion.x, ev.motion.y);
+                        vmrp_onEvent(MR_MOUSE_MOVE, ev.motion.x, ev.motion.y);
                     }
                     break;
                 case SDL_MOUSEBUTTONDOWN:
                     isMouseDown = true;
-                    event(MR_MOUSE_DOWN, ev.motion.x, ev.motion.y);
+                    vmrp_onEvent(MR_MOUSE_DOWN, ev.motion.x, ev.motion.y);
                     break;
                 case SDL_MOUSEBUTTONUP:
                     isMouseDown = false;
-                    event(MR_MOUSE_UP, ev.motion.x, ev.motion.y);
+                    vmrp_onEvent(MR_MOUSE_UP, ev.motion.x, ev.motion.y);
                     break;
             }
         }
@@ -252,7 +252,7 @@ int main(int argc, char *args[]) {
 
     bridge_set_guiDrawBitmap(guiDrawBitmap);
     bridge_set_timer(timerStart, timerStop);
-    startVmrp();
+    vmrp_start();
 
 #if defined(__EMSCRIPTEN__)
     emscripten_set_main_loop(loop, 0, 1);

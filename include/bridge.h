@@ -50,4 +50,8 @@ int32_t bridge_dsm_mr_timer(uc_engine *uc);
 int32_t bridge_dsm_mr_event(uc_engine *uc, int32_t code, int32_t p0, int32_t p1);
 int32_t bridge_dsm_network_cb(uc_engine *uc, uint32_t addr, int32_t p0, uint32_t p1);
 
+extern guiDrawBitmap_t _guiDrawBitmap;
+extern timerStart_t _timerStart;
+extern timerStop_t _timerStop;
+
 #endif

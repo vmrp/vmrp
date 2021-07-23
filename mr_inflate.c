@@ -326,7 +326,7 @@ static int huft_build(unsigned *b,            /* code lengths in bits (all assum
         z = 1 << j;             /* table entries for j-bit table */
 
         /* allocate and link in new table */
-        if ((q = (struct huft *)MR_MALLOC((z + 1)*sizeof(struct huft))) == (struct huft *)NULL)
+        if ((q = (struct huft *)mr_malloc((z + 1)*sizeof(struct huft))) == (struct huft *)NULL)
         {
           if (h)
             huft_free(u[0]);
@@ -407,7 +407,7 @@ struct huft *t         /* table to free */)
   while (p != (struct huft *)NULL)
   {
     q = (--p)->v.t;
-    MR_FREE((char*)p, p->l);
+    mr_free((char*)p, p->l);
     p = q;
   } 
   return 0;

@@ -25,11 +25,15 @@
 #define END_ADDRESS (MEMORY_MANAGER_ADDRESS + MEMORY_MANAGER_SIZE)
 #define TOTAL_MEMORY (END_ADDRESS - START_ADDRESS)
 
+// 将vm中的地址值转换为指针，返回的指针禁止用free()释放
 void *getMrpMemPtr(uint32_t addr);
+
+// 将指针转换为vm中的地址值
 uint32_t toMrpMemAddr(void *ptr);
 
-int32_t event(int32_t code, int32_t p1, int32_t p2);
-int32_t timer();
-int startVmrp();
+int32_t vmrp_onEvent(int32_t code, int32_t p1, int32_t p2);
+int32_t vmrp_onTimer();
+int vmrp_start();
+void vmrp_onStop();
 
 #endif

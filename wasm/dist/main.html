@@ -292,13 +292,13 @@
                         return;
                     }
                     dialogTextarea.readOnly = true;
-                    Module._c_event(MR_DIALOG_EVENT, MR_DIALOG_KEY_OK, 0);
+                    Module._vmrp_onEvent(MR_DIALOG_EVENT, MR_DIALOG_KEY_OK, 0);
                 }
             }
             if (keyType == MR_DIALOG_OK_CANCEL || keyType == MR_DIALOG_CANCEL) {
                 dialogCancelBtn.style.visibility = 'visible';
                 dialogCancelBtn.onclick = function (e) {
-                    Module._c_event(MR_DIALOG_EVENT, MR_DIALOG_KEY_CANCEL, 0);
+                    Module._vmrp_onEvent(MR_DIALOG_EVENT, MR_DIALOG_KEY_CANCEL, 0);
                 }
             }
             dialogTextarea.oninput = function (e) {
@@ -335,13 +335,13 @@
             if (keyType == MR_DIALOG_OK_CANCEL || keyType == MR_DIALOG_OK) {
                 dialogOkBtn.style.visibility = 'visible';
                 dialogOkBtn.onclick = function (e) {
-                    Module._c_event(MR_DIALOG_EVENT, MR_DIALOG_KEY_OK, 0);
+                    Module._vmrp_onEvent(MR_DIALOG_EVENT, MR_DIALOG_KEY_OK, 0);
                 }
             }
             if (keyType == MR_DIALOG_OK_CANCEL || keyType == MR_DIALOG_CANCEL) {
                 dialogCancelBtn.style.visibility = 'visible';
                 dialogCancelBtn.onclick = function (e) {
-                    Module._c_event(MR_DIALOG_EVENT, MR_DIALOG_KEY_CANCEL, 0);
+                    Module._vmrp_onEvent(MR_DIALOG_EVENT, MR_DIALOG_KEY_CANCEL, 0);
                 }
             }
             return 0;
@@ -426,11 +426,11 @@
         function touch_add(id, code) {
             const key = document.getElementById(id);
             key.onmousedown = function (e) {
-                Module._c_event(0, code, 0);
+                Module._vmrp_onEvent(0, code, 0);
                 e.preventDefault();
             }
             key.onmouseup = function (e) {
-                Module._c_event(1, code, 0);
+                Module._vmrp_onEvent(1, code, 0);
                 e.preventDefault();
             }
             key.ontouchstart = key.onmousedown;

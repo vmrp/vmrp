@@ -18,7 +18,6 @@ EMSCRIPTEN_WEBSOCKET_T bridgeSocket = 0;
 EMSCRIPTEN_WEBSOCKET_T emscripten_init_websocket_to_posix_socket_bridge(const char* bridgeUrl);
 #endif
 
-
 typedef struct {
     SOCKET_T s;
     uint32_t sendCounter;
@@ -235,9 +234,8 @@ int32 my_closeNetwork(void) {
 }
 
 typedef struct {
-    MR_INIT_NETWORK_CB cb;
+    _MR_INIT_NETWORK_CB cb;
     void* userData;
-    uc_engine* uc;
     pthread_t th;
 } initNetworkAsyncData_t;
 
@@ -271,7 +269,7 @@ static void* my_initNetworkAsync(void* arg) {
     initNetworkAsyncData_t* data = (initNetworkAsyncData_t*)arg;
     int32 r = my_initNetworkSync();
     printf("my_initNetworkAsync(): %d\n", r);
-    bridge_dsm_network_cb(data->uc, (uint32_t)data->cb, r, (uint32_t)data->userData);
+    data->cb(r, data->userData);
     free(data);
     return NULL;
 }
@@ -281,7 +279,7 @@ static void* my_initNetworkAsync(void* arg) {
    MR_FAILED （立即感知的）失败，不再调用cb
    MR_WAITING 使用回调函数通知引擎初始化结果 
 */
-int32 my_initNetwork(uc_engine* uc, MR_INIT_NETWORK_CB cb, const char* mode, void* userData) {
+int32 my_initNetwork(_MR_INIT_NETWORK_CB cb, const char* mode, void* userData) {
 #ifdef NETWORK_SUPPORT
     printf("my_initNetwork(0x%p, '%s')\n", cb, mode);
     if (strncasecmp("cmwap", mode, 5) == 0) {
@@ -291,7 +289,6 @@ int32 my_initNetwork(uc_engine* uc, MR_INIT_NETWORK_CB cb, const char* mode, voi
         initNetworkAsyncData_t* data = malloc(sizeof(initNetworkAsyncData_t));
         data->cb = cb;
         data->userData = userData;
-        data->uc = uc;
         if (pthread_create(&data->th, NULL, my_initNetworkAsync, data) != 0) {
             return MR_FAILED;
         }
@@ -305,9 +302,8 @@ int32 my_initNetwork(uc_engine* uc, MR_INIT_NETWORK_CB cb, const char* mode, voi
 
 typedef struct {
     char* name;
-    MR_GET_HOST_CB cb;
+    _MR_GET_HOST_CB cb;
     void* userData;
-    uc_engine* uc;
     pthread_t th;
 } getHostByNameAsyncData_t;
 
@@ -351,7 +347,7 @@ static void* my_getHostByNameAsync(void* arg) {
     getHostByNameAsyncData_t* data = (getHostByNameAsyncData_t*)arg;
     int32 r = my_getHostByNameSync(data->name);
     printf("my_getHostByNameAsync(): 0x%X\n", r);
-    bridge_dsm_network_cb(data->uc, (uint32_t)data->cb, r, (uint32_t)data->userData);
+    data->cb(r, data->userData);
     free(data->name);
     free(data);
     return NULL;
@@ -362,7 +358,7 @@ static void* my_getHostByNameAsync(void* arg) {
    MR_WAITING 使用回调函数通知引擎获取IP的结果
    其他值 同步模式，立即返回的IP地址，不再调用cb 
 */
-int32 my_getHostByName(uc_engine* uc, const char* name, MR_GET_HOST_CB cb, void* userData) {
+int32 my_getHostByName(const char* name, _MR_GET_HOST_CB cb, void* userData) {
 #ifdef NETWORK_SUPPORT
     printf("my_getHostByName('%s', 0x%p)\n", name, cb);
     if (cb != NULL) {
@@ -373,7 +369,6 @@ int32 my_getHostByName(uc_engine* uc, const char* name, MR_GET_HOST_CB cb, void*
         data->name[len] = '\0';
         data->cb = cb;
         data->userData = userData;
-        data->uc = uc;
         int ret = pthread_create(&data->th, NULL, my_getHostByNameAsync, data);
         if (ret != 0) {
             return MR_FAILED;

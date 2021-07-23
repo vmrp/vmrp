@@ -595,7 +595,7 @@ MRPLIB_API int mr_L_loadfile (mrp_State *L, const char *filename) {
       ls.size = filelen;
       status = mrp_load(L, getS, &ls, mrp_tostring(L, -1));
    }
-   MR_FREE(buff, filelen);
+   mr_free(buff, filelen);
    LUADBGPRINTF("after free");
    readstatus = 0;
 

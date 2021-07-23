@@ -406,9 +406,11 @@ extern int32 mr_newSIMInd(int16 type, uint8* old_IMSI);
 
 /*函数mr_initNetwork使用的回调函数定义*/
 typedef int32 (*MR_INIT_NETWORK_CB)(int32 result);
+typedef int32 (*_MR_INIT_NETWORK_CB)(int32 result, void* userData);
 
 /*函数mr_getHostByName使用的回调函数定义*/
 typedef int32 (*MR_GET_HOST_CB)(int32 ip);
+typedef int32 (*_MR_GET_HOST_CB)(int32 ip, void* userData);
 
 /*********************以下是抽象接口定义******************************/
 

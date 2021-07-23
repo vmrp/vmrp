@@ -228,7 +228,7 @@ static int io_readAll (mrp_State *L) {
      ret = mr_read(f, (char*)filebuf+oldlen, filelen-oldlen);
      if (ret <= 0)
      {
-         //MR_FREE(filebuf, filelen);
+         //mr_free(filebuf, filelen);
          mr_close(f);
          //_mr_readFileShowInfo(filename, 3009);
          return 0;
@@ -432,7 +432,7 @@ static int MenuCreate(mrp_State *L)
       mrp_pushnil(L);
    }
 #ifdef MR_AUTO_UNICODE
-   MR_FREE((void *)tempBuf, TextSize);
+   mr_free((void *)tempBuf, TextSize);
 #endif
    return 1;
 }
@@ -468,7 +468,7 @@ static int MenuAddItem(mrp_State *L)
       mrp_pushnil(L);
    }
 #ifdef MR_AUTO_UNICODE
-   MR_FREE((void *)tempBuf, TextSize);
+   mr_free((void *)tempBuf, TextSize);
 #endif
    return 1;
 }
