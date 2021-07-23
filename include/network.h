@@ -1,7 +1,8 @@
 #ifndef __NETWORK_H__
 #define __NETWORK_H__
 
-#include "types.h"
+#include "type.h"
+#include "mrporting.h"
 #include "bridge.h"
 
 int32 my_closeNetwork(void);

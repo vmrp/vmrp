@@ -1,8 +1,8 @@
-#include "./header/debug.h"
+#include "./include/debug.h"
 
-#include "./header/fileLib.h"
-#include "./header/utils.h"
-#include "./header/vmrp.h"
+#include "./include/fileLib.h"
+#include "./include/utils.h"
+#include "./include/vmrp.h"
 #include "./windows/capstone-4.0.1-win32/include/capstone/capstone.h"
 
 // 获取等号左边的内容，限制长最大长度为maxLen个字符,

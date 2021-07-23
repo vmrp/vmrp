@@ -1,7 +1,7 @@
 #ifndef _FILELIB_H
 #define _FILELIB_H
 
-#include "types.h"
+#include "type.h"
 
 #define MR_FILE_RDONLY 1  //以只读的方式打开文件。
 #define MR_FILE_WRONLY 2  //以只写的方式打开文件。
@@ -11,12 +11,6 @@
 #define MR_IS_FILE 1     //文件
 #define MR_IS_DIR 2      //目录
 #define MR_IS_INVALID 8  //无效(非文件、非目录)
-
-enum {
-    MR_SEEK_SET,
-    MR_SEEK_CUR,
-    MR_SEEK_END
-};
 
 // 注意在mrp中的字符编码
 int32_t my_open(const char *filename, uint32_t mode);

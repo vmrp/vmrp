@@ -7,7 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "types.h"
+#include "other.h"
+#include "mrporting.h"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 // #ifdef _WIN64

@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "./header/network.h"
-#include "./header/posix_sockets.h"
+#include "./include/network.h"
+#include "./include/posix_sockets.h"
 
 // #define NETWORK_SUPPORT
 
@@ -18,20 +18,6 @@ EMSCRIPTEN_WEBSOCKET_T bridgeSocket = 0;
 EMSCRIPTEN_WEBSOCKET_T emscripten_init_websocket_to_posix_socket_bridge(const char* bridgeUrl);
 #endif
 
-enum {
-    MR_SOCK_STREAM,
-    MR_SOCK_DGRAM
-};
-
-enum {
-    MR_IPPROTO_TCP,
-    MR_IPPROTO_UDP
-};
-
-enum {
-    MR_SOCKET_BLOCK,
-    MR_SOCKET_NONBLOCK
-};
 
 typedef struct {
     SOCKET_T s;

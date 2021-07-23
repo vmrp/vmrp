@@ -1,6 +1,6 @@
-#include "./header/vmrp.h"
-#include "./header/memory.h"
-#include "./header/utils.h"
+#include "./include/vmrp.h"
+#include "./include/memory.h"
+#include "./include/utils.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -45,7 +45,7 @@ void initMemoryManager(uint32_t baseAddress, uint32_t len) {
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE
 #endif
-void printMemoryInfo() {
+void my_printMemoryInfo() {
     printf(".......total:%d, min:%d, free:%d, top:%d\n", LG_mem_len, LG_mem_min, LG_mem_left, LG_mem_top);
     printf(".......base:%p, end:%p\n", LG_mem_base, LG_mem_end);
     printf(".......obase:%p, olen:%d\n", Origin_LG_mem_base, Origin_LG_mem_len);

@@ -1,11 +1,11 @@
-#include "./header/utils.h"
+#include "./include/utils.h"
 
 #include <sys/time.h>
 #include <time.h>
 
-#include "./header/fileLib.h"
-#include "./header/memory.h"
-#include "./header/vmrp.h"
+#include "./include/fileLib.h"
+#include "./include/memory.h"
+#include "./include/vmrp.h"
 
 // 只支持240*320大小
 void printScreen(char *filename, uint16_t *buf) {
@@ -130,14 +130,6 @@ retResult:
     }
     *mem = '\0';
     return ret;
-}
-
-int wstrlen(char *txt) {
-    int i = 0;
-    if (txt) {
-        while (txt[i] || txt[i + 1]) i += 2;
-    }
-    return i;
 }
 
 uint32_t copyWstrToMrp(char *str) {

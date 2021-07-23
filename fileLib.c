@@ -1,5 +1,5 @@
-#include "./header/fileLib.h"
-#include "./header/utils.h"
+#include "./include/fileLib.h"
+#include "./include/utils.h"
 
 #include <string.h>
 #include <dirent.h>

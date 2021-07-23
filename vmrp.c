@@ -1,15 +1,15 @@
-#include "./header/vmrp.h"
+#include "./include/vmrp.h"
 
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "./header/bridge.h"
-#include "./header/fileLib.h"
-#include "./header/memory.h"
-#include "./header/utils.h"
-#include "./header/debug.h"
+#include "./include/bridge.h"
+#include "./include/fileLib.h"
+#include "./include/memory.h"
+#include "./include/utils.h"
+#include "./include/debug.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>

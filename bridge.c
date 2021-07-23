@@ -1,4 +1,4 @@
-#include "./header/bridge.h"
+#include "./include/bridge.h"
 
 #include <ctype.h>
 #include <pthread.h>
@@ -7,21 +7,17 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "./header/dsm.h"
-#include "./header/fileLib.h"
-#include "./header/memory.h"
-#include "./header/vmrp.h"
-#include "./header/debug.h"
-#include "./header/network.h"
+#include "./include/dsm.h"
+#include "./include/fileLib.h"
+#include "./include/memory.h"
+#include "./include/vmrp.h"
+#include "./include/debug.h"
+#include "./include/network.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 //////////////////////////////////////////////////////////////////////////////////////////
-#ifdef LOG
-#undef LOG
-#endif
-
 #ifdef DEBUG
 #define LOG(format, ...) printf("   -> bridge: " format, ##__VA_ARGS__)
 #else
@@ -554,14 +550,6 @@ static void br_mr_getSocketState(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(my_getSocketState(s));
 }
 
-enum {
-    MR_SOUND_MIDI,
-    MR_SOUND_WAV,
-    MR_SOUND_MP3,
-    MR_SOUND_AMR,
-    MR_SOUND_PCM  // 8K 16bit PCM
-} MR_SOUND_TYPE;
-
 /*
 播放声音数据
 type [IN] 声音数据类型，见MR_SOUND_TYPE定义，此函数支持MR_SOUND_MIDI MR_SOUND_WAV MR_SOUND_MP3 
@@ -649,16 +637,6 @@ static void br_mr_stopShake(BridgeMap *o, uc_engine *uc) {
 #endif
 }
 
-enum {
-    MR_DIALOG_KEY_OK,     // 对话框/文本框等的"确定"键被点击(选择);
-    MR_DIALOG_KEY_CANCEL  // 对话框/文本框等的"取消"("返回")键被点击(选择);
-};
-
-enum {
-    MR_DIALOG_OK,         // 对话框有"确定"键;
-    MR_DIALOG_OK_CANCEL,  // 对话框有"确定" "取消"键;
-    MR_DIALOG_CANCEL      // 对话框有"返回"键
-};
 
 /*
 创建一个对话框，并返回对话框句柄。当对话框显示时，如果用户按了对话框上的某个键，系统将构造Mythroad应用消息，通过mrc_event函数传送给Mythroad应用，
@@ -809,12 +787,6 @@ static void br_mr_textRefresh(BridgeMap *o, uc_engine *uc) {
     SET_RET_V(MR_FAILED);
 #endif
 }
-
-enum {
-    MR_EDIT_ANY,
-    MR_EDIT_NUMERIC,
-    MR_EDIT_PASSWORD
-};
 
 /*
 创建一个编辑框，并返回编辑框句柄。 
