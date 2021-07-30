@@ -4,7 +4,7 @@ UNICORN = ./windows/unicorn-1.0.2-win32/unicorn.lib
 SDL2 = ./windows/SDL2-2.0.10/i686-w64-mingw32
 CAPSTONE := 
 
-FILES := network.c fileLib.c vmrp.c utils.c rbtree.c bridge.c memory.c
+FILES := network.c fileLib.c vmrp.c utils.c rbtree.c bridge.c
 ifeq ($(DEBUG),1)
 	CFLAGS += -DDEBUG
 	FILES += debug.c

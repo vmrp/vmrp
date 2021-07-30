@@ -369,7 +369,10 @@ extern int32 mr_stop(void);
 extern int32 mr_start(mr_appSt* app);
 #endif
 
-int32 mr_start_dsm(char* filename, char* ext, char* entry);
+int32 dsm_init(void);
+void dsm_prepare(void);
+
+int32 mr_start_dsm(char* filename, char* startFile, char* entry);
 
 /*注册固化应用*/
 extern int32 mr_registerAPP(uint8* p, int32 len, int32 index);
@@ -401,8 +404,6 @@ extern int32 mr_resumeApp(void);
 /*当手机收到短消息时调用该函数*/
 extern int32 mr_smsIndiaction(uint8* pContent, int32 nLen, uint8* pNum, int32 type);
 
-/*用户SIM卡变更*/
-extern int32 mr_newSIMInd(int16 type, uint8* old_IMSI);
 
 /*函数mr_initNetwork使用的回调函数定义*/
 typedef int32 (*MR_INIT_NETWORK_CB)(int32 result);
@@ -477,9 +478,6 @@ extern int32 mr_findStop(int32 search_handle);
 
 /*退出平台*/
 extern int32 mr_exit(void);
-
-extern void mr_panic(char* msg);
-void dsm_prepare(void);
 
 /*开始手机震动*/
 extern int32 mr_startShake(int32 ms);

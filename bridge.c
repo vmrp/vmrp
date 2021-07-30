@@ -7,9 +7,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "./include/dsm.h"
 #include "./include/fileLib.h"
-#include "./include/memory.h"
+#include "./include/mem.h"
 #include "./include/vmrp.h"
 #include "./include/debug.h"
 #include "./include/network.h"
@@ -37,12 +36,7 @@ typedef struct mr_c_function_P_t {
     int32 stack;            //stack shell 2008-2-28
 } mr_c_function_P_t;
 
-static void *mr_table;
 static mr_c_function_P_t *mr_c_function_P;
-static void *dsm_require_funcs;
-static event_t *mr_c_event;  // 用于mrc_event参数传递的内存
-static event_t *dsm_event;   // 用于传递真实事件
-static start_t *mr_start_dsm_param;
 static uint32_t mr_extHelper_addr;
 
 static const char MUTEX_LOCK_FAIL[] = "mutex lock fail";
@@ -74,7 +68,7 @@ static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
     dumpREG(uc);
 
     mr_extHelper_addr = p_f;
-    mr_c_function_P = my_mallocExt(p_len);
+    mr_c_function_P = mr_mallocExt(p_len);
     memset(mr_c_function_P, 0, p_len);
 
     uint32_t v = toMrpMemAddr(mr_c_function_P);
@@ -86,7 +80,7 @@ static void br_mr_malloc(BridgeMap *o, uc_engine *uc) {
     // typedef void* (*T_mr_malloc)(uint32 len);
     uint32_t len;
     uc_reg_read(uc, UC_ARM_REG_R0, &len);
-    void *p = my_mallocExt(len);
+    void *p = mr_mallocExt(len);
     if (p) {
         uint32_t ret = toMrpMemAddr(p);
         LOG("ext call %s(0x%X[%u]) ret=0x%X[%u]\n", o->name, len, len, ret, ret);
@@ -103,7 +97,7 @@ static void br_mr_free(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R1, &len);
 
     LOG("ext call %s(0x%X[%u], 0x%X[%u])\n", o->name, p, p, len, len);
-    my_freeExt(getMrpMemPtr(p));
+    mr_freeExt(getMrpMemPtr(p));
 }
 
 static void br_memcpy(BridgeMap *o, uc_engine *uc) {
@@ -287,7 +281,7 @@ static void br_mem_get(BridgeMap *o, uc_engine *uc) {
     LOG("ext call %s()\n", o->name);
 
     uint32_t len = 1024 * 1024 * 4;
-    uint32_t buffer = toMrpMemAddr(my_mallocExt(len));
+    uint32_t buffer = toMrpMemAddr(mr_mallocExt(len));
 
     printf("br_mem_get base=0x%X len=%d(%d kb) =================\n", buffer, len, len / 1024);
 
@@ -306,7 +300,7 @@ static void br_mem_free(BridgeMap *o, uc_engine *uc) {
     uc_reg_read(uc, UC_ARM_REG_R1, &mem_len);
 
     LOG("ext call %s(0x%X, 0x%X)\n", o->name, mem, mem_len);
-    my_freeExt(getMrpMemPtr(mem));
+    mr_freeExt(getMrpMemPtr(mem));
     SET_RET_V(MR_SUCCESS);
 }
 
@@ -379,7 +373,7 @@ static void br_opendir(BridgeMap *o, uc_engine *uc) {
 static char *readdirSharedMem;  // 文件名的共享内存
 static void br_readdir_init(BridgeMap *o, uc_engine *uc, uint32_t addr) {
     LOG("br_%s_init() 0x%X[%u]\n", o->name, addr, addr);
-    readdirSharedMem = (char *)my_mallocExt(READDIR_SHARED_MEM_SIZE);
+    readdirSharedMem = (char *)mr_mallocExt(READDIR_SHARED_MEM_SIZE);
     readdirSharedMem[READDIR_SHARED_MEM_SIZE - 1] = '\0';
     uc_mem_write(uc, addr, &addr, 4);
 }
@@ -1066,7 +1060,7 @@ static void *hooks_init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32
     BridgeMap *obj;
     uIntMap *mobj;
     uint32_t addr;
-    void *ptr = my_mallocExt(size);
+    void *ptr = mr_mallocExt(size);
     uint32_t startAddress = toMrpMemAddr(ptr);
 
     err = uc_hook_add(uc, &trace, UC_HOOK_CODE, hook_code, NULL, startAddress, startAddress + size, 0);
@@ -1096,7 +1090,7 @@ static void *hooks_init(uc_engine *uc, BridgeMap *map, uint32_t mapCount, uint32
     }
     return ptr;
 end:
-    my_freeExt(ptr);
+    mr_freeExt(ptr);
     exit(1);
     return NULL;
 }
@@ -1113,24 +1107,15 @@ static void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool i
     }
 }
 
+static void *mr_table;
 uc_err bridge_init(uc_engine *uc) {
     if (pthread_mutex_init(&mutex, NULL) != 0) {
         perror("mutex init fail");
         exit(EXIT_FAILURE);
     }
-    uint32_t len = 4 * countof(mr_table_funcMap);  // 因为都是指针，所以直接可以算出来总内存大小
-    mr_table = hooks_init(uc, mr_table_funcMap, countof(mr_table_funcMap), len);
+    // uint32_t len = 4 * countof(mr_table_funcMap);  // 因为都是指针，所以直接可以算出来总内存大小
+    // mr_table = hooks_init(uc, mr_table_funcMap, countof(mr_table_funcMap), len);
 
-    dsm_require_funcs = hooks_init(uc, dsm_require_funcs_funcMap, countof(dsm_require_funcs_funcMap), sizeof(DSM_REQUIRE_FUNCS));
-#ifdef __EMSCRIPTEN__
-    ((DSM_REQUIRE_FUNCS *)dsm_require_funcs)->flags = FLAG_USE_UTF8_FS;
-#else
-    ((DSM_REQUIRE_FUNCS *)dsm_require_funcs)->flags = 0;
-#endif
-
-    mr_c_event = my_mallocExt(sizeof(event_t));
-    dsm_event = my_mallocExt(sizeof(event_t));
-    mr_start_dsm_param = my_mallocExt(sizeof(start_t));
     return UC_ERR_OK;
 }
 
@@ -1162,12 +1147,6 @@ static int32_t bridge_mr_extHelper(uc_engine *uc, uint32_t code, uint32_t input,
     return v;
 }
 
-static inline int32_t bridge_mr_event(uc_engine *uc, int32_t code, int32_t param0, int32_t param1) {
-    mr_c_event->code = code;
-    mr_c_event->p0 = param0;
-    mr_c_event->p1 = param1;
-    return bridge_mr_extHelper(uc, 1, toMrpMemAddr(mr_c_event), sizeof(event_t));
-}
 
 // 执行网络通信的回调
 int32_t bridge_dsm_network_cb(uc_engine *uc, uint32_t addr, int32_t p0, uint32_t p1) {
@@ -1196,41 +1175,12 @@ int32_t bridge_dsm_network_cb(uc_engine *uc, uint32_t addr, int32_t p0, uint32_t
     return ret;
 }
 
-int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, char *filename, char *ext, char *entry) {
-    if (pthread_mutex_lock(&mutex) != 0) {
-        perror(MUTEX_LOCK_FAIL);
-        exit(EXIT_FAILURE);
-    }
-
-    mr_start_dsm_param->filename = (char *)copyStrToMrp(filename);
-    mr_start_dsm_param->ext = (char *)copyStrToMrp(ext);
-    mr_start_dsm_param->entry = entry ? (char *)copyStrToMrp(entry) : NULL;
-
-    int32_t v = bridge_mr_event(uc, MR_START_DSM, toMrpMemAddr(mr_start_dsm_param), 0);
-
-    my_freeExt(getMrpMemPtr((uint32_t)mr_start_dsm_param->filename));
-    mr_start_dsm_param->filename = NULL;
-
-    my_freeExt(getMrpMemPtr((uint32_t)mr_start_dsm_param->ext));
-    mr_start_dsm_param->ext = NULL;
-
-    if (entry) {
-        my_freeExt(getMrpMemPtr((uint32_t)mr_start_dsm_param->entry));
-    }
-
-    if (pthread_mutex_unlock(&mutex) != 0) {
-        perror(MUTEX_UNLOCK_FAIL);
-        exit(EXIT_FAILURE);
-    }
-    return v;
-}
-
 int32_t bridge_dsm_mr_pauseApp(uc_engine *uc) {
     if (pthread_mutex_lock(&mutex) != 0) {
         perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
-    int32_t v = bridge_mr_event(uc, MR_PAUSEAPP, 0, 0);
+    int32_t v = mr_pauseApp();
     if (pthread_mutex_unlock(&mutex) != 0) {
         perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
@@ -1243,7 +1193,7 @@ int32_t bridge_dsm_mr_resumeApp(uc_engine *uc) {
         perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
-    int32_t v = bridge_mr_event(uc, MR_RESUMEAPP, 0, 0);
+    int32_t v = mr_resumeApp();
     if (pthread_mutex_unlock(&mutex) != 0) {
         perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
@@ -1256,7 +1206,7 @@ int32_t bridge_dsm_mr_timer(uc_engine *uc) {
         perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
-    int32_t v = bridge_mr_event(uc, MR_TIMER, 0, 0);
+    int32_t v = mr_timer();
     if (pthread_mutex_unlock(&mutex) != 0) {
         perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
@@ -1269,10 +1219,7 @@ int32_t bridge_dsm_mr_event(uc_engine *uc, int32_t code, int32_t p0, int32_t p1)
         perror(MUTEX_LOCK_FAIL);
         exit(EXIT_FAILURE);
     }
-    dsm_event->code = code;
-    dsm_event->p0 = p0;
-    dsm_event->p1 = p1;
-    int32_t v = bridge_mr_event(uc, MR_EVENT, toMrpMemAddr(dsm_event), 0);
+    int32_t v = mr_event(code, p0, p1);
     if (pthread_mutex_unlock(&mutex) != 0) {
         perror(MUTEX_UNLOCK_FAIL);
         exit(EXIT_FAILURE);
@@ -1280,21 +1227,3 @@ int32_t bridge_dsm_mr_event(uc_engine *uc, int32_t code, int32_t p0, int32_t p1)
     return v;
 }
 
-int32_t bridge_dsm_init(uc_engine *uc) {
-    if (pthread_mutex_lock(&mutex) != 0) {
-        perror(MUTEX_LOCK_FAIL);
-        exit(EXIT_FAILURE);
-    }
-    int32_t v = bridge_mr_event(uc, DSM_INIT, toMrpMemAddr(dsm_require_funcs), 0);
-
-    if (pthread_mutex_unlock(&mutex) != 0) {
-        perror(MUTEX_UNLOCK_FAIL);
-        exit(EXIT_FAILURE);
-    }
-    if (v == VMRP_VER) {
-        return MR_SUCCESS;
-    } else {
-        printf("warning: bridge_dsm_version:%d != %d\n", v, VMRP_VER);
-    }
-    return MR_FAILED;
-}

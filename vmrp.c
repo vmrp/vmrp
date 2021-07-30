@@ -7,7 +7,8 @@
 
 #include "./include/bridge.h"
 #include "./include/fileLib.h"
-#include "./include/memory.h"
+#include "./include/mem.h"
+#include "./include/mrporting.h"
 #include "./include/utils.h"
 #include "./include/debug.h"
 
@@ -74,7 +75,6 @@ static uc_engine *initVmrp() {
         printf("Failed mem map: %u (%s)\n", err, uc_strerror(err));
         goto end;
     }
-    initMemoryManager(MEMORY_MANAGER_ADDRESS, MEMORY_MANAGER_SIZE);
 
     err = bridge_init(uc);
     if (err) {
@@ -146,24 +146,15 @@ int vmrp_start() {
         return MR_FAILED;
     }
 
-    if (loadCode() == MR_FAILED) {
-        printf("loadCode fail.\n");
-        return MR_FAILED;
-    }
-    bridge_ext_init(uc);
+    dsm_init();
+    mr_start_dsm("dsm_gm.mrp", "start.mr", NULL);
 
-    if (bridge_dsm_init(uc) == MR_SUCCESS) {
-        printf("bridge_dsm_init success\n");
-        dumpREG(uc);
+    // if (loadCode() == MR_FAILED) {
+    //     printf("loadCode fail.\n");
+    //     return MR_FAILED;
+    // }
+    // bridge_ext_init(uc);
 
-        char *filename = "dsm_gm.mrp";
-        // char *filename = "winmine.mrp";
-        char *extName = "start.mr";
-        // char *extName = "cfunction.ext";
-
-        uint32_t ret = bridge_dsm_mr_start_dsm(uc, filename, extName, NULL);
-        printf("bridge_dsm_mr_start_dsm('%s','%s',NULL): 0x%X\n", filename, extName, ret);
-    }
     return MR_SUCCESS;
 }
 

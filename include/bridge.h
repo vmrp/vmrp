@@ -42,8 +42,6 @@ void bridge_set_timer(timerStart_t start, timerStop_t stop);
 uc_err bridge_init(uc_engine *uc);
 uc_err bridge_ext_init(uc_engine *uc);
 
-int32_t bridge_dsm_init(uc_engine *uc);
-int32_t bridge_dsm_mr_start_dsm(uc_engine *uc, char *filename, char *ext, char *entry);
 int32_t bridge_dsm_mr_pauseApp(uc_engine *uc);
 int32_t bridge_dsm_mr_resumeApp(uc_engine *uc);
 int32_t bridge_dsm_mr_timer(uc_engine *uc);

@@ -1803,7 +1803,7 @@ int32 mr_doExt(char* extName) {
     return MR_SUCCESS;
 }
 
-static int32 _mr_intra_start(char* appExName, const char* entry) {
+static int32 _mr_intra_start(char* startFile, const char* entry) {
     int i, ret;
     //ret = mr_plat(1250, mrc_appInfo_st.ram);
     if (_mr_mem_init() != MR_SUCCESS) {
@@ -1870,7 +1870,7 @@ static int32 _mr_intra_start(char* appExName, const char* entry) {
     STRNCPY(mr_entry, entry, sizeof(mr_entry) - 1);
     MRDBGPRINTF("Used by VM(include screen buffer):%d bytes", LG_mem_len - LG_mem_left);
     mr_state = MR_STATE_RUN;
-    ret = mr_doExt(appExName);
+    ret = mr_doExt(startFile);
     if (0 != ret)
         ret = mr_doExt("logo.ext");  //尝试加载 logo.ext
 
@@ -1885,7 +1885,7 @@ static int32 _mr_intra_start(char* appExName, const char* entry) {
     return MR_SUCCESS;
 }
 
-int32 mr_start_dsm(char* filename, char* ext, char* entry) {
+int32 mr_start_dsm(char* filename, char* startFile, char* entry) {
     mr_screeninfo screeninfo;
     if (mr_getScreenInfo(&screeninfo) != MR_SUCCESS) {
         return MR_FAILED;
@@ -1894,7 +1894,7 @@ int32 mr_start_dsm(char* filename, char* ext, char* entry) {
     mr_screen_h = screeninfo.height;
     mr_screen_bit = screeninfo.bit;
 
-    MRDBGPRINTF("filename:%s, ext:%s, entry:%s", filename, ext, entry ? entry : "(NULL)");
+    MRDBGPRINTF("filename:%s, startFile:%s, entry:%s", filename, startFile, entry ? entry : "(NULL)");
     MEMSET(pack_filename, 0, sizeof(pack_filename));
     if (filename && (*filename == '*')) {
         STRCPY(pack_filename, filename);
@@ -1919,7 +1919,7 @@ int32 mr_start_dsm(char* filename, char* ext, char* entry) {
     mrc_appInfo_st.ram = 0;
     // return _mr_intra_start("cfunction.ext", entry);
     // return _mr_intra_start("logo.ext", filename);
-    return _mr_intra_start(ext, entry);
+    return _mr_intra_start(startFile, entry);
 }
 
 int32 mr_stop_ex(int16 freemem) {

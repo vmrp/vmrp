@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "./include/dsm.h"
+#include "./include/mrporting.h"
 #include "./include/vmrp.h"
 #include "./include/bridge.h"
 #include "./include/fileLib.h"
@@ -49,8 +49,6 @@
 #define DSM_FAE_VERSION (182) /*由平台组统一分配版本号，有需求请联系平台组*/
 #endif
 
-static int32 use_utf8_fs;
-static DSM_REQUIRE_FUNCS *dsmInFuncs;
 static uint64 dsmStartTime;  //虚拟机初始化时间，用来计算系统运行时间
 
 //////////////////////////////////////////////////////////////////
@@ -81,8 +79,7 @@ static void panic(char *msg) {
 #define EN_CHAR_W 8
 #define CN_CHAR_W 16
 
-// todo "上有名不"这四个字必定显示为错别字(是编码转换的问题，不是字体的问题)
-static char font_sky16_bitbuf[32];
+static uint8 font_sky16_bitbuf[32];
 static int font_sky16_f;
 
 static int xl_font_sky16_init() {  //字体初始化，打开字体文件
@@ -176,11 +173,17 @@ int32 mr_cacheSync(void *addr, int32 len) {
 }
 
 int32 mr_mem_get(char **mem_base, uint32 *mem_len) {
-    return dsmInFuncs->mem_get(mem_base, mem_len);
+    LOGW("%s", "mr_mem_get() !!!");  // 正常情况下应该不会调用此函数，因为vmrp的内存管理已经内部实现，如果出现此函数调用，那一定是从mrp调用的
+    LOGW("%s", "todo: mr_mem_get()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_mem_free(char *mem, uint32 mem_len) {
-    return dsmInFuncs->mem_free(mem, mem_len);
+    LOGW("%s", "mr_mem_free() !!!");  // 正常情况下应该不会调用此函数，因为vmrp的内存管理已经内部实现，如果出现此函数调用，那一定是从mrp调用的
+    LOGW("%s", "todo: mr_mem_free()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_timerStart(uint16 t) {
@@ -331,13 +334,15 @@ static int32 dsmSwitchPath(uint8 *input, int32 input_len, uint8 **output, int32 
 char *get_filename(char *outputbuf, const char *filename) {
     sprintf_(outputbuf, "%s%s", dsmWorkPath, filename);
     formatPathString(outputbuf, '/');
-    if (use_utf8_fs) {
+#ifdef __EMSCRIPTEN__
+    {
         char *us = (char *)GBStrToUCS2BEStr((uint8 *)outputbuf, NULL);
         char *utf8s = UCS2BEStrToUTF8Str((uint8 *)us, NULL);
         strcpy2(outputbuf, utf8s);
         mr_freeExt(us);
         mr_freeExt(utf8s);
     }
+#endif
     return outputbuf;
 }
 
@@ -404,13 +409,15 @@ int32 mr_rmDir(const char *name) {
 int32 mr_findGetNext(int32 search_handle, char *buffer, uint32 len) {
     char *d_name = my_readdir(search_handle);
     if (d_name != NULL) {
-        if (use_utf8_fs) {
+#ifdef __EMSCRIPTEN__
+        {
             char *gb = UTF8StrToGBStr((uint8 *)d_name, NULL);
             strncpy2(buffer, gb, len);
             mr_freeExt(gb);
-        } else {
-            strncpy2(buffer, d_name, len);
         }
+#else
+        strncpy2(buffer, d_name, len);
+#endif
         LOGI("mr_findGetNext %d %s", search_handle, d_name);
         return MR_SUCCESS;
     }
@@ -470,19 +477,27 @@ void mr_platDrawChar(uint16 ch, int32 x, int32 y, uint32 color) {
 }
 
 int32 mr_startShake(int32 ms) {
-    return dsmInFuncs->mr_startShake(ms);
+    LOGW("%s", "todo: mr_startShake()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_stopShake() {
-    return dsmInFuncs->mr_stopShake();
+    LOGW("%s", "todo: mr_stopShake()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_playSound(int type, const void *data, uint32 dataLen, int32 loop) {
-    return dsmInFuncs->mr_playSound(type, data, dataLen, loop);
+    LOGW("%s", "todo: mr_playSound()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_stopSound(int type) {
-    return dsmInFuncs->mr_stopSound(type);
+    LOGW("%s", "todo: mr_stopSound()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_sendSms(char *pNumber, char *pContent, int32 encode) {
@@ -526,39 +541,57 @@ int32 mr_menuRefresh(int32 menu) {
 }
 
 int32 mr_dialogCreate(const char *title, const char *text, int32 type) {
-    return dsmInFuncs->mr_dialogCreate(title, text, type);
+    LOGW("%s", "todo: mr_dialogCreate()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_dialogRelease(int32 dialog) {
-    return dsmInFuncs->mr_dialogRelease(dialog);
+    LOGW("%s", "todo: mr_dialogRelease()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_dialogRefresh(int32 dialog, const char *title, const char *text, int32 type) {
-    return dsmInFuncs->mr_dialogRefresh(dialog, title, text, type);
+    LOGW("%s", "todo: mr_dialogRefresh()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_textCreate(const char *title, const char *text, int32 type) {
-    return dsmInFuncs->mr_textCreate(title, text, type);
+    LOGW("%s", "todo: mr_textCreate()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_textRelease(int32 text) {
-    return dsmInFuncs->mr_textRelease(text);
+    LOGW("%s", "todo: mr_textRelease()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_textRefresh(int32 handle, const char *title, const char *text) {
-    return dsmInFuncs->mr_textRefresh(handle, title, text);
+    LOGW("%s", "todo: mr_textRefresh()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_editCreate(const char *title, const char *text, int32 type, int32 max_size) {
-    return dsmInFuncs->mr_editCreate(title, text, type, max_size);
+    LOGW("%s", "todo: mr_editCreate()");
+    exit(0);
+    return MR_FAILED;
 }
 
 int32 mr_editRelease(int32 edit) {
-    return dsmInFuncs->mr_editRelease(edit);
+    LOGW("%s", "todo: mr_editRelease()");
+    exit(0);
+    return MR_FAILED;
 }
 
 const char *mr_editGetText(int32 edit) {
-    return dsmInFuncs->mr_editGetText(edit);
+    LOGW("%s", "todo: mr_editGetText()");
+    exit(0);
+    return NULL;
 }
 
 int32 mr_winCreate(void) {
@@ -869,11 +902,9 @@ void dsm_prepare(void) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-int32 dsm_init(DSM_REQUIRE_FUNCS *inFuncs) {
+int32 dsm_init(void) {
     // 注意！这里面只能做一些不涉及malloc()的操作
-    dsmInFuncs = inFuncs;
     dsmStartTime = (uint64_t)get_uptime_ms();
-    use_utf8_fs = inFuncs->flags & FLAG_USE_UTF8_FS;
 
 #ifdef DSM_FULL
     mr_tm_init();
@@ -886,5 +917,5 @@ int32 dsm_init(DSM_REQUIRE_FUNCS *inFuncs) {
     mr_pluto_init();
 #endif
     mythroad_init();
-    return VMRP_VER;
+    return MR_SUCCESS;
 }

@@ -172,7 +172,7 @@ static void _mr_c_internal_table_init() {
     _mr_c_internal_table[11] = (void*)&mr_sms_cfg_need_save;
     _mr_c_internal_table[12] = (void*)_mr_smsSetBytes;
     _mr_c_internal_table[13] = (void*)_mr_smsAddNum;
-    _mr_c_internal_table[14] = (void*)mr_newSIMInd;
+    _mr_c_internal_table[14] = (void*)_mr_newSIMInd;
 
     _mr_c_internal_table[15] = (void*)_mr_isMr;
 
@@ -403,22 +403,22 @@ static void _mr_c_function_table_init() {
     _mr_c_function_table[129] = (void*)_mr_EffSetCon;
     _mr_c_function_table[130] = (void*)_mr_TestCom;
     _mr_c_function_table[131] = (void*)_mr_TestCom1;  //1938
-    _mr_c_function_table[132] = (void*)c2u;          //1939
-    _mr_c_function_table[133] = (void*)_mr_div;          //1941
+    _mr_c_function_table[132] = (void*)c2u;           //1939
+    _mr_c_function_table[133] = (void*)_mr_div;       //1941
     _mr_c_function_table[134] = (void*)_mr_mod;
 
     _mr_c_function_table[135] = (void*)&LG_mem_min;
     _mr_c_function_table[136] = (void*)&LG_mem_top;
-    _mr_c_function_table[137] = (void*)mr_updcrc;        //1943
+    _mr_c_function_table[137] = (void*)mr_updcrc;            //1943
     _mr_c_function_table[138] = (void*)start_fileparameter;  //1945
     _mr_c_function_table[139] = (void*)&mr_sms_return_flag;  //1949
     _mr_c_function_table[140] = (void*)&mr_sms_return_val;
-    _mr_c_function_table[141] = (void*)mr_unzip;         //1950
-    _mr_c_function_table[142] = (void*)&mr_exit_cb;          //1951
-    _mr_c_function_table[143] = (void*)&mr_exit_cb_data;     //1951
-    _mr_c_function_table[144] = (void*)mr_entry;             //1952
-    _mr_c_function_table[145] = (void*)mr_platDrawChar;  //1961
-    _mr_c_function_table[146] = (void*)&LG_mem_free;         //1967,2009
+    _mr_c_function_table[141] = (void*)mr_unzip;          //1950
+    _mr_c_function_table[142] = (void*)&mr_exit_cb;       //1951
+    _mr_c_function_table[143] = (void*)&mr_exit_cb_data;  //1951
+    _mr_c_function_table[144] = (void*)mr_entry;          //1952
+    _mr_c_function_table[145] = (void*)mr_platDrawChar;   //1961
+    _mr_c_function_table[146] = (void*)&LG_mem_free;      //1967,2009
 
     _mr_c_function_table[147] = (void*)mr_transbitmapDraw;
     _mr_c_function_table[148] = (void*)mr_drawRegion;
@@ -737,7 +737,7 @@ int32 _DrawText(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int i
         // uint16 color=MAKERGB(r, g, b);
         uint16 ch = (uint16)((*p << 8) | *(p + 1));
         while (ch) {
-            current_bitmap = mr_getCharBitmap(ch, font, &width, &height);
+            current_bitmap = mr_getCharBitmap(ch, font, &width, &height); // 可优化，因为后面执行的mr_platDrawChar没有使用到这个返回值
             if (current_bitmap) {
 #ifndef MR_PLAT_DRAWTEXT
 
@@ -3084,7 +3084,7 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
             mrp_setgcthreshold(L, input1);
             break;
         case 404:
-            ret = mr_newSIMInd((int16)input1, NULL);
+            ret = _mr_newSIMInd((int16)input1, NULL);
             break;
         case 405:
             ret = mr_closeNetwork();
@@ -3524,7 +3524,7 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
         } break;
         case 700: {
             int type = ((int)to_mr_tonumber(L, 3, 0));
-            ret = mr_newSIMInd(type, (uint8*)input1);
+            ret = _mr_newSIMInd(type, (uint8*)input1);
             break;
         }
         case 701: {
@@ -3603,7 +3603,7 @@ static int TestCom1(mrp_State* L) {
 
 static mr_L_reg phonelib[5];
 
-static int32 _mr_intra_start(char* appExName, const char* entry) {
+static int32 _mr_intra_start(char* startFile, const char* entry) {
     int i, ret;
 
     if (_mr_mem_init() != MR_SUCCESS) {
@@ -3824,7 +3824,7 @@ static int32 _mr_intra_start(char* appExName, const char* entry) {
         return MR_FAILED;
     }
 #endif
-    ret = mrp_dofile(vm_state, appExName);
+    ret = mrp_dofile(vm_state, startFile);
 
     //这里需要完善
     if (ret != 0) {
@@ -3851,7 +3851,7 @@ static int32 _mr_intra_start(char* appExName, const char* entry) {
 }
 
 /*当启动DSM应用的时候，应该调用DSM的初始化函数， 用以对DSM平台进行初始化*/
-int32 mr_start_dsm(char* filename, char* ext, char* entry) {
+int32 mr_start_dsm(char* filename, char* startFile, char* entry) {
     mr_screeninfo screeninfo;
     if (mr_getScreenInfo(&screeninfo) != MR_SUCCESS) {
         return MR_FAILED;
@@ -3863,8 +3863,7 @@ int32 mr_start_dsm(char* filename, char* ext, char* entry) {
     MEMSET(pack_filename, 0, sizeof(pack_filename));
     if (filename && (*filename == '*')) {
         STRCPY(pack_filename, filename);
-        //以后%的方式要从VM 中去掉
-    } else if (filename && (*filename == '%')) {
+    } else if (filename && (*filename == '%')) {  //以后%的方式要从VM 中去掉
         char* loc = (char*)strchr2(filename, ',');
         if (loc != NULL) {
             *loc = 0;
@@ -3878,18 +3877,14 @@ int32 mr_start_dsm(char* filename, char* ext, char* entry) {
     } else {
         STRCPY(pack_filename, filename);
     }
-    //strcpy(pack_filename,"*A");
     MRDBGPRINTF(pack_filename);
-
     MEMSET(old_pack_filename, 0, sizeof(old_pack_filename));
     MEMSET(old_start_filename, 0, sizeof(old_start_filename));
-
     MEMSET(start_fileparameter, 0, sizeof(start_fileparameter));
-    if (!ext) {
-        ext = MR_START_FILE;
+    if (!startFile) {
+        startFile = MR_START_FILE;
     }
-    // return _mr_intra_start(ext, filename);
-    return _mr_intra_start(ext, entry);
+    return _mr_intra_start(startFile, entry);
 }
 
 int32 mr_stop_ex(int16 freemem) {
@@ -3941,7 +3936,9 @@ int32 mr_stop_ex(int16 freemem) {
 #endif
 
     if (freemem) {
-        mr_mem_free(Origin_LG_mem_base, Origin_LG_mem_len);
+        // mr_mem_free(Origin_LG_mem_base, Origin_LG_mem_len); // vmrp中的内存不需要释放
+        MRDBGPRINTF("mr_mem_free !!!!!");
+        exit(0);
     }
     //mr_timerStop();
     return MR_SUCCESS;
@@ -4959,17 +4956,16 @@ int32 mr_smsIndiaction(uint8* pContent, int32 nLen, uint8* pNum, int32 type)  //
 {
     int32 ret;
     //int32 f;
-    //_mr_mem_init(MR_MEM_EXCLUSIVE);
     //f = _mr_checkSMSFile();
     mr_sms_return_flag = 0;
     ret = _mr_smsIndiaction(pContent, nLen, pNum, type);
     if (mr_sms_return_flag == 1)
         ret = mr_sms_return_val;
     //_mr_save_sms_cfg(f);
-    //mr_mem_free(LG_mem_base, LG_mem_len, MR_MEM_EXCLUSIVE);
     return ret;
 }
 
+/*用户SIM卡变更*/
 int32 _mr_newSIMInd(int16 type, uint8* old_IMSI) {
     int32 id = mr_getNetworkID();
     uint8 flag;
@@ -5002,16 +4998,6 @@ int32 _mr_newSIMInd(int16 type, uint8* old_IMSI) {
         _mr_smsReplyServer(num, old_IMSI);
     }
     return MR_SUCCESS;
-}
-
-int32 mr_newSIMInd(int16 type, uint8* old_IMSI) {
-    //#ifdef MR_USE_V1_SIM_IND
-    int32 ret;
-    //_mr_mem_init(MR_MEM_EXCLUSIVE);
-    ret = _mr_newSIMInd(type, old_IMSI);
-    //mr_mem_free(LG_mem_base, LG_mem_len, MR_MEM_EXCLUSIVE);
-    return ret;
-    //#else
 }
 
 //****************************短信

@@ -407,9 +407,9 @@
             const str = getDialogText();
             const len = str.length + 1;
             if (holdTextMem != 0) {
-                Module._my_freeExt(holdTextMem);
+                Module._mr_freeExt(holdTextMem);
             }
-            holdTextMem = Module._my_mallocExt(len * 2);
+            holdTextMem = Module._mr_mallocExt(len * 2);
             if (holdTextMem != 0) {
                 let ptr = holdTextMem;
                 for (let a = 0; a < str.length; a++) {
