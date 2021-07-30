@@ -1,4 +1,4 @@
-<a href="https://996.icu"><img src="https://img.shields.io/badge/link-996.icu-red.svg" alt="996.icu" /></a> 反对996是每个软件工程师的义务
+<a href="https://996.icu"><img src="https://img.shields.io/badge/link-996.icu-red.svg" alt="996.icu" /></a>
 
 # PC版本下载地址
 
@@ -65,6 +65,7 @@ sudo apt install libsdl2-dev
 
 直接`make`即可编译，使用`make DEBUG=1`可以编译出带调试功能的版本
 
+另外，需要用斯凯SDK单独编译 /mythroad/build/build_full.bat 生成vmrp.mrp，提取里面的cfunction.ext，这么做的原因是mythroad层代码量非常大，arm编译和gcc编译有一点差别，例如char类型的变量值传递给uint16类型时在arm编译时可能char也是被当成uint8来处理的，而在gcc中这种情况char是有符号的，会导致bug，因此还不敢将全部代码整合到一起，目前正在mythroad分支中尝试合并
 
 # 参考资料
 
