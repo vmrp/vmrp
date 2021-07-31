@@ -370,7 +370,6 @@ extern int32 mr_start(mr_appSt* app);
 #endif
 
 int32 dsm_init(void);
-void dsm_prepare(void);
 
 int32 mr_start_dsm(char* filename, char* startFile, char* entry);
 

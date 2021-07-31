@@ -5,7 +5,6 @@
 #include "./include/fileLib.h"
 #include "./include/network.h"
 #include "./include/encode.h"
-#include "./include/fixR9.h"
 #include "./include/mem.h"
 #include "./include/printf.h"
 #include "./include/string.h"
@@ -49,7 +48,7 @@
 #define DSM_FAE_VERSION (182) /*由平台组统一分配版本号，有需求请联系平台组*/
 #endif
 
-static uint64 dsmStartTime;  //虚拟机初始化时间，用来计算系统运行时间
+static uint64 dsmStartTime;  // 初始化时间，用来计算系统运行时间
 
 //////////////////////////////////////////////////////////////////
 
@@ -889,31 +888,13 @@ int32 mr_sendto(int32 s, const char *buf, int len, int32 ip, uint16 port) {
 #error "I don't like Apple and its products, and I forbid using this code in any Apple product"
 #endif
 
-void dsm_prepare(void) {
+int32 dsm_init(void) {
+    dsmStartTime = (uint64_t)get_uptime_ms();
     my_mkDir(MYTHROAD_PATH);
     my_mkDir(DSM_HIDE_DRIVE);
     my_mkDir(DSM_DRIVE_A);
     my_mkDir(DSM_DRIVE_B);
     my_mkDir(DSM_DRIVE_X);
     xl_font_sky16_init();
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-
-int32 dsm_init(void) {
-    // 注意！这里面只能做一些不涉及malloc()的操作
-    dsmStartTime = (uint64_t)get_uptime_ms();
-
-#ifdef DSM_FULL
-    mr_tm_init();
-    mr_baselib_init();
-    mr_tablib_init();
-    mr_socket_target_init();
-    mr_tcp_target_init();
-    mr_iolib_target_init();
-    mr_strlib_init();
-    mr_pluto_init();
-#endif
-    mythroad_init();
     return MR_SUCCESS;
 }

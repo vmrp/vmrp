@@ -154,7 +154,6 @@ static const void* _mr_c_internal_table[17];
 static void* _mr_c_port_table[4];
 static void* _mr_c_function_table[150];
 
-
 static int32 _mr_div(int32 a, int32 b) {
     return a / b;
 }
@@ -1887,6 +1886,7 @@ static int32 _mr_intra_start(char* startFile, const char* entry) {
 
 int32 mr_start_dsm(char* filename, char* startFile, char* entry) {
     mr_screeninfo screeninfo;
+    mythroad_init();
     if (mr_getScreenInfo(&screeninfo) != MR_SUCCESS) {
         return MR_FAILED;
     }

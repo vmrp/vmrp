@@ -1,7 +1,6 @@
 #include "./include/mythroad.h"
 
 #include "./include/encode.h"
-#include "./include/fixR9.h"
 #include "./include/md5.h"
 #include "./include/mem.h"
 #include "./include/mr.h"
@@ -737,7 +736,7 @@ int32 _DrawText(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int i
         // uint16 color=MAKERGB(r, g, b);
         uint16 ch = (uint16)((*p << 8) | *(p + 1));
         while (ch) {
-            current_bitmap = mr_getCharBitmap(ch, font, &width, &height); // 可优化，因为后面执行的mr_platDrawChar没有使用到这个返回值
+            current_bitmap = mr_getCharBitmap(ch, font, &width, &height);  // 可优化，因为后面执行的mr_platDrawChar没有使用到这个返回值
             if (current_bitmap) {
 #ifndef MR_PLAT_DRAWTEXT
 
@@ -3610,7 +3609,7 @@ static int32 _mr_intra_start(char* startFile, const char* entry) {
         return MR_FAILED;
     }
     MRDBGPRINTF("Total memory:%d", LG_mem_len);
-    dsm_prepare();
+    dsm_init();
 
     mr_event_function = NULL;
     mr_timer_function = NULL;
@@ -3825,14 +3824,7 @@ static int32 _mr_intra_start(char* startFile, const char* entry) {
     }
 #endif
     ret = mrp_dofile(vm_state, startFile);
-
-    //这里需要完善
     if (ret != 0) {
-        /*
-        mrp_close(vm_state);
-        mr_mem_free(LG_mem_base, LG_mem_len);
-        mr_state = MR_STATE_IDLE;
-        */
         MRDBGPRINTF(mrp_tostring(vm_state, -1));
         mrp_pop(vm_state, 1); /* remove error message*/
         mr_stop();
@@ -3853,6 +3845,19 @@ static int32 _mr_intra_start(char* startFile, const char* entry) {
 /*当启动DSM应用的时候，应该调用DSM的初始化函数， 用以对DSM平台进行初始化*/
 int32 mr_start_dsm(char* filename, char* startFile, char* entry) {
     mr_screeninfo screeninfo;
+
+#ifdef DSM_FULL
+    mr_tm_init();
+    mr_baselib_init();
+    mr_tablib_init();
+    mr_socket_target_init();
+    mr_tcp_target_init();
+    mr_iolib_target_init();
+    mr_strlib_init();
+    mr_pluto_init();
+#endif
+    mythroad_init();
+
     if (mr_getScreenInfo(&screeninfo) != MR_SUCCESS) {
         return MR_FAILED;
     }

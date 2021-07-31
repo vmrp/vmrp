@@ -146,7 +146,6 @@ int vmrp_start() {
         return MR_FAILED;
     }
 
-    dsm_init();
     mr_start_dsm("dsm_gm.mrp", "start.mr", NULL);
 
     // if (loadCode() == MR_FAILED) {
