@@ -105,17 +105,25 @@ int luadec(mrp_State* L, char* filename, char* outputFile) {
         if (isMr(name)) {
             n++;
             mr_printf("luadec load %s", name);
+            #if 0
             if (mr_L_loadfile(L, name) != 0) {
                 mr_printf("luadec: %s", mrp_tostring(L, -1));
                 mr_freeExt(ptr);
                 return -1;
             }
+            #endif
         }
         pos += fnLen + 4 * 4;  // 文件名长度、文件名、文件偏移、文件长度、int32(0)
     }
     mr_freeExt(ptr);
 
     mr_printf("luadec load done.");
+
+    n = 1;
+    if (mr_L_loadfile(L, "start.mr") != 0) {
+        mr_printf("luadec: %s", mrp_tostring(L, -1));
+        return -1;
+    }
     f = combine(L, n);
     if (functions)
         luaU_decompileFunctions(f, debugging, outputFile);

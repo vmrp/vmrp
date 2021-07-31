@@ -12,6 +12,7 @@
 
 #include "../include/mrporting.h"
 #include "../include/mem.h"
+#include "../include/fileLib.h"
 
 /*
  * ------------------------------------------------------------------------- 

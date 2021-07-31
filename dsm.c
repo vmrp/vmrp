@@ -100,7 +100,7 @@ static int xl_font_sky16_close() {  //关闭字体
 static char *xl_font_sky16_getChar(uint16 id) {
     mr_seek(font_sky16_f, id * 32, 0);
     mr_read(font_sky16_f, font_sky16_bitbuf, 32);
-    return font_sky16_bitbuf;
+    return (char *)font_sky16_bitbuf;
 }
 
 static void xl_font_sky16_drawChar(uint16 ch, int x, int y, uint16 color) {
@@ -495,8 +495,6 @@ int32 mr_playSound(int type, const void *data, uint32 dataLen, int32 loop) {
 }
 
 int32 mr_stopSound(int type) {
-    LOGW("%s", "todo: mr_stopSound()");
-    exit(0);
     return MR_FAILED;
 }
 
