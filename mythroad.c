@@ -3846,7 +3846,7 @@ static int32 _mr_intra_start(char* startFile, const char* entry) {
 int32 mr_start_dsm(char* filename, char* startFile, char* entry) {
     mr_screeninfo screeninfo;
 
-#ifdef DSM_FULL
+    // 为了方便移植，一些全局变量必需用函数来初始化
     mr_tm_init();
     mr_baselib_init();
     mr_tablib_init();
@@ -3855,7 +3855,6 @@ int32 mr_start_dsm(char* filename, char* startFile, char* entry) {
     mr_iolib_target_init();
     mr_strlib_init();
     mr_pluto_init();
-#endif
     mythroad_init();
 
     if (mr_getScreenInfo(&screeninfo) != MR_SUCCESS) {
@@ -3943,7 +3942,7 @@ int32 mr_stop_ex(int16 freemem) {
     if (freemem) {
         // mr_mem_free(Origin_LG_mem_base, Origin_LG_mem_len); // vmrp中的内存不需要释放
         MRDBGPRINTF("mr_mem_free !!!!!");
-        exit(0);
+        // exit(0);
     }
     //mr_timerStop();
     return MR_SUCCESS;
