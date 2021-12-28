@@ -452,28 +452,9 @@ MRPLIB_API void mr_L_unref (mrp_State *L, int t, int ref) {
 ** =======================================================
 */
 
-
-
-
-
-typedef struct LoadS {
-  const char *s;
-  size_t size;
-} LoadS;
-
-
-static const char *getS (mrp_State *L, void *ud, size_t *size) {
-  LoadS *ls = (LoadS *)ud;
-  (void)L;
-  if (ls->size == 0) return NULL;
-  *size = ls->size;
-  ls->size = 0;
-  return ls->s;
-}
-
 #if 0
 static const char *getF (mrp_State *L, void *ud, size_t *size) {
-#ifdef PC_MOD
+#ifdef PC_MOD // PC_MOD为原版lua代码
    LoadF *lf = (LoadF *)ud;
    (void)L;
    if (feof(lf->f)) return NULL;
@@ -524,7 +505,6 @@ static const char *getF (mrp_State *L, void *ud, size_t *size) {
 
 static int errfile (mrp_State *L, int fnameindex) {
   const char *filename = mrp_tostring(L, fnameindex) + 1;
-//ouli important
   mrp_pushfstring(L, "cannot read %s", filename);
   mrp_remove(L, fnameindex);
   return MRP_ERRFILE;
@@ -532,6 +512,7 @@ static int errfile (mrp_State *L, int fnameindex) {
 
 
 
+// 与原版lua不同的是，mrp中文件是从mrp加载
 MRPLIB_API int mr_L_loadfile (mrp_State *L, const char *filename) {
 #ifdef PC_MOD
    LoadF lf;
@@ -760,6 +741,23 @@ MRPLIB_API int mr_L_loadfile (mrp_State *L, const char *filename) {
 }
 
 
+typedef struct LoadS {
+  const char *s;
+  size_t size;
+} LoadS;
+
+
+static const char *getS (mrp_State *L, void *ud, size_t *size) {
+  LoadS *ls = (LoadS *)ud;
+  (void)L;
+  if (ls->size == 0) return NULL;
+  *size = ls->size;
+  ls->size = 0;
+  return ls->s;
+}
+
+
+
 MRPLIB_API int mr_L_loadbuffer (mrp_State *L, const char *buff, size_t size,
                                 const char *name) {
   LoadS ls;
@@ -777,7 +775,7 @@ MRPLIB_API int mr_L_loadbuffer (mrp_State *L, const char *buff, size_t size,
 ** =======================================================
 */
 
-#if 0
+#if 0 // 原版lua
 static void callalert (mrp_State *L, int status) {
   if (status != 0) {
     mrp_getglobal(L, "_ALERT");
@@ -797,7 +795,7 @@ static void callalert (mrp_State *L, int status) {
 
 static int mr_aux_do (mrp_State *L, int status) {
   LUADBGPRINTF("mr_aux_do start");
-#if 0
+#if 0 // 原版lua
   if (status == 0) {  /* parse OK? */
     status = mrp_pcall(L, 0, MRP_MULTRET, 0);  /* call main */
   }

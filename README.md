@@ -111,6 +111,9 @@ https://blog.csdn.net/gooogleman/article/details/3538033
 
 因为mrp标准开发环境是xp系统+ads+vs2005+skysdk，我用的虚拟机都有8G那么大，在了解mrp实现原理后我原本想用TCC编译器做一个可以精简到几M的开发环境，可惜TCC编译器并不支持arm版本的位置无关代码的生成（TCC正式发布的版本目前不支持，可能开发版已经有支持）
 
+# mr文件
+
+大部分语法与5.0.2相同，一些关键字和运算符进行了修改，删除了newproxy功能(在mr_baselib.c)，同时文件加载也做了修改(在mr_auxlib.c)
 
 # License
 

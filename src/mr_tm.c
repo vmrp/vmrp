@@ -16,12 +16,12 @@ const char *mr_T_short_typenames[9];
 void mr_tm_init(void) {
     mr_T_typenames[0] = "nil";
     mr_T_typenames[1] = "boolean";
-    mr_T_typenames[2] = "object";
+    mr_T_typenames[2] = "object"; // 原版lua为userdata
     mr_T_typenames[3] = "number";
     mr_T_typenames[4] = "string";
     mr_T_typenames[5] = "table";
     mr_T_typenames[6] = "function";
-    mr_T_typenames[7] = "object";
+    mr_T_typenames[7] = "object"; // 原版lua为userdata
     mr_T_typenames[8] = "thread";
 
     mr_T_short_typenames[0] = "nil";
@@ -58,7 +58,7 @@ void mr_T_init(mrp_State *L) {
     mr_T_eventname[6] = "__sub";
     mr_T_eventname[7] = "__mul";
     mr_T_eventname[8] = "__div";
-    mr_T_eventname[9] = "__op";
+    mr_T_eventname[9] = "__op"; // 原版lua为__pow
     mr_T_eventname[10] = "__unm";
     mr_T_eventname[11] = "__lt";
     mr_T_eventname[12] = "__le";

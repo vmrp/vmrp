@@ -24,6 +24,16 @@
 
 
 
+/* 有对关键字和运算符做修改
+原版      修改后
+and       &&
+elseif    elif
+function  def
+not       !
+or        ||
+~=        !=
+*/
+
 /* ORDER RESERVED */
 static const char *const token2string [] = {
     "&&", "break", "do", "else", "elif",
@@ -33,17 +43,6 @@ static const char *const token2string [] = {
     "..", "...", "==", ">=", "<=", "!=",
     "*number", "*string", "<eof>"
 };
-
-// /* ORDER RESERVED */
-// static const char *const token2string [] = {
-//     "and", "break", "do", "else", "elseif",
-//     "end", "false", "for", "function", "if",
-//     "in", "local", "nil", "not", "or", "repeat",
-//     "return", "then", "true", "until", "while", "*name",
-//     "..", "...", "==", ">=", "<=", "~=",
-//     "*number", "*string", "<eof>"
-// };
-
 
 
 void mr_X_init (mrp_State *L) {
@@ -160,15 +159,9 @@ void mr_X_setinput (mrp_State *L, LexState *LS, ZIO *z, TString *source) {
 /* maximum number of chars that can be read without checking buffer size */
 #define MAXNOCHECK	5
 
-//ouli important
 #define checkbuffer(LS, len)	\
     if (((len)+MAXNOCHECK)*sizeof(char) > mr_Z_sizebuffer((LS)->buff)) \
       mr_Z_openspace((LS)->L, (LS)->buff, (len)+EXTRABUFF)
-/*
-#define checkbuffer(LS, len)	\
-    if (((len)+MAXNOCHECK)*sizeof(char) > mr_Z_sizebuffer((LS)->buff)) \
-      mr_Z_openspace((LS)->L, (LS)->buff, (len)+EXTRABUFF)
-*/
 
 #define save(LS, c, l) \
 	(mr_Z_buffer((LS)->buff)[l++] = cast(char, c))
@@ -187,7 +180,7 @@ static size_t readname (LexState *LS) {
 }
 
 
-//Hex Patch
+//Hex Patch (可能是对十六进制数做了加强，原版可能不支持)
 static int mr_O_hexstr2d (const char *s, mrp_Number *result) {
   char *endptr;
   mrp_Number res = strtoul(s, &endptr, 0);
@@ -253,7 +246,7 @@ static void read_numeral (LexState *LS, int comma, SemInfo *seminfo) {
     mr_X_lexerror(LS, "malformed number", TK_NUMBER);
 }
 
-
+// 可能是对C语言多行注释的支持，原版lua不支持
 static void read_long_comment_string(LexState *LS) {
    int cont = 0;
    size_t l = 0;
@@ -545,7 +538,7 @@ int mr_X_lex (LexState *LS, SemInfo *seminfo) {
         if (LS->current != '=') return '<';
         else { next(LS); return TK_LE; }
       }
-      case '&': {
+      case '&': { // 可能是对C语言&&运算符的支持，原版lua不支持
         next(LS);
         if (LS->current != '&') return '&';
         else { next(LS); return TK_AND; }

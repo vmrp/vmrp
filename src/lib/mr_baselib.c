@@ -66,7 +66,7 @@ static int mr_B_tonumber (mrp_State *L) {
     char *s2;
     unsigned long n;
     mr_L_argcheck(L, 2 <= base && base <= 36, 2, "base out of range");
-    n = STRTOUL(s1, &s2, base);  //ouli brew
+    n = STRTOUL(s1, &s2, base);
     if (s1 != s2) {  /* at least one valid digit? */
       while (mr_isspace((unsigned char)(*s2))) s2++;  /* skip trailing spaces */
       if (*s2 == '\0') {  /* no invalid trailing characters? */
@@ -189,7 +189,7 @@ int mr_B_rawset (mrp_State *L) {
   return 1;
 }
 
-#if 0
+#if 0 // 原版lua
 static int mr_B_gcinfo (mrp_State *L) {
   mrp_pushnumber(L, (mrp_Number)mrp_getgccount(L));
   mrp_pushnumber(L, (mrp_Number)mrp_getgcthreshold(L));
@@ -368,7 +368,7 @@ static int mr_B_tostring (mrp_State *L) {
   return 1;
 }
 
-#if 0
+#if 0 // 原版lua
 static int mr_B_newproxy (mrp_State *L) {
   mrp_settop(L, 1);
   mrp_newuserdata(L, 0);  /* create proxy */
@@ -422,7 +422,7 @@ static int mr_B_newproxy (mrp_State *L) {
 #endif
 
 
-#if 0
+#if 0 // 原版lua
 static const char *getpath (mrp_State *L) {
   const char *path;
   mrp_getglobal(L, MRP_PATH);  /* try global variable */
@@ -711,7 +711,7 @@ static void base_lib_open (mrp_State *L) {
   mrp_pushvalue(L, MRP_GLOBALSINDEX);
   mr_L_openlib(L, NULL, base_funcs, 0);  /* open lib into global table */
   /* `newproxy' needs a weaktable as upvalue */
-#if 0
+#if 0 // 原版lua
   mrp_pushliteral(L, "newproxy");
   mrp_newtable(L);  /* new table `w' */
   mrp_pushvalue(L, -1);  /* `w' will be its own metatable */

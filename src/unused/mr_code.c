@@ -589,7 +589,7 @@ void mr_K_prefix (FuncState *fs, UnOpr op, expdesc *e) {
     codenot(fs, e);
 }
 #else
-void mr_K_prefix (FuncState *fs, UnOpr op, expdesc *e) {
+void mr_K_prefix (FuncState *fs, UnOpr op, expdesc *e) { // 此处可能是5.0.3的代码
   if (op == OPR_MINUS) {
     mr_K_exp2val(fs, e);
     if (e->k == VK && ttisnumber(&fs->f->k[e->info]))
@@ -653,7 +653,7 @@ static void codebinop (FuncState *fs, expdesc *res, BinOpr op,
     res->info = mr_K_codeABC(fs, opc, 0, o1, o2);
     res->k = VRELOCABLE;
   }
-#if 1
+#if 1 // 此处可能是5.0.3的代码
   else if ((op >= OPR_BAND) && (op <= OPR_BXOR)) {
      OpCode opc = cast(OpCode, (op - OPR_BAND) + OP_BAND);  /* ORDER OP */
      res->info = mr_K_codeABC(fs, opc, 0, o1, o2);

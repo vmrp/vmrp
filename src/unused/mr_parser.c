@@ -769,7 +769,7 @@ static UnOpr getunopr (int op) {
     case TK_NOT: return OPR_NOT;
     case '-': return OPR_MINUS;
 #if 1
-    case '~': return OPR_BNOT;
+    case '~': return OPR_BNOT; // 扩展功能，原版lua没有
 #endif
     default: return OPR_NOUNOPR;
   }
@@ -782,7 +782,7 @@ static BinOpr getbinopr (int op) {
     case '-': return OPR_SUB;
     case '*': return OPR_MULT;
     case '/': return OPR_DIV;
-    case '#': return OPR_POW;
+    case '#': return OPR_POW; // 原版lua是^
     case TK_CONCAT: return OPR_CONCAT;
     case TK_NE: return OPR_NE;
     case TK_EQ: return OPR_EQ;
@@ -792,7 +792,7 @@ static BinOpr getbinopr (int op) {
     case TK_GE: return OPR_GE;
     case TK_AND: return OPR_AND;
     case TK_OR: return OPR_OR;
-#if 1
+#if 1 // 扩展功能，原版lua没有
     case '&': return OPR_BAND;
     case '|': return OPR_BOR;
     case '^': return OPR_BXOR;

@@ -61,7 +61,7 @@ static Node *hashnum (const Table *t, mrp_Number n) {
   int i;
   n += 1;  /* normalize number (avoid -0) */
   mrp_assert(sizeof(a) <= sizeof(n));
-  MEMCPY(a, &n, sizeof(a));//ouli brew
+  MEMCPY(a, &n, sizeof(a));
   for (i = 1; i < numints; i++) a[0] += a[i];
   return hashmod(t, cast(lu_hash, a[0]));
 }
@@ -118,7 +118,7 @@ static int mr_H_index (mrp_State *L, Table *t, StkId key) {
   else {
     const TObject *v = mr_H_get(t, key);
     if (v == &mr_O_nilobject)
-      mr_G_runerror(L, "key err: 2021"); //invalid key for `next'
+      mr_G_runerror(L, "invalid key for `next'");
     i = cast(int, (cast(const lu_byte *, v) -
                    cast(const lu_byte *, gval(gnode(t, 0)))) / sizeof(Node));
     return i + t->sizearray;  /* hash elements are numbered after array ones */
@@ -225,7 +225,7 @@ static void setnodevector (mrp_State *L, Table *t, int lsize) {
   int i;
   int size = twoto(lsize);
   if (lsize > MAXBITS)
-    mr_G_runerror(L, "table err:2013");  //key overflow
+    mr_G_runerror(L, "key overflow");
   if (lsize == 0) {  /* no elements to hash part? */
     t->node = G(L)->dummynode;  /* use common `dummynode' */
     mrp_assert(ttisnil(gkey(t->node)));  /* assert invariants: */
@@ -464,9 +464,9 @@ TObject *mr_H_set (mrp_State *L, Table *t, const TObject *key) {
   if (p != &mr_O_nilobject)
     return cast(TObject *, p);
   else {
-    if (ttisnil(key)) mr_G_runerror(L, "key err: 2020"); //table index is nil
+    if (ttisnil(key)) mr_G_runerror(L, "table index is nil");
     else if (ttisnumber(key) && nvalue(key) != nvalue(key))
-      mr_G_runerror(L, "key err: 2022"); //table index is NaN
+      mr_G_runerror(L, "table index is NaN");
     return newkey(L, t, key);
   }
 }

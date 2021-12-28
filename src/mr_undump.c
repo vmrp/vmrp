@@ -26,7 +26,7 @@ typedef struct {
 } LoadState;
 
 static void unexpectedEOZ(LoadState* S) {
-    mr_G_runerror(S->L, "err:1001 in %s", S->name);  // unexpected end of file in %s
+    mr_G_runerror(S->L, "unexpected end of file in %s", S->name);
 }
 
 static int ezgetc(LoadState* S) {
@@ -65,7 +65,7 @@ static void LoadVector(LoadState* S, void* b, int m, size_t size) {
 static int LoadInt(LoadState* S) {
     int x;
     LoadBlock(S, &x, sizeof(x));
-    if (x < 0) mr_G_runerror(S->L, "err:1000 in XX", S->name);  // bad integer in %s
+    if (x < 0) mr_G_runerror(S->L, "bad integer in XX", S->name);
     return x;
 }
 
@@ -122,8 +122,8 @@ static void LoadUpvalues(LoadState* S, Proto* f) {
     int i, n;
     n = LoadInt(S);
     if (n != 0 && n != f->nups)
-        mr_G_runerror(S->L, "err:1002 in %s:%d:%d",
-                      S->name, n, f->nups);  //bad nupvalues in %s: read %d; expected %d
+        mr_G_runerror(S->L, "bad nupvalues in %s: read %d; expected %d",
+                      S->name, n, f->nups);
     f->upvalues = mr_M_newvector(S->L, n, TString*);
     f->sizeupvalues = n;
     for (i = 0; i < n; i++) f->upvalues[i] = LoadString(S);
@@ -150,7 +150,7 @@ static void LoadConstants(LoadState* S, Proto* f) {
                 setnilvalue(o);
                 break;
             default:
-                mr_G_runerror(S->L, "err:1003 in %s:%d", t, S->name);  //bad constant type (%d) in %s
+                mr_G_runerror(S->L, "bad constant type (%d) in %s", t, S->name);
                 break;
         }
     }
@@ -175,7 +175,7 @@ static Proto* LoadFunction(LoadState* S, TString* p) {
     LoadConstants(S, f);
     LoadCode(S, f);
 #ifndef TRUST_BINARIES
-    if (!mr_G_checkcode(f)) mr_G_runerror(S->L, "err:1004 in %s", S->name);  //bad code in %s
+    if (!mr_G_checkcode(f)) mr_G_runerror(S->L, "bad code in %s", S->name);
 #endif
     return f;
 }
@@ -194,33 +194,28 @@ static void LoadSignature(LoadState* S) {
     while (*s != 0 && ezgetc(S) == *s)
         ++s;
     //#endif
-    if (*s != 0) mr_G_runerror(S->L, "err:1005 in %s", S->name);  //bad signature in %s
+    if (*s != 0) mr_G_runerror(S->L, "bad signature in %s", S->name);
 }
 
 static void TestSize(LoadState* S, int s, const char* what) {
     int r = LoadByte(S);
     if (r != s)
-        mr_G_runerror(S->L, "err:1006 in %s:%s:%d:%d", S->name, what, s, r);
-    //mr_G_runerror(S->L,"virtual machine mismatch in %s: "
-    //	"size of %s is %d but read %d",S->name,what,s,r);
+    mr_G_runerror(S->L,"virtual machine mismatch in %s: size of %s is %d but read %d",S->name,what,s,r);
 }
 
 #define TESTSIZE(s, w) TestSize(S, s, w)
 #define V(v) v / 16, v % 16
 
-static void LoadHeader(LoadState* S) {
+static void LoadHeader(LoadState* S) { // 对原版有改动
     int version;
     mrp_Number x, tx = TEST_NUMBER;
     LoadSignature(S);
     version = LoadByte(S);
     if (version > VERSION)
-        mr_G_runerror(S->L, "err:1007 in %s:%d:%d:%d:%d",
-                      //mr_G_runerror(S->L,"%s's ver too new: meet version %d.%d; %d.%d expected",
+        mr_G_runerror(S->L,"%s too new: read version %d.%d; %d.%d expected",
                       S->name, V(version), V(VERSION));
     if (version < VERSION_50) /* check last major change */
-        mr_G_runerror(S->L, "err:1007 in %s:%d:%d:%d:%d",
-                      //mr_G_runerror(S->L,"%s's ver too old: "
-                      //	"meet version %d.%d; %d.%d expected ",
+        mr_G_runerror(S->L,"%s too old: read version %d.%d; %d.%d expected ",
                       S->name, V(version), V(VERSION_50));
     S->swap = (mr_U_endianness() != LoadByte(S)); /* need to swap bytes? */
     if (version > VERSION_50) {
@@ -235,7 +230,7 @@ static void LoadHeader(LoadState* S) {
         TESTSIZE(sizeof(mrp_Number), "number");
         x = LoadNumber(S);
         if ((long)x != (long)tx)                             /* disregard errors in last bits of fraction */
-            mr_G_runerror(S->L, "err:1008 in %s", S->name);  //unknown number format in %s
+            mr_G_runerror(S->L, "unknown number format in %s", S->name);
     }
 }
 
@@ -247,7 +242,7 @@ static Proto* LoadChunk(LoadState* S) {
 /*
 ** load precompiled chunk
 */
-Proto* mr_U_undump(mrp_State* L, ZIO* Z, Mbuffer* buff) {
+Proto* mr_U_undump(mrp_State* L, ZIO* Z, Mbuffer* buff) { // 对原版有改动
     LoadState S;
     const char* s = zname(Z);
     if (*s == '$')

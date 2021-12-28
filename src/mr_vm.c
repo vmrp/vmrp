@@ -140,7 +140,7 @@ static const TObject *mr_V_getnotable (mrp_State *L, const TObject *t,
 const TObject *mr_V_gettable (mrp_State *L, const TObject *t, TObject *key,
                               int loop) {
   if (loop > MAXTAGLOOP)
-    mr_G_runerror(L, "table err:2014"); //loop in gettable
+    mr_G_runerror(L, "loop in gettable");
   if (ttistable(t)) {  /* `t' is a table? */
     Table *h = hvalue(t);
     const TObject *v = mr_H_get(h, key);  /* do a primitive get */
@@ -176,7 +176,7 @@ void mr_V_settable (mrp_State *L, const TObject *t, TObject *key, StkId val) {
     }
     t = tm;  /* else repeat with `tm' */ 
   } while (++loop <= MAXTAGLOOP);
-  mr_G_runerror(L, "table err:2015");// loop in settable
+  mr_G_runerror(L, "loop in settable");
 }
 
 
@@ -300,7 +300,7 @@ int mr_V_equalval (mrp_State *L, const TObject *t1, const TObject *t2) {
 }
 
 
-void mr_V_concat (mrp_State *L, int total, int last) {
+void mr_V_concat (mrp_State *L, int total, int last) { // 对此函数的修改可能是从5.0.3中来的
   do {
     StkId top = L->base + last + 1;
     int n = 2;  /* number of elements handled in this pass (at least 2) */
@@ -309,7 +309,7 @@ void mr_V_concat (mrp_State *L, int total, int last) {
         mr_G_concaterror(L, top-2, top-1);
     } else if (tsvalue(top-1)->tsv.len > 0) {  /* if len=0, do nothing */
       /* at least two string values; get as many as possible */
-#if 0
+#if 0 // 原版lua
       lu_mem tl = cast(lu_mem, tsvalue(top-1)->tsv.len) +
                   cast(lu_mem, tsvalue(top-2)->tsv.len);
 #else
@@ -317,7 +317,7 @@ void mr_V_concat (mrp_State *L, int total, int last) {
 #endif
       char *buffer;
       int i;
-#if 0 
+#if 0 // 原版lua
       while (n < total && tostring(L, top-n-1)) {  /* collect total length */
         tl += tsvalue(top-n-1)->tsv.len;
         n++;
@@ -329,14 +329,14 @@ void mr_V_concat (mrp_State *L, int total, int last) {
         tl += l;
 #endif
       }
-#if 0 
+#if 0 // 原版lua
       if (tl > MAX_SIZET) mr_G_runerror(L, "string size overflow");
 #endif
       buffer = mr_Z_openspace(L, &G(L)->buff, tl);
       tl = 0;
       for (i=n; i>0; i--) {  /* concat all strings */
         size_t l = tsvalue(top-i)->tsv.len;
-        MEMCPY(buffer+tl, svalue(top-i), l);//ouli brew
+        MEMCPY(buffer+tl, svalue(top-i), l);
         tl += l;
       }
       setsvalue2s(top-n, mr_S_newlstr(L, buffer, tl));
@@ -362,7 +362,7 @@ static void Arith (mrp_State *L, StkId ra,
         const TObject *f = mr_H_getstr(hvalue(gt(L)), G(L)->tmname[TM_POW]);
         ptrdiff_t res = savestack(L, ra);
         if (!ttisfunction(f))
-          mr_G_runerror(L, "err:1020"); //`__op' (`^' operator) is not a function
+          mr_G_runerror(L, "`__op' (`^' operator) is not a function");
         callTMres(L, f, b, c);
         ra = restorestack(L, res);  /* previous call may change stack */
         setobjs2s(ra, L->top);
@@ -690,11 +690,11 @@ StkId mr_V_execute (mrp_State *L) {
         const TObject *plimit = ra+1;
         const TObject *pstep = ra+2;
         if (!ttisnumber(ra))
-          mr_G_runerror(L, "err:1021"); //`for' initial value must be a number
+          mr_G_runerror(L, "`for' initial value must be a number");
         if (!tonumber(plimit, ra+1))
-          mr_G_runerror(L, "err:1022");  //`for' limit must be a number
+          mr_G_runerror(L, "`for' limit must be a number");
         if (!tonumber(pstep, ra+2))
-          mr_G_runerror(L, "err:1023");  //`for' step must be a number
+          mr_G_runerror(L, "`for' step must be a number");
         step = nvalue(pstep);
         idx = nvalue(ra) + step;  /* increment index */
         limit = nvalue(plimit);
@@ -776,7 +776,7 @@ StkId mr_V_execute (mrp_State *L) {
         mr_C_checkGC(L);
         break;
       }
-#if 1
+#if 1 // 可能是对位运算的扩展，原版lua没有
       case OP_BNOT: {
         const TObject *rb = RKB(i);
         if (ttisnumber(rb)) {

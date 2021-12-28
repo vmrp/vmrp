@@ -98,7 +98,7 @@ const lu_byte mr_P_opmodes[NUM_OPCODES] = {
  ,opmode(0, 0, 0, 0, 0, 0, iABx)		/* OP_SETLISTO */
  ,opmode(0, 0, 0, 0, 0, 0, iABC)		/* OP_CLOSE */
  ,opmode(0, 0, 0, 0, 1, 0, iABx)		/* OP_CLOSURE */
-#if 1
+#if 1 // 以下为扩展，原版lua没有
  ,opmode(0, 1, 0, 0, 1, 0, iABC)      /* OP_BNOT */
  ,opmode(0, 0, 1, 1, 1, 0, iABC)      /* OP_BAND */
  ,opmode(0, 0, 1, 1, 1, 0, iABC)      /* OP_BOR */
