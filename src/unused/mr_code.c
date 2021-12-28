@@ -7,17 +7,17 @@
 
 //#define lcode_c
 
-#include "mr.h"
+#include "../../include/mr.h"
 
-#include "mr_code.h"
-#include "mr_debug.h"
-#include "mr_do.h"
-#include "mr_lex.h"
-#include "mr_mem.h"
-#include "mr_object.h"
-#include "mr_opcodes.h"
-#include "mr_parser.h"
-#include "mr_table.h"
+#include "../h/mr_code.h"
+#include "../h/mr_debug.h"
+#include "../h/mr_do.h"
+#include "../h/mr_lex.h"
+#include "../h/mr_mem.h"
+#include "../h/mr_object.h"
+#include "../h/mr_opcodes.h"
+#include "../h/mr_parser.h"
+#include "../h/mr_table.h"
 
 
 
@@ -56,6 +56,7 @@ static int mr_K_condjump (FuncState *fs, OpCode op, int A, int B, int C) {
   return mr_K_jump(fs);
 }
 
+#define ABS(VAL) (((VAL) > 0) ? (VAL) : (-(VAL)))
 
 static void mr_K_fixjump (FuncState *fs, int pc, int dest) {
   Instruction *jmp = &fs->f->code[pc];

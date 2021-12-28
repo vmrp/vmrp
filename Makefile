@@ -39,7 +39,6 @@ LOCAL_SRC_FILES_FULL := src/mr_api.c \
                   src/mr_undump.c   \
                   src/mr_vm.c       \
                   src/mr_zio.c      \
-                  src/mr_noparser.c  \
                   src/lib/mr_auxiliar.c\
                   src/lib/mr_auxlib.c \
                   src/lib/mr_baselib.c\
@@ -49,10 +48,14 @@ LOCAL_SRC_FILES_FULL := src/mr_api.c \
                   src/lib/mr_tablib.c   \
                   src/lib/mr_tcp_target.c
 
-# LUA_PARSE:= src\unused\mr_code.c
-# src\unused\mr_lex.c
-# src\unused\mr_parser.c
-# src\unused\mr_tests.c
+# 不带parser，无法运行lua文件
+# LOCAL_SRC_FILES_FULL += src/mr_noparser.c
+
+# 带parser
+LOCAL_SRC_FILES_FULL += src/unused/mr_code.c \
+                src/unused/mr_lex.c \
+                src/unused/mr_parser.c \
+                src/unused/mr_tests.c
 
 LOCAL_SRC_FILES_FULL += mythroad.c  encode.c  mr_pluto.c  mr_unzip.c  mr_base64.c  mr_graphics.c  mr_inflate.c \
                     string.c  printf.c  other.c  strtol.c  strtoul.c  dsm.c  md5.c  mem.c

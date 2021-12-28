@@ -6,8 +6,12 @@
 #include "../../include/mem.h"
 #include "../../include/mythroad.h"
 
+typedef struct LoadS {
+  const char *s;
+  size_t size;
+} LoadS;
 
-
+static const char *getS (mrp_State *L, void *ud, size_t *size);
 /* This file uses only the official API of Lua.
 ** Any function declared here could be written as an application function.
 */
@@ -545,73 +549,29 @@ MRPLIB_API int mr_L_loadfile (mrp_State *L, const char *filename) {
    return status;
 #endif  //#ifdef PC_MOD
 
-
 #ifdef TARGET_MOD
-   //LoadF lf;
-   int status, readstatus;
-//  int c;
-   int fnameindex = mrp_gettop(L) + 1;  /* index of filename on the stack */
-   void* buff;
+   int status;
+   int fnameindex = mrp_gettop(L) + 1; /* index of filename on the stack */
+   void *buff;
+   LoadS ls;
    int filelen;
-   
+
    LUADBGPRINTF("mr_L_loadfile sart");
-
-   // Open the file for writing using the generated file name
-   mrp_pushfstring(L, "@%s", filename);
-   
-//  change for zip
+   mrp_pushfstring(L, "@%s", filename);  // Open the file for writing using the generated file name
    buff = _mr_readFile((const char *)filename, &filelen, 0);
-
-   if (!buff)
-      {
-      mrp_settop(L, fnameindex);  /* ignore results from `mrp_load' */
-      
-      LUADBGPRINTF("_mr_readFile Failed");
-      return errfile(L, fnameindex);
-      }
-
-   {
-      LoadS ls;
-      ls.s = buff;
-      ls.size = filelen;
-      status = mrp_load(L, getS, &ls, mrp_tostring(L, -1));
+   if (!buff) {
+       mrp_settop(L, fnameindex); /* ignore results from `mrp_load' */
+       LUADBGPRINTF("_mr_readFile Failed");
+       return errfile(L, fnameindex);
    }
+   ls.s = buff;
+   ls.size = filelen;
+   status = mrp_load(L, getS, &ls, mrp_tostring(L, -1));
    mr_free(buff, filelen);
-   LUADBGPRINTF("after free");
-   readstatus = 0;
-
-/*               change for zip
-   lf.f = ffs_open(filebuf, FFS_O_RDONLY );
-   //lf.f = fopen(filename, "r");
-   if (lf.f < EFFS_OK)
-   {
-      LUADBGPRINTF("ffs_open failed!********");
-      return errfile(L, fnameindex);  
-   }
-   LUADBGPRINTF("ffs_open ok");
-   	
-  status = mrp_load(L, getF, &lf, mrp_tostring(L, -1));
-
-   LUADBGPRINTF("After mrp_load");
-
-  readstatus = 0;
-   ffs_close(lf.f);
-*/
-
-//ouli brew
-  if (readstatus) {
-    mrp_settop(L, fnameindex);  /* ignore results from `mrp_load' */
-
-    LUADBGPRINTF("mr_L_loadfile error");
-    return errfile(L, fnameindex);
-  }
-  LUADBGPRINTF("before rm");
-  mrp_remove(L, fnameindex);
-  LUADBGPRINTF("after rm");
-
-  LUADBGPRINTF("mr_L_loadfile end");
-  return status;
-#endif  //#ifdef TARGET_MOD else
+   mrp_remove(L, fnameindex);
+   LUADBGPRINTF("mr_L_loadfile end");
+   return status;
+#endif
 
 #ifdef BREW_MOD
    LoadF lf;
@@ -739,13 +699,6 @@ MRPLIB_API int mr_L_loadfile (mrp_State *L, const char *filename) {
   
 
 }
-
-
-typedef struct LoadS {
-  const char *s;
-  size_t size;
-} LoadS;
-
 
 static const char *getS (mrp_State *L, void *ud, size_t *size) {
   LoadS *ls = (LoadS *)ud;

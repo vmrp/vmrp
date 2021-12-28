@@ -8,15 +8,15 @@
 
 //#define llex_c
 
-#include "mr.h"
+#include "../../include/mr.h"
 
-#include "mr_do.h"
-#include "mr_lex.h"
-#include "mr_object.h"
-#include "mr_parser.h"
-#include "mr_state.h"
-#include "mr_string.h"
-#include "mr_zio.h"
+#include "../h/mr_do.h"
+#include "../h/mr_lex.h"
+#include "../h/mr_object.h"
+#include "../h/mr_parser.h"
+#include "../h/mr_state.h"
+#include "../h/mr_string.h"
+#include "../h/mr_zio.h"
 
 
 
@@ -183,7 +183,7 @@ static size_t readname (LexState *LS) {
 //Hex Patch (可能是对十六进制数做了加强，原版可能不支持)
 static int mr_O_hexstr2d (const char *s, mrp_Number *result) {
   char *endptr;
-  mrp_Number res = strtoul(s, &endptr, 0);
+  mrp_Number res = strtoul2(s, &endptr, 0);
   if (endptr == s) return 0;  /* no conversion */
   while (mr_isspace((unsigned char)(*endptr))) endptr++;
   if (*endptr != '\0') return 0;  /* invalid trailing characters? */
@@ -358,7 +358,6 @@ static int hexval(char c)
 
 
 static void read_long_string_for_py_mode (LexState *LS, int del, SemInfo *seminfo) {
-  int cont = 0;
   size_t l = 2;
   checkbuffer(LS, l);
   save_and_next(LS, l);  /* pass the second `[' */

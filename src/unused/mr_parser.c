@@ -2,18 +2,18 @@
 
 //#define lparser_c
 
-#include "mr.h"
+#include "../../include/mr.h"
 
-#include "mr_code.h"
-#include "mr_debug.h"
-#include "mr_func.h"
-#include "mr_lex.h"
-#include "mr_mem.h"
-#include "mr_object.h"
-#include "mr_opcodes.h"
-#include "mr_parser.h"
-#include "mr_state.h"
-#include "mr_string.h"
+#include "../h/mr_code.h"
+#include "../h/mr_debug.h"
+#include "../h/mr_func.h"
+#include "../h/mr_lex.h"
+#include "../h/mr_mem.h"
+#include "../h/mr_object.h"
+#include "../h/mr_opcodes.h"
+#include "../h/mr_parser.h"
+#include "../h/mr_state.h"
+#include "../h/mr_string.h"
 
 
 
