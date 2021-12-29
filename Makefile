@@ -49,13 +49,13 @@ LOCAL_SRC_FILES_FULL := src/mr_api.c \
                   src/lib/mr_tcp_target.c
 
 # 不带parser，无法运行lua文件
-# LOCAL_SRC_FILES_FULL += src/mr_noparser.c
+# LOCAL_SRC_FILES_FULL += src/parser/mr_noparser.c
 
 # 带parser
-LOCAL_SRC_FILES_FULL += src/unused/mr_code.c \
-                src/unused/mr_lex.c \
-                src/unused/mr_parser.c \
-                src/unused/mr_tests.c
+LOCAL_SRC_FILES_FULL += src/parser/mr_code.c \
+                src/parser/mr_lex.c \
+                src/parser/mr_parser.c \
+                src/parser/mr_tests.c
 
 LOCAL_SRC_FILES_FULL += mythroad.c  encode.c  mr_pluto.c  mr_unzip.c  mr_base64.c  mr_graphics.c  mr_inflate.c \
                     string.c  printf.c  other.c  strtol.c  strtoul.c  dsm.c  md5.c  mem.c
