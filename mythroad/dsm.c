@@ -45,7 +45,6 @@
 #define DSM_FAE_VERSION (182) /*由平台组统一分配版本号，有需求请联系平台组*/
 #endif
 
-static int32 use_utf8_fs;
 static DSM_REQUIRE_FUNCS *dsmInFuncs;
 static uint32 dsmStartTime;  //虚拟机初始化时间，用来计算系统运行时间
 
@@ -263,7 +262,7 @@ static int32 dsmSwitchPath(uint8 *input, int32 input_len, uint8 **output, int32 
         case 'y': {  // 获取当前的路径设置，返回型如："C:/App/"（即必须符合上述输入标准），gb编码；
             char *p;
             if ((p = strstr2(dsmWorkPath, DSM_HIDE_DRIVE)) != NULL) {  //在A盘下
-                p += strlen2(DSM_HIDE_DRIVE);                          //a/...
+                p += strlen2(DSM_HIDE_DRIVE);                          // a/...
                 if (p) {
                     if (*(p + 2))
                         snprintf_(dsmSwitchPathBuf, sizeof(dsmSwitchPathBuf), "%c:/%s", *p, (p + 2));
@@ -326,7 +325,7 @@ static int32 dsmSwitchPath(uint8 *input, int32 input_len, uint8 **output, int32 
 char *get_filename(char *outputbuf, const char *filename) {
     sprintf_(outputbuf, "%s%s", dsmWorkPath, filename);
     formatPathString(outputbuf, '/');
-    if (use_utf8_fs) {
+    if (dsmInFuncs->flags & FLAG_USE_UTF8_FS) {
         char *us = (char *)GBStrToUCS2BEStr((uint8 *)outputbuf, NULL);
         char *utf8s = UCS2BEStrToUTF8Str((uint8 *)us, NULL);
         strcpy2(outputbuf, utf8s);
@@ -402,7 +401,7 @@ int32 mr_rmDir(const char *name) {
 int32 mr_findGetNext(int32 search_handle, char *buffer, uint32 len) {
     char *d_name = dsmInFuncs->readdir(search_handle);
     if (d_name != NULL) {
-        if (use_utf8_fs) {
+        if (dsmInFuncs->flags & FLAG_USE_UTF8_FS) {
             char *gb = UTF8StrToGBStr((uint8 *)d_name, NULL);
             strncpy2(buffer, gb, len);
             mr_freeExt(gb);
@@ -547,15 +546,42 @@ int32 mr_textRefresh(int32 handle, const char *title, const char *text) {
     return dsmInFuncs->mr_textRefresh(handle, title, text);
 }
 
+static uint8 *holdTextMem;
+
+static void freeHoldTextMem() {
+    if (holdTextMem != NULL) {
+        mr_freeExt(holdTextMem);
+        holdTextMem = NULL;
+    }
+}
+
 int32 mr_editCreate(const char *title, const char *text, int32 type, int32 max_size) {
+    if (dsmInFuncs->flags & FLAG_USE_UTF8_EDIT) {
+        char *u8_title = UCS2BEStrToUTF8Str((uint8 *)title, NULL);
+        char *u8_text = UCS2BEStrToUTF8Str((uint8 *)text, NULL);
+        int32 ret = dsmInFuncs->mr_editCreate(u8_title, u8_text, type, max_size);
+        mr_freeExt(u8_title);
+        mr_freeExt(u8_text);
+        return ret;
+    }
     return dsmInFuncs->mr_editCreate(title, text, type, max_size);
 }
 
 int32 mr_editRelease(int32 edit) {
+    if (dsmInFuncs->flags & FLAG_USE_UTF8_EDIT) {
+        freeHoldTextMem();
+    }
     return dsmInFuncs->mr_editRelease(edit);
 }
 
 const char *mr_editGetText(int32 edit) {
+    if (dsmInFuncs->flags & FLAG_USE_UTF8_EDIT) {
+        char *gbStr = UTF8StrToGBStr((uint8 *)dsmInFuncs->mr_editGetText(edit), NULL);
+        freeHoldTextMem();
+        holdTextMem = (uint8 *)GBStrToUCS2BEStr((uint8 *)gbStr, NULL);
+        mr_freeExt(gbStr);
+        return (const char *)holdTextMem;
+    }
     return dsmInFuncs->mr_editGetText(edit);
 }
 
@@ -574,14 +600,14 @@ int32 mr_rand(void) {
 /*平台扩展接口*/
 int32 mr_plat(int32 code, int32 param) {
     switch (code) {
-        case MR_CONNECT:  //1001
+        case MR_CONNECT:  // 1001
             return mr_getSocketState(param);
-        case MR_GET_RAND:  //1211
+        case MR_GET_RAND:  // 1211
             dsmInFuncs->srand(mr_getTime());
             return (MR_PLAT_VALUE_BASE + dsmInFuncs->rand() % param);
-        case MR_CHECK_TOUCH:  //1205是否支持触屏
+        case MR_CHECK_TOUCH:  // 1205是否支持触屏
             return MR_TOUCH_SCREEN;
-        case MR_GET_HANDSET_LG:  //1206获取语言
+        case MR_GET_HANDSET_LG:  // 1206获取语言
             return MR_CHINESE;
         case 1218:  // 查询存储卡的状态
             return MR_MSDC_OK;
@@ -871,7 +897,7 @@ int32 dsm_init(DSM_REQUIRE_FUNCS *inFuncs) {
     // 注意！这里面只能做一些不涉及malloc()的操作
     dsmInFuncs = inFuncs;
     dsmStartTime = dsmInFuncs->get_uptime_ms();
-    use_utf8_fs = inFuncs->flags & FLAG_USE_UTF8_FS;
+    holdTextMem = NULL;
 
 #ifdef DSM_FULL
     mr_tm_init();

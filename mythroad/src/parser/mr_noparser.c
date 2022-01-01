@@ -1,7 +1,7 @@
 
-#include "./h/mr_lex.h"
-#include "./h/mr_parser.h"
-#include "./h/mr_zio.h"
+#include "../h/mr_lex.h"
+#include "../h/mr_parser.h"
+#include "../h/mr_zio.h"
 
 void mr_X_init (mrp_State *L) {
   UNUSED(L);

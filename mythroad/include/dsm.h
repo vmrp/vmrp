@@ -2,7 +2,7 @@
 #define _DSM_H
 
 #ifdef VMRP
-#include "types.h"
+#include "../../header/types.h"
 #else
 #include "mrporting.h"
 #endif
@@ -21,7 +21,10 @@ enum {
     MR_EVENT
 };
 
-#define FLAG_USE_UTF8_FS 1
+typedef enum {
+    FLAG_USE_UTF8_FS = 1 << 0,
+    FLAG_USE_UTF8_EDIT = 1 << 1
+} dsm_flag;
 
 typedef int32 (*NETWORK_CB)(int32 result, void *userData);
 

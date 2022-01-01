@@ -8,15 +8,15 @@
 
 //#define llex_c
 
-#include "mr.h"
+#include "../../include/mr.h"
 
-#include "mr_do.h"
-#include "mr_lex.h"
-#include "mr_object.h"
-#include "mr_parser.h"
-#include "mr_state.h"
-#include "mr_string.h"
-#include "mr_zio.h"
+#include "../h/mr_do.h"
+#include "../h/mr_lex.h"
+#include "../h/mr_object.h"
+#include "../h/mr_parser.h"
+#include "../h/mr_state.h"
+#include "../h/mr_string.h"
+#include "../h/mr_zio.h"
 
 
 
@@ -25,29 +25,43 @@
 
 
 /* ORDER RESERVED */
-static const char *const token2string [] = {
-    "&&", "break", "do", "else", "elif",
-    "end", "false", "for", "def", "if",
-    "in", "local", "nil", "!", "||", "repeat",
-    "return", "then", "true", "until", "while", "*name",
-    "..", "...", "==", ">=", "<=", "!=",
-    "*number", "*string", "<eof>"
-};
-
-// /* ORDER RESERVED */
-// static const char *const token2string [] = {
-//     "and", "break", "do", "else", "elseif",
-//     "end", "false", "for", "function", "if",
-//     "in", "local", "nil", "not", "or", "repeat",
-//     "return", "then", "true", "until", "while", "*name",
-//     "..", "...", "==", ">=", "<=", "~=",
-//     "*number", "*string", "<eof>"
-// };
-
-
+static const char *token2string [31];
 
 void mr_X_init (mrp_State *L) {
   int i;
+
+  token2string[0] = "&&";
+  token2string[1] = "break";
+  token2string[2] = "do";
+  token2string[3] = "else";
+  token2string[4] = "elif";
+  token2string[5] = "end";
+  token2string[6] = "false";
+  token2string[7] = "for";
+  token2string[8] = "def";
+  token2string[9] = "if";
+  token2string[10] = "in";
+  token2string[11] = "local";
+  token2string[12] = "nil";
+  token2string[13] = "!";
+  token2string[14] = "||";
+  token2string[15] = "repeat";
+  token2string[16] = "return";
+  token2string[17] = "then";
+  token2string[18] = "true";
+  token2string[19] = "until";
+  token2string[20] = "while";
+  token2string[21] = "*name";
+  token2string[22] = "..";
+  token2string[23] = "...";
+  token2string[24] = "==";
+  token2string[25] = ">=";
+  token2string[26] = "<=";
+  token2string[27] = "!=";
+  token2string[28] = "*number";
+  token2string[29] = "*string";
+  token2string[30] = "<eof>";
+
   LUADBGPRINTF("mr_X_init sart");
   for (i=0; i<NUM_RESERVED; i++) {
     TString *ts = mr_S_new(L, token2string[i]);
@@ -190,7 +204,7 @@ static size_t readname (LexState *LS) {
 //Hex Patch
 static int mr_O_hexstr2d (const char *s, mrp_Number *result) {
   char *endptr;
-  mrp_Number res = strtoul(s, &endptr, 0);
+  mrp_Number res = strtoul2(s, &endptr, 0);
   if (endptr == s) return 0;  /* no conversion */
   while (mr_isspace((unsigned char)(*endptr))) endptr++;
   if (*endptr != '\0') return 0;  /* invalid trailing characters? */
@@ -365,7 +379,6 @@ static int hexval(char c)
 
 
 static void read_long_string_for_py_mode (LexState *LS, int del, SemInfo *seminfo) {
-  int cont = 0;
   size_t l = 2;
   checkbuffer(LS, l);
   save_and_next(LS, l);  /* pass the second `[' */

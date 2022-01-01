@@ -28,7 +28,7 @@ vmrp实现原理与mrpoid基本相同，参考了mrpoid早期的实现原理，�
 
 最早的模拟器实现的功能非常有限，于是将整个mythroad层交给arm代码去实现，尝试了ELF加载器的方式加载mythroad层发现有潜在的bug（gcc编译时在mythroad层主要问题是elfloader没有实现对GOT的处理，在gcc编译mrp的功能上主要是r9和r10寄存器的问题，因此放弃ELF加载器，仍然采用ext加载方式。
 
-完整版模拟器将借助mythroad层代码实现，代码在vmrp_arm项目中。
+完整版模拟器将借助mythroad层代码实现，代码在vmrp_arm项目中(vmrp_arm已经停止开发，代码已经复制到本项目的mythroad文件夹中)。
 
 # R9寄存器导致的BUG
 
@@ -42,7 +42,7 @@ vmrp实现原理与mrpoid基本相同，参考了mrpoid早期的实现原理，�
 
 https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/sjlj/x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0.7z
 
-https://github.com/aquynh/capstone/releases/download/4.0.1/capstone-4.0.1-win32.zip  （非必需）
+https://github.com/aquynh/capstone/releases/download/4.0.1/capstone-4.0.1-win32.zip  （只有编译带DEBUG功能时才需要）
 
 https://github.com/unicorn-engine/unicorn/releases/download/1.0.2/unicorn-1.0.2-win32.zip
 
@@ -76,6 +76,8 @@ sudo apt install libsdl2-dev
 3. capstone.dll: 反编译引擎，只有用`make DEBUG=1`编译的main.exe才会依赖这个文件，在`./windows/capstone-4.0.1-win32/capstone.dll`
 4. SDL2.dll: 用于图形界面，在`./windows/SDL2-2.0.10/i686-w64-mingw32/bin/SDL2.dll`
 5. unicorn.dll: 用于arm指令的执行，在`./windows/unicorn-1.0.2-win32/unicorn.dll`
+
+在改代码的时候严格注意将`./mythroad/`文件夹中的代码看成是另一个项目，不要与其它地方的源码混在一起，这么做的原因是`./mythroad/`是直接复制的vmrp_arm项目，考虑到将来移植到嵌入式系统中的便利性因此要求将`./mythroad/`完全独立开发。
 
 # 参考资料
 
