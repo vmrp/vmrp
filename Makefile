@@ -25,17 +25,6 @@ main: $(OBJS) main.o
 dll: $(OBJS)
 	$(CC) $(CFLAGS) -m32 -shared -o ./bin/vmrp.dll $^ $(UNICORN) $(CAPSTONE) -lpthread -lm -lws2_32 -lmingw32
 
-ifeq (,$(wildcard ./bin/capstone.dll))
-ifeq ($(DEBUG),1)
-	cp $(CAPSTONE) ./bin/
-endif
-endif
-
-ifeq (,$(wildcard ./bin/SDL2.dll))
-	cp $(SDL2)/bin/SDL2.dll ./bin/
-	cp ./windows/unicorn-1.0.2-win32/unicorn.dll ./bin/
-endif
-
 %.o:%.c
 	$(CC) $(CFLAGS) -m32 -c $^
 

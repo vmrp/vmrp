@@ -67,6 +67,16 @@ sudo apt install libsdl2-dev
 
 另外，需要用斯凯SDK单独编译 /mythroad/build/build_full.bat 生成vmrp.mrp，提取里面的cfunction.ext，这么做的原因是mythroad层代码量非常大，arm编译和gcc编译有一点差别，例如char类型的变量值传递给uint16类型时在arm编译时可能char也是被当成uint8来处理的，而在gcc中这种情况char是有符号的，会导致bug，因此还不敢将全部代码整合到一起，目前正在mythroad分支中尝试合并
 
+编译vmrp.mrp可能会遇到`"<command line>": Error: A1023E: File "..\asm\r9r10.s" could not be opened`，这是因为r9r10.s需要用代码生成，在./mythroad/asm/文件夹下通过`node genR9R10.js 0 1`生成
+
+编译成功后还需要补充bin文件夹里面的文件才能运行：
+
+1. mythroad文件夹: 与真实手机上的文件相同，主要是一些基本的mrp和字体等文件，在./wasm/dist/fs文件夹中能获得
+2. cfunction.ext: 从vmrp.mrp内提取，每次编译mythroad层后会生成vmrp.mrp，利用工具提取出来，在./wasm/dist/fs文件夹中能获得一个编译好的文件
+3. capstone.dll: 反编译引擎，只有用`make DEBUG=1`编译的main.exe才会依赖这个文件，在`./windows/capstone-4.0.1-win32/capstone.dll`
+4. SDL2.dll: 用于图形界面，在`./windows/SDL2-2.0.10/i686-w64-mingw32/bin/SDL2.dll`
+5. unicorn.dll: 用于arm指令的执行，在`./windows/unicorn-1.0.2-win32/unicorn.dll`
+
 # 参考资料
 
 mrp编辑器:  [Mrpeditor.exe](tool/Mrpeditor.exe)

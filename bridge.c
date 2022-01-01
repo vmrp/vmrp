@@ -1357,7 +1357,7 @@ int32_t bridge_dsm_init(uc_engine *uc) {
     if (v == VMRP_VER) {
         return MR_SUCCESS;
     } else {
-        printf("warning: bridge_dsm_version:%d != %d\n", v, VMRP_VER);
+        printf("err: dsm_version got %d expect %d\n", v, VMRP_VER);
     }
     return MR_FAILED;
 }
