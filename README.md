@@ -2,15 +2,15 @@
 
 # PC版本下载地址
 
-https://github.com/zengming00/vmrp/releases/download/1.0.0/vmrp_win32_20210702.zip
+https://github.com/vmrp/vmrp/releases/download/1.0.0/vmrp_win32_20220102.zip
 
 此版本已经实现完整的联网功能，可以运行支持网络通信的mrp了
 
 # web网页版体验地址
 
-https://zengming00.github.io/
+https://vmrp.github.io/
 
-https://zengming00.github.io/vmrp_v1.0/main.html
+https://vmrp.github.io/vmrp_v1.0/main.html
 
 # 实现原理
 
