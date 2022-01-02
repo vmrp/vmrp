@@ -4,6 +4,7 @@
 
 #include "./header/bridge.h"
 #include "./header/vmrp.h"
+#include "./header/memory.h"
 
 #ifdef _WIN32
 // #ifdef __x86_64__
@@ -28,6 +29,63 @@
 
 static SDL_TimerID timeId = 0;
 static SDL_Window *window;
+static bool isMouseDown = false;
+static bool isEditMode = false;
+static int32_t editMaxSize = 0;
+static char *holdEditText = NULL;
+
+static SDL_Keycode isKeyDown = SDLK_UNKNOWN;
+
+void saveEditText(char *str) {
+    uint8_t *utf8Str = (uint8_t *)str;
+    int32_t n = 0;
+    while (*utf8Str && (n < editMaxSize)) {
+        if (*utf8Str < 0x80) {  // 1 Byte
+            utf8Str += 1;
+        } else if ((*utf8Str & 0xe0) == 0xc0) {  // 2 Bytes
+            utf8Str += 2;
+        } else if ((*utf8Str & 0xf0) == 0xe0) {  // 3 Bytes
+            utf8Str += 3;
+        } else {
+            break;
+        }
+        n++;
+    }
+    if (holdEditText != NULL) {
+        my_freeExt(holdEditText);
+        holdEditText = NULL;
+    }
+    uint32_t len = (uint32_t)utf8Str - (uint32_t)str;
+    holdEditText = my_mallocExt(len + 1);
+    memcpy(holdEditText, str, len);
+    holdEditText[len] = '\0';
+}
+
+int32_t editCreate(const char *title, const char *text, int32_t type, int32_t max_size) {
+    isEditMode = true;
+    editMaxSize = max_size;
+    SDL_Log("title: '%s', text: '%s', type: %d, max_size: %d", title, text, type, max_size);
+    if (SDL_SetClipboardText(text) == 0) {
+        SDL_Log("编辑内容已复制到剪贴板，按ctrl+v输入内容，按ctrl+z取消");
+    } else {
+        SDL_Log("无法使用剪贴板");
+    }
+    return 1234;
+}
+
+int32 editRelease(int32 edit) {
+    isEditMode = false;
+    if (holdEditText != NULL) {
+        my_freeExt(holdEditText);
+        holdEditText = NULL;
+    }
+    return MR_SUCCESS;
+}
+
+char *editGetText(int32 edit) {
+    SDL_Log("editGetText(): '%s'", holdEditText);
+    return holdEditText;
+}
 
 void guiDrawBitmap(uint16_t *bmp, int32_t x, int32_t y, int32_t w, int32_t h) {
     SDL_Surface *surface = SDL_GetWindowSurface(window);
@@ -64,7 +122,7 @@ void setEventEnable(int v) {
 }
 #endif
 
-uint32_t th2(uint32_t interval, void *param) {
+uint32_t timerCb(uint32_t interval, void *param) {
     SDL_RemoveTimer(timeId);
     timeId = 0;
     timer();
@@ -73,10 +131,10 @@ uint32_t th2(uint32_t interval, void *param) {
 
 int32_t timerStart(uint16_t t) {
     if (!timeId) {
-        timeId = SDL_AddTimer(t, th2, NULL);
+        timeId = SDL_AddTimer(t, timerCb, NULL);
     } else {
         SDL_RemoveTimer(timeId);
-        timeId = SDL_AddTimer(t, th2, NULL);
+        timeId = SDL_AddTimer(t, timerCb, NULL);
     }
     return MR_SUCCESS;
 }
@@ -172,9 +230,6 @@ static void keyEvent(int16 type, SDL_Keycode code) {
     }
 }
 
-bool isMouseDown = false;
-SDL_Keycode isKeyDown = SDLK_UNKNOWN;
-
 void loop() {
     SDL_Event ev;
     bool isLoop = true;
@@ -194,6 +249,30 @@ void loop() {
                 isLoop = false;
                 // emscripten_cancel_main_loop();
                 break;
+            }
+            if (isEditMode) {
+                switch (ev.type) {
+                    case SDL_KEYDOWN: {
+                        if (SDL_GetModState() & KMOD_CTRL) {
+                            if (ev.key.keysym.sym == SDLK_z) {  // 取消编辑框输入
+                                // MR_DIALOG_KEY_CANCEL=1
+                                event(MR_DIALOG_EVENT, 1, 0);
+                                SDL_Log("取消输入");
+                                continue;
+                            } else if (ev.key.keysym.sym == SDLK_v) {  // 编辑框输入
+                                char *str = SDL_GetClipboardText();
+                                saveEditText(str);
+                                SDL_free(str);
+                                // MR_DIALOG_KEY_OK=0
+                                event(MR_DIALOG_EVENT, 0, 0);
+                                continue;
+                            }
+                        }
+                    }
+                    case SDL_MOUSEBUTTONDOWN:
+                        SDL_Log("ctrl+v输入内容，ctrl+z取消输入");
+                }
+                continue;
             }
             switch (ev.type) {
                 case SDL_KEYDOWN:
@@ -250,8 +329,6 @@ int main(int argc, char *args[]) {
         return -1;
     }
 
-    bridge_set_guiDrawBitmap(guiDrawBitmap);
-    bridge_set_timer(timerStart, timerStop);
     startVmrp();
 
 #if defined(__EMSCRIPTEN__)

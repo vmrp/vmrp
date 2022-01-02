@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "./header/dsm.h"
+#include "./mythroad/include/dsm.h"
 #include "./header/fileLib.h"
 #include "./header/memory.h"
 #include "./header/vmrp.h"
@@ -38,7 +38,7 @@ typedef struct mr_c_function_P_t {
     uint32 ER_RW_Length;    // RW长度
     int32 ext_type;         // ext启动类型，为1时表示ext启动
     void *mrc_extChunk;     // ext模块描述段，下面的结构体。
-    int32 stack;            //stack shell 2008-2-28
+    int32 stack;            // stack shell 2008-2-28
 } mr_c_function_P_t;
 
 static void *mr_table;
@@ -52,22 +52,10 @@ static uint32_t mr_extHelper_addr;
 static const char MUTEX_LOCK_FAIL[] = "mutex lock fail";
 static const char MUTEX_UNLOCK_FAIL[] = "mutex unlock fail";
 static pthread_mutex_t mutex;
-static guiDrawBitmap_t guiDrawBitmap;
-static timerStart_t timerStart;
-static timerStop_t timerStop;
 
 static void runCode(uc_engine *uc, uint32_t startAddr, uint32_t stopAddr, bool isThumb);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void bridge_set_guiDrawBitmap(guiDrawBitmap_t cb) {
-    guiDrawBitmap = cb;
-}
-
-void bridge_set_timer(timerStart_t start, timerStop_t stop) {
-    timerStart = start;
-    timerStop = stop;
-}
 
 static void br__mr_c_function_new(BridgeMap *o, uc_engine *uc) {
     // typedef int32 (*T__mr_c_function_new)(MR_C_FUNCTION f, int32 len);
@@ -533,9 +521,9 @@ static void br_mr_recv(BridgeMap *o, uc_engine *uc) {
 }
 
 /*
-获取socket connect 状态（主要用于TCP的异步连接） 
+获取socket connect 状态（主要用于TCP的异步连接）
 Syntax
-int32 mrc_getSocketState(int32 s); 
+int32 mrc_getSocketState(int32 s);
 Parameters
 s
    [IN] 打开的socket句柄，由mrc_socket创建
@@ -564,11 +552,11 @@ enum {
 
 /*
 播放声音数据
-type [IN] 声音数据类型，见MR_SOUND_TYPE定义，此函数支持MR_SOUND_MIDI MR_SOUND_WAV MR_SOUND_MP3 
+type [IN] 声音数据类型，见MR_SOUND_TYPE定义，此函数支持MR_SOUND_MIDI MR_SOUND_WAV MR_SOUND_MP3
 data [IN] 声音数据指针
 datalen [IN] 声音数据长度
 loop [IN] 0:单次播放, 1:循环播放
-Return Value MR_SUCCESS 成功 MR_FAILED 失败 
+Return Value MR_SUCCESS 成功 MR_FAILED 失败
 */
 #ifdef __EMSCRIPTEN__
 EM_JS(int32, js_mr_playSound, (int type, const void *data, uint32 dataLen, int32 loop), {
@@ -593,8 +581,8 @@ static void br_mr_playSound(BridgeMap *o, uc_engine *uc) {
 
 /*
 停止播放声音数据
-type [IN] 声音数据类型，见MR_SOUND_TYPE定义，此函数支持MR_SOUND_MIDI MR_SOUND_WAV MR_SOUND_MP3  
-Return Value MR_SUCCESS 成功 MR_FAILED 失败 
+type [IN] 声音数据类型，见MR_SOUND_TYPE定义，此函数支持MR_SOUND_MIDI MR_SOUND_WAV MR_SOUND_MP3
+Return Value MR_SUCCESS 成功 MR_FAILED 失败
 */
 #ifdef __EMSCRIPTEN__
 EM_JS(int32, js_mr_stopSound, (int type), {
@@ -667,7 +655,7 @@ title [IN]对话框的标题，unicode编码，网络字节序
 text [IN]对话框内容，unicode编码，网络字节序
 type [IN]对话框类型：MR_DIALOG_OK MR_DIALOG_OK_CANCEL MR_DIALOG_CANCEL
 
-Return Value 正整数 对话框句柄 MR_FAILED 失败 
+Return Value 正整数 对话框句柄 MR_FAILED 失败
 */
 #ifdef __EMSCRIPTEN__
 EM_JS(int32, js_mr_dialogCreate, (const char *title, const char *text, int32 type), {
@@ -713,8 +701,8 @@ static void br_mr_dialogRelease(BridgeMap *o, uc_engine *uc) {
 dialog [IN]对话框的句柄
 title [IN]对话框的标题，unicode编码，网络字节序
 text [IN]对话框内容，unicode编码，网络字节序
-type [IN]若type为-1，表示type不变,见定义MR_DIALOG_OK MR_DIALOG_OK_CANCEL MR_DIALOG_CANCEL 
-Return Value MR_SUCCESS 成功 MR_FAILED 失败 
+type [IN]若type为-1，表示type不变,见定义MR_DIALOG_OK MR_DIALOG_OK_CANCEL MR_DIALOG_CANCEL
+Return Value MR_SUCCESS 成功 MR_FAILED 失败
 */
 #ifdef __EMSCRIPTEN__
 EM_JS(int32, js_mr_dialogRefresh, (int32 dialog, const char *title, const char *text, int32 type), {
@@ -742,13 +730,13 @@ static void br_mr_dialogRefresh(BridgeMap *o, uc_engine *uc) {
 创建一个文本框，并返回文本框句柄
 title [IN]文本框的标题，unicode编码，网络字节序
 text [IN]文本框内容，unicode编码，网络字节序
-type [IN]文本框按键类型,见定义MR_DIALOG_OK MR_DIALOG_OK_CANCEL MR_DIALOG_CANCEL 
-Return Value 正整数 文本框句柄 MR_FAILED 失败 
+type [IN]文本框按键类型,见定义MR_DIALOG_OK MR_DIALOG_OK_CANCEL MR_DIALOG_CANCEL
+Return Value 正整数 文本框句柄 MR_FAILED 失败
 Remarks
    文本框用来显示只读的文字信息。文本框和对话框并没有本质的区别，仅仅是显示方式上的不同，在使用上它们的主要区别是：对话框的内容一般较短，文本框的内容一般较长，
    对话框一般实现为弹出式的窗口，文本框一般实现为全屏式的窗口。也可能在手机上对话框和文本框使用了相同的方式实现。文本框和对话框的消息参数是一样的。当文本框显示时，
    如果用户选择了文本框上的某个键，系统将构造Mythroad应用消息，通过mrc_event函数传送给Mythroad 平台，消息类型为MR_DIALOG_EVENT，参数为该按键的ID。
-   "确定"键ID为：MR_DIALOG_KEY_OK；"取消"键ID为：MR_DIALOG_KEY_CANCEL。 
+   "确定"键ID为：MR_DIALOG_KEY_OK；"取消"键ID为：MR_DIALOG_KEY_CANCEL。
 */
 #ifdef __EMSCRIPTEN__
 EM_JS(int32, js_mr_textCreate, (const char *title, const char *text, int32 type), {
@@ -817,17 +805,17 @@ enum {
 };
 
 /*
-创建一个编辑框，并返回编辑框句柄。 
+创建一个编辑框，并返回编辑框句柄。
 title [IN]文本框的标题，unicode编码，网络字节序
 text [IN]文本框内容，unicode编码，网络字节序
 type [IN]见MR_EDIT_ANY;MR_EDIT_NUMERIC;MR_EDIT_PASSWORD定义
-max_size [IN]最多可以输入的字符（unicode）个数，这里每一个中文、字母、数字、符号都算一个字符 
-Return Value 正整数 编辑框句柄 MR_FAILED 失败 
+max_size [IN]最多可以输入的字符（unicode）个数，这里每一个中文、字母、数字、符号都算一个字符
+Return Value 正整数 编辑框句柄 MR_FAILED 失败
 Remarks
    编辑框用来显示并提供用户编辑文字信息。text是编辑框显示的初始内容。当编辑框显示时，
 如果用户选择了编辑框上的某个键，系统将构造Mythroad应用消息，通过mrc_event函数传送给
 Mythroad应用，消息类型为MR_DIALOG_EVENT，参数为该按键的ID;"确定"键ID为：MR_DIALOG_KEY_OK；
-"取消"键ID为：MR_DIALOG_KEY_CANCEL。 
+"取消"键ID为：MR_DIALOG_KEY_CANCEL。
 */
 #ifdef __EMSCRIPTEN__
 EM_JS(int32, js_mr_editCreate, (const char *title, const char *text, int32 type, int32 max_size), {
@@ -847,7 +835,7 @@ static void br_mr_editCreate(BridgeMap *o, uc_engine *uc) {
 #ifdef __EMSCRIPTEN__
     SET_RET_V(js_mr_editCreate(getMrpMemPtr(title), getMrpMemPtr(text), type, max_size));
 #else
-    SET_RET_V(MR_FAILED);
+    SET_RET_V(editCreate(getMrpMemPtr(title), getMrpMemPtr(text), type, max_size));
 #endif
 }
 
@@ -865,13 +853,13 @@ static void br_mr_editRelease(BridgeMap *o, uc_engine *uc) {
 #ifdef __EMSCRIPTEN__
     SET_RET_V(js_mr_editRelease(edit));
 #else
-    SET_RET_V(MR_FAILED);
+    SET_RET_V(editRelease(edit));
 #endif
 }
 
 /*
-获取编辑框内容，unicode编码。调用者若需在编辑框释放后仍然使用编辑框的内容，需要自行保存该内容。该函数需要在编辑框释放之前调用。 
-Return Value 非NULL 编辑框的内容指针，unicode编码, NULL 失败 
+获取编辑框内容，unicode编码。调用者若需在编辑框释放后仍然使用编辑框的内容，需要自行保存该内容。该函数需要在编辑框释放之前调用。
+Return Value 非NULL 编辑框的内容指针，unicode编码, NULL 失败
 */
 #ifdef __EMSCRIPTEN__
 EM_JS(const char *, js_mr_editGetText, (int32 edit), {
@@ -888,7 +876,8 @@ static void br_mr_editGetText(BridgeMap *o, uc_engine *uc) {
     char *str = (char *)js_mr_editGetText(edit);
     SET_RET_V(toMrpMemAddr(str));
 #else
-    SET_RET_V((uint32_t)NULL);
+    char *str = editGetText(edit);
+    SET_RET_V(toMrpMemAddr(str));
 #endif
 }
 
@@ -1186,9 +1175,9 @@ uc_err bridge_init(uc_engine *uc) {
 
     dsm_require_funcs = hooks_init(uc, dsm_require_funcs_funcMap, countof(dsm_require_funcs_funcMap), sizeof(DSM_REQUIRE_FUNCS));
 #ifdef __EMSCRIPTEN__
-    ((DSM_REQUIRE_FUNCS *)dsm_require_funcs)->flags = FLAG_USE_UTF8_FS;
+    ((DSM_REQUIRE_FUNCS *)dsm_require_funcs)->flags = FLAG_USE_UTF8_FS;  // wasm文件系统是UTF8编码
 #else
-    ((DSM_REQUIRE_FUNCS *)dsm_require_funcs)->flags = 0;
+    ((DSM_REQUIRE_FUNCS *)dsm_require_funcs)->flags = FLAG_USE_UTF8_EDIT;  // windows下文件系统是GBK编码，编辑框暂时用复制粘贴代替（需要utf8编码）
 #endif
 
     mr_c_event = my_mallocExt(sizeof(event_t));
