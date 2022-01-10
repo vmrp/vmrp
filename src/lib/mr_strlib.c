@@ -890,7 +890,7 @@ static int str_find (mrp_State *L) {
   sint32 init = posrelat(mr_L_optlong(L, 3, 1), l1) - 1;
   if (init < 0) init = 0;
   else if ((size_t)(init) > l1) init = (sint32)l1;
-  if ((!mrp_toboolean(L, 4)) ||  /* explicit request? */
+  if ((!mrp_toboolean(L, 4)) ||  /* explicit request? */ // 注意此处被故意使条件成立实现默认关闭模式匹配功能（原lua是默认开启）
       STRPBRK(p, SPECIALS) == NULL) {  /* or no special characters? */
     /* do a plain search */
     const char *s2 = _mr_memfind(s+init, l1-init, p, l2);

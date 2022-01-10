@@ -37,7 +37,6 @@
             "externalConsole": false,
             "MIMode": "gdb",
             // "miDebuggerPath": "C:/x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0/mingw64/bin/gdb.exe",
-            "miDebuggerPath": "C:/msys64/mingw32/bin/gdb.exe",
             "setupCommands": [
                 {
                     "description": "为 gdb 启用整齐打印",
