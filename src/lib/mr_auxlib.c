@@ -449,64 +449,6 @@ MRPLIB_API void mr_L_unref (mrp_State *L, int t, int ref) {
 }
 
 
-
-/*
-** {======================================================
-** Load functions
-** =======================================================
-*/
-
-#if 0
-static const char *getF (mrp_State *L, void *ud, size_t *size) {
-#ifdef PC_MOD // PC_MOD为原版lua代码
-   LoadF *lf = (LoadF *)ud;
-   (void)L;
-   if (feof(lf->f)) return NULL;
-   *size = fread(lf->buff, 1, MRP_L_BUFFERSIZE, lf->f);
-   return (*size > 0) ? lf->buff : NULL;
-#endif
-
-#ifdef TARGET_MOD
-  LoadF *lf = (LoadF *)ud;
-  (void)L;
-
-///*               change for zip
-
-  //ouli brew
-//  if (feof(lf->f)) return NULL;
-//  *size = fread(lf->buff, 1, MRP_L_BUFFERSIZE, lf->f);
-  *size = mr_read ( lf->f,
-                   (void*)(lf->buff),
-                   MRP_L_BUFFERSIZE);
-  //LUADBGPRINTF("ffs_read");
-  //MmiTraceInt(*size);
-  return (*size > 0) ? lf->buff : NULL;
-//*/
-#endif
-
-#ifdef BREW_MOD
-
-  LoadF *lf = (LoadF *)ud;
-  (void)L;
-  //ouli brew
-//  if (feof(lf->f)) return NULL;
-//  *size = fread(lf->buff, 1, MRP_L_BUFFERSIZE, lf->f);
-  *size = IUNZIPASTREAM_Read(lf->pUnzip, lf->buff, MRP_L_BUFFERSIZE);
-   return (*size > 0) ? lf->buff : NULL;
-#endif
-
-#if 0 //brew mod do not use zip
-  LoadF *lf = (LoadF *)ud;
-  (void)L;
-  //ouli brew
-//  if (feof(lf->f)) return NULL;
-//  *size = fread(lf->buff, 1, MRP_L_BUFFERSIZE, lf->f);
-  *size = IFILE_Read(lf->f, lf->buff, MRP_L_BUFFERSIZE);
-  return (*size > 0) ? lf->buff : NULL;
-#endif
-}
-#endif
-
 static int errfile (mrp_State *L, int fnameindex) {
   const char *filename = mrp_tostring(L, fnameindex) + 1;
   mrp_pushfstring(L, "cannot read %s", filename);
@@ -518,51 +460,48 @@ static int errfile (mrp_State *L, int fnameindex) {
 
 // 与原版lua不同的是，mrp中文件是从mrp加载
 MRPLIB_API int mr_L_loadfile (mrp_State *L, const char *filename) {
-#ifdef PC_MOD
-   LoadF lf;
-   int status, readstatus;
-   int c;
-   int fnameindex = mrp_gettop(L) + 1;  /* index of filename on the stack */
-   if (filename == NULL) {
-     mrp_pushliteral(L, "=stdin");
-     lf.f = stdin;
-   }
-   else {
-     mrp_pushfstring(L, "@%s", filename);
-     lf.f = fopen(filename, "r");
-   }
-   if (lf.f == NULL) return errfile(L, fnameindex);  /* unable to open file */
-   c = ungetc(getc(lf.f), lf.f);
-   if (!(mr_isspace(c) || mr_isprint(c)) && lf.f != stdin) {  /* binary file? */
-     fclose(lf.f);
-     lf.f = fopen(filename, "rb");  /* reopen in binary mode */
-     if (lf.f == NULL) return errfile(L, fnameindex); /* unable to reopen file */
-   }
-   status = mrp_load(L, getF, &lf, mrp_tostring(L, -1));
-   readstatus = ferror(lf.f);
-   if (lf.f != stdin) fclose(lf.f);  /* close file (even in case of errors) */
-   if (readstatus) {
-     mrp_settop(L, fnameindex);  /* ignore results from `mrp_load' */
-     return errfile(L, fnameindex);
-   }
-   mrp_remove(L, fnameindex);
-   return status;
-#endif  //#ifdef PC_MOD
-
-#ifdef TARGET_MOD
    int status;
    int fnameindex = mrp_gettop(L) + 1; /* index of filename on the stack */
-   void *buff;
+   void *buff = NULL;
    LoadS ls;
    int filelen;
 
    LUADBGPRINTF("mr_L_loadfile sart");
    mrp_pushfstring(L, "@%s", filename);  // Open the file for writing using the generated file name
-   buff = _mr_readFile((const char *)filename, &filelen, 0);
-   if (!buff) {
-       mrp_settop(L, fnameindex); /* ignore results from `mrp_load' */
-       LUADBGPRINTF("_mr_readFile Failed");
-       return errfile(L, fnameindex);
+   if (mr_info(filename) == MR_IS_FILE) { // 先尝试直接从文件加载
+     int fh;
+     filelen = mr_getLen(filename);
+     buff = mr_malloc(filelen);
+     if (buff != NULL) {
+      fh = mr_open(filename, MR_FILE_RDONLY);
+      if (fh == 0) {
+        mr_free(buff, filelen);
+        buff = NULL;
+      } else {
+        int len = filelen;
+        int rLen = 0;
+        char *ptr = buff;
+        do {
+          ptr += rLen;
+          rLen = mr_read(fh, ptr, len);
+          if (rLen == MR_FAILED) {
+            mr_free(buff, filelen);
+            buff = NULL;
+            break;
+          }
+          len -= rLen;
+        } while (len > 0);
+        mr_close(fh);
+      }
+     }
+   }
+   if (buff == NULL) { // 尝试从mrp内加载
+    buff = _mr_readFile((const char *)filename, &filelen, 0);
+    if (!buff) {
+      mrp_settop(L, fnameindex); /* ignore results from `mrp_load' */
+      LUADBGPRINTF("_mr_readFile Failed");
+      return errfile(L, fnameindex);
+    }
    }
    ls.s = buff;
    ls.size = filelen;
@@ -571,133 +510,6 @@ MRPLIB_API int mr_L_loadfile (mrp_State *L, const char *filename) {
    mrp_remove(L, fnameindex);
    LUADBGPRINTF("mr_L_loadfile end");
    return status;
-#endif
-
-#ifdef BREW_MOD
-   LoadF lf;
-  int status, readstatus;
-  int fnameindex = mrp_gettop(L) + 1;  /* index of filename on the stack */
-
-   LegendGameApp *pLegendGame = (LegendGameApp *)GETAPPINSTANCE();
-
-   LUADBGPRINTF("mr_L_loadfile sart");
-
-   // Open the file for writing using the generated file name
-   mrp_pushfstring(L, "@%s", filename);
-
-#if 0
-   lf.f = IFILEMGR_OpenFile( pLegendGame->pFileMgr, filename, _OFM_READ );
-   if (lf.f == NULL)
-   {
-      LUADBGPRINTF("IFILEMGR_OpenFile failed!********");
-   	//IFILEMGR_Release( pFileMgr );
-      return errfile(L, fnameindex);  /* unable to open file */
-   }
-   LUADBGPRINTF("IFILEMGR_OpenFile ok");
-#endif
-//   LoadF lf;
-   lf.f = GetFileStream(filename);
-   if (lf.f == NULL)
-   {
-      LUADBGPRINTF("IFILEMGR_OpenFile failed!********");
-   	//IFILEMGR_Release( pFileMgr );
-      return errfile(L, fnameindex);  /* unable to open file */
-   }
-
-   IUNZIPASTREAM_SetStream ( pLegendGame->pUnzip, 
-       (IAStream *)lf.f );
-   lf.pUnzip = pLegendGame->pUnzip;
-  status = mrp_load(L, getF, &lf, mrp_tostring(L, -1));
-
-   LUADBGPRINTF("After mrp_load");
-
-  readstatus = 0;
-   IFILE_Release(lf.f);//ouli brew
-   
-  if (readstatus) {
-    mrp_settop(L, fnameindex);  /* ignore results from `mrp_load' */
-
-    LUADBGPRINTF("mr_L_loadfile error");
-    return errfile(L, fnameindex);
-  }
-  mrp_remove(L, fnameindex);
-
-  LUADBGPRINTF("mr_L_loadfile end");
-  return status;
-
-#endif //BREW_MOD
-
-
-#if 0 //brew mod do not use zip
-   LoadF lf;
-  int status, readstatus;
-//  int c;
-  int fnameindex = mrp_gettop(L) + 1;  /* index of filename on the stack */
-//ouli brew
-  //IFileMgr* pFileMgr = NULL;
-
-   LegendGameApp *pLegendGame = (LegendGameApp *)GETAPPINSTANCE();
-
-   LUADBGPRINTF("mr_L_loadfile sart");
-
-   // Open the file for writing using the generated file name
-   mrp_pushfstring(L, "@%s", filename);
-
-/*
-   if ( ISHELL_CreateInstance(pLegendGame->a.m_pIShell, AEECLSID_FILEMGR, (void**)(&pFileMgr)) != SUCCESS )
-   {
-      mrp_pushfstring(L, "cannot create FILEMGR");
-      mrp_remove(L, fnameindex);
-      return MRP_ERRFILE;
-   }
-
-*/
-   
-
-   lf.f = IFILEMGR_OpenFile( pLegendGame->pFileMgr, filename, _OFM_READ );
-   //lf.f = fopen(filename, "r");
-   if (lf.f == NULL)
-   {
-      LUADBGPRINTF("IFILEMGR_OpenFile failed!********");
-   	//IFILEMGR_Release( pFileMgr );
-      return errfile(L, fnameindex);  /* unable to open file */
-   }
-   LUADBGPRINTF("IFILEMGR_OpenFile ok");
-   	
-   //IFILEMGR_Release( pFileMgr );
-
-  //if (lf.f == NULL) return errfile(L, fnameindex);  /* unable to open file */
-
-//ouli brew
-//  c = ungetc(getc(lf.f), lf.f);
-//  if (!(mr_isspace(c) || mr_isprint(c)) ) {  /* binary file? */
-//    fclose(lf.f);
-//    lf.f = fopen(filename, "rb");  /* reopen in binary mode */
-//    if (lf.f == NULL) return errfile(L, fnameindex); /* unable to reopen file */
-//  }
-  status = mrp_load(L, getF, &lf, mrp_tostring(L, -1));
-
-   LUADBGPRINTF("After mrp_load");
-
-  //readstatus = ferror(lf.f);
-  readstatus = 0;
-  //fclose(lf.f);  /* close file (even in case of errors) */
-   IFILE_Release(lf.f);//ouli brew
-//ouli brew
-  if (readstatus) {
-    mrp_settop(L, fnameindex);  /* ignore results from `mrp_load' */
-
-    LUADBGPRINTF("mr_L_loadfile error");
-    return errfile(L, fnameindex);
-  }
-  mrp_remove(L, fnameindex);
-
-  LUADBGPRINTF("mr_L_loadfile end");
-  return status;
-
-#endif  //brew mod do not use zip
-  
-
 }
 
 static const char *getS (mrp_State *L, void *ud, size_t *size) {

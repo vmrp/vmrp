@@ -21,7 +21,7 @@ ifeq (,$(wildcard ./bin/SDL2.dll))
 	cp ./windows/unicorn-1.0.2-win32/unicorn.dll ./bin/
 endif
 
-LOCAL_CFLAGS_FULL := -DDSM_FULL -DTARGET_MOD -DMTK_MOD -DMR_PLAT_DRAWTEXT
+LOCAL_CFLAGS_FULL := -DDSM_FULL -DMTK_MOD -DMR_PLAT_DRAWTEXT
 
 LOCAL_SRC_FILES_FULL := src/mr_api.c \
                   src/mr_debug.c  \
@@ -75,7 +75,7 @@ full:
 
 #####################################################################
 
-LOCAL_CFLAGS := -g -Wall -DTARGET_MOD -DMTK_MOD -DMR_PLAT_DRAWTEXT
+LOCAL_CFLAGS := -g -Wall -DMTK_MOD -DMR_PLAT_DRAWTEXT
 LOCAL_SRC_FILES := mythroad_mini.c \
                     encode.c     \
                     mr_unzip.c	\
