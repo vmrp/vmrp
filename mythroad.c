@@ -17,7 +17,6 @@
 #include "./include/other.h"
 #include "./include/printf.h"
 #include "./include/string.h"
-#include "./tomr/tomr.h"
 #include "./luadec/luadec.h"
 
 #define MR_VERSION 1968
@@ -90,7 +89,7 @@ int32 mr_zipType;
 
 //************************************短信
 #define MR_MAX_NUM_LEN 32     //手机号码最大长度
-#define MR_MAX_TRACE_BUF 100  //TRACE 大小
+#define MR_MAX_TRACE_BUF 100  // TRACE 大小
 #define MR_CMD_NUM 10         //最大命令号码个数
 #define MR_SECTION_LEN 120    //一节的长度
 #define MR_MAX_SM_LEN 160     //短消息的最大长度
@@ -175,7 +174,7 @@ static void _mr_c_internal_table_init() {
 
     _mr_c_internal_table[15] = (void*)_mr_isMr;
 
-    _mr_c_internal_table[16] = (void*)mrp_gettop;  //1937
+    _mr_c_internal_table[16] = (void*)mrp_gettop;  // 1937
     _mr_c_internal_table[17] = (void*)mrp_settop;
     _mr_c_internal_table[18] = (void*)mrp_pushvalue;
     _mr_c_internal_table[19] = (void*)mrp_remove;
@@ -277,11 +276,11 @@ static void _mr_c_function_table_init() {
     _mr_c_function_table[20] = (void*)mr_rand;
 
     _mr_c_function_table[21] = (void*)NULL;
-    _mr_c_function_table[22] = (void*)mr_stop_ex;  //V1939
+    _mr_c_function_table[22] = (void*)mr_stop_ex;  // V1939
     _mr_c_function_table[23] = (void*)_mr_c_internal_table;
 
     _mr_c_function_table[24] = (void*)_mr_c_port_table;
-    _mr_c_function_table[25] = (void*)_mr_c_function_new;  //26
+    _mr_c_function_table[25] = (void*)_mr_c_function_new;  // 26
     _mr_c_function_table[26] = (void*)mr_printf;
     _mr_c_function_table[27] = (void*)mr_mem_get;
     _mr_c_function_table[28] = (void*)mr_mem_free;
@@ -292,10 +291,10 @@ static void _mr_c_function_table_init() {
     _mr_c_function_table[33] = (void*)mr_getTime;
     _mr_c_function_table[34] = (void*)mr_getDatetime;
     _mr_c_function_table[35] = (void*)mr_getUserInfo;
-    _mr_c_function_table[36] = (void*)mr_sleep;  //37
+    _mr_c_function_table[36] = (void*)mr_sleep;  // 37
 
     _mr_c_function_table[37] = (void*)mr_plat;
-    _mr_c_function_table[38] = (void*)mr_platEx;  //39
+    _mr_c_function_table[38] = (void*)mr_platEx;  // 39
 
     _mr_c_function_table[39] = (void*)mr_ferrno;
     _mr_c_function_table[40] = (void*)mr_open;
@@ -311,13 +310,13 @@ static void _mr_c_function_table_init() {
     _mr_c_function_table[50] = (void*)mr_rmDir;
     _mr_c_function_table[51] = (void*)mr_findStart;
     _mr_c_function_table[52] = (void*)mr_findGetNext;
-    _mr_c_function_table[53] = (void*)mr_findStop;  //54
+    _mr_c_function_table[53] = (void*)mr_findStop;  // 54
 
     _mr_c_function_table[54] = (void*)mr_exit;
     _mr_c_function_table[55] = (void*)mr_startShake;
     _mr_c_function_table[56] = (void*)mr_stopShake;
     _mr_c_function_table[57] = (void*)mr_playSound;
-    _mr_c_function_table[58] = (void*)mr_stopSound;  //59
+    _mr_c_function_table[58] = (void*)mr_stopSound;  // 59
 
     _mr_c_function_table[59] = (void*)mr_sendSms;
     _mr_c_function_table[60] = (void*)mr_call;
@@ -327,7 +326,7 @@ static void _mr_c_function_table_init() {
     _mr_c_function_table[63] = (void*)mr_menuCreate;
     _mr_c_function_table[64] = (void*)mr_menuSetItem;
     _mr_c_function_table[65] = (void*)mr_menuShow;
-    _mr_c_function_table[66] = (void*)NULL;  //mr_menuSetFocus,
+    _mr_c_function_table[66] = (void*)NULL;  // mr_menuSetFocus,
     _mr_c_function_table[67] = (void*)mr_menuRelease;
     _mr_c_function_table[68] = (void*)mr_menuRefresh;
     _mr_c_function_table[69] = (void*)mr_dialogCreate;
@@ -398,26 +397,26 @@ static void _mr_c_function_table_init() {
     _mr_c_function_table[125] = (void*)_mr_readFile;
     _mr_c_function_table[126] = (void*)wstrlen;
     _mr_c_function_table[127] = (void*)mr_registerAPP;
-    _mr_c_function_table[128] = (void*)_DrawTextEx;  //1936
+    _mr_c_function_table[128] = (void*)_DrawTextEx;  // 1936
     _mr_c_function_table[129] = (void*)_mr_EffSetCon;
     _mr_c_function_table[130] = (void*)_mr_TestCom;
-    _mr_c_function_table[131] = (void*)_mr_TestCom1;  //1938
-    _mr_c_function_table[132] = (void*)c2u;           //1939
-    _mr_c_function_table[133] = (void*)_mr_div;       //1941
+    _mr_c_function_table[131] = (void*)_mr_TestCom1;  // 1938
+    _mr_c_function_table[132] = (void*)c2u;           // 1939
+    _mr_c_function_table[133] = (void*)_mr_div;       // 1941
     _mr_c_function_table[134] = (void*)_mr_mod;
 
     _mr_c_function_table[135] = (void*)&LG_mem_min;
     _mr_c_function_table[136] = (void*)&LG_mem_top;
-    _mr_c_function_table[137] = (void*)mr_updcrc;            //1943
-    _mr_c_function_table[138] = (void*)start_fileparameter;  //1945
-    _mr_c_function_table[139] = (void*)&mr_sms_return_flag;  //1949
+    _mr_c_function_table[137] = (void*)mr_updcrc;            // 1943
+    _mr_c_function_table[138] = (void*)start_fileparameter;  // 1945
+    _mr_c_function_table[139] = (void*)&mr_sms_return_flag;  // 1949
     _mr_c_function_table[140] = (void*)&mr_sms_return_val;
-    _mr_c_function_table[141] = (void*)mr_unzip;          //1950
-    _mr_c_function_table[142] = (void*)&mr_exit_cb;       //1951
-    _mr_c_function_table[143] = (void*)&mr_exit_cb_data;  //1951
-    _mr_c_function_table[144] = (void*)mr_entry;          //1952
-    _mr_c_function_table[145] = (void*)mr_platDrawChar;   //1961
-    _mr_c_function_table[146] = (void*)&LG_mem_free;      //1967,2009
+    _mr_c_function_table[141] = (void*)mr_unzip;          // 1950
+    _mr_c_function_table[142] = (void*)&mr_exit_cb;       // 1951
+    _mr_c_function_table[143] = (void*)&mr_exit_cb_data;  // 1951
+    _mr_c_function_table[144] = (void*)mr_entry;          // 1952
+    _mr_c_function_table[145] = (void*)mr_platDrawChar;   // 1961
+    _mr_c_function_table[146] = (void*)&LG_mem_free;      // 1967,2009
 
     _mr_c_function_table[147] = (void*)mr_transbitmapDraw;
     _mr_c_function_table[148] = (void*)mr_drawRegion;
@@ -670,12 +669,12 @@ void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
         }
 
         if (((uint32)srcp & 0x00000003) != 0) {
-            //srcp = ((srcp+1) & 0xfffffffc);
+            // srcp = ((srcp+1) & 0xfffffffc);
             srcp++;
             for (dy = MinY + 1; dy < MaxY; dy++) {
                 dstp = MR_SCREEN_CACHE_POINT(MinX, dy);
                 *dstp = nativecolor;
-                //dstp = ((dstp+1) & 0xfffffffc);
+                // dstp = ((dstp+1) & 0xfffffffc);
                 dstp++;
                 MEMCPY(dstp, srcp, (MaxX - MinX - 1) << 1);
                 /*
@@ -794,7 +793,7 @@ int32 _DrawText(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int i
                         }
                     }
                 }
-#else  //MR_FONT_LIB_REDUNDANCY_BIT
+#else  // MR_FONT_LIB_REDUNDANCY_BIT
 
 #ifndef MR_FONT_LIB_REDUNDANCY_BIT24
                 for (Y1 = 0; Y1 < height; Y1++)
@@ -814,9 +813,9 @@ int32 _DrawText(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int i
                     };
 #endif
 
-#endif  //MR_FONT_LIB_REDUNDANCY_BIT
+#endif  // MR_FONT_LIB_REDUNDANCY_BIT
 
-#else  //defined MR_VIA_MOD
+#else  // defined MR_VIA_MOD
                 for (X1 = 0; X1 < width; X1++)
                     for (Y1 = 0; Y1 < height; Y1++) {
                         a_ = (Y1 & (0x07));
@@ -965,7 +964,7 @@ int32 _DrawTextEx(char* pcText, int16 x, int16 y, mr_screenRectSt rect, mr_colou
                         }
                     }
                 }
-#else  //defined MR_VIA_MOD
+#else  // defined MR_VIA_MOD
                 for (X1 = 0; X1 < width; X1++)
                     for (Y1 = 0; Y1 < height; Y1++) {
                         a_ = (Y1 & (0x07));
@@ -999,7 +998,7 @@ int32 _DrawTextEx(char* pcText, int16 x, int16 y, mr_screenRectSt rect, mr_colou
                         endchar_index = p - (uint8*)tempBuf;
                   }
                }
-               
+
                if ((ch == 0x0a) || (ch == 0x0d)){
                   p+=2;
                   ch = (uint16) ((*p<<8)+*(p+1));
@@ -1016,7 +1015,7 @@ int32 _DrawTextEx(char* pcText, int16 x, int16 y, mr_screenRectSt rect, mr_colou
                             if ((chx + X1) < (x + rect.w) && (chy + Y1) < (y + rect.h))
                                 _DrawPoint((int16)(chx + X1), (int16)(chy + Y1), color);
                     };
-#else  //MR_FONT_LIB_REDUNDANCY_BIT24
+#else  // MR_FONT_LIB_REDUNDANCY_BIT24
                 for (Y1 = 0; Y1 < height; Y1++)
                     for (X1 = 0; X1 < width; X1++) {
                         a_ = (X1 & (0x07));
@@ -1027,9 +1026,9 @@ int32 _DrawTextEx(char* pcText, int16 x, int16 y, mr_screenRectSt rect, mr_colou
                     };
 #endif
 
-#endif  //MR_FONT_LIB_REDUNDANCY_BIT
+#endif  // MR_FONT_LIB_REDUNDANCY_BIT
 
-#else  //MR_PLAT_DRAWTEXT
+#else  // MR_PLAT_DRAWTEXT
                 mr_platDrawChar(ch, chx, chy, color);
 #endif
 
@@ -1083,6 +1082,18 @@ int _BitmapCheck(uint16* p, int16 x, int16 y, uint16 w, uint16 h, uint16 transco
     return nResult;
 }
 
+static int to_mr_tonumber(mrp_State* L, int narg, int def) {
+    return mrp_gettop(L) < ABS(narg) ? def : mrp_tonumber(L, narg);
+}
+
+static const char* to_mr_tostring(mrp_State* L, int narg, const char* def) {
+    return mrp_gettop(L) < ABS(narg) ? def : mrp_tostring(L, narg);
+}
+
+static int to_mr_toboolean(mrp_State* L, int narg, int def) {
+    return mrp_gettop(L) < ABS(narg) ? def : mrp_toboolean(L, narg);
+}
+
 static int MRF_BmGetScr(mrp_State* L) {
     uint16 i = ((uint16)to_mr_tonumber(L, 1, 0));
     uint16 *srcp, *dstp;
@@ -1109,7 +1120,7 @@ static int MRF_BmGetScr(mrp_State* L) {
     mr_bitmap[i].buflen = MR_SCREEN_W * MR_SCREEN_H * MR_SCREEN_DEEP;
     dstp = mr_bitmap[i].p;
     for (dy = 0; dy < MR_SCREEN_H; dy++) {
-        //srcp = mr_screenBuf + dy * MR_SCREEN_MAX_W;
+        // srcp = mr_screenBuf + dy * MR_SCREEN_MAX_W;
         srcp = MR_SCREEN_CACHE_POINT(0, dy);
         for (dx = 0; dx < MR_SCREEN_W; dx++) {
             *dstp = *srcp;
@@ -1175,7 +1186,7 @@ static int MRF_SpriteCheck(mrp_State* L) {
                                               spriteindex * mr_bitmap[i].w * mr_sprite[i].h,
                                           (uint16)x, (uint16)y, (uint16)mr_bitmap[i].w, (uint16)mr_sprite[i].h,
                                           (uint16) * (mr_bitmap[i].p), (uint16)color);
-        to_mr_pushnumber(L, (mrp_Number)to_mr_ret);
+        mrp_pushnumber(L, (mrp_Number)to_mr_ret);
     }
 
     return 1;
@@ -1196,7 +1207,7 @@ void _mr_showErrorInfo(const char* errstr) {
     }
 
     mr_drawBitmap(mr_screenBuf, 0, 0, (uint16)MR_SCREEN_W, (uint16)MR_SCREEN_H);
-    //MRF_DrawText(errstr, 2, 2, 0, 0,0);
+    // MRF_DrawText(errstr, 2, 2, 0, 0,0);
 }
 
 static void _mr_readFileShowInfo(const char* filename, int32 code) {
@@ -1226,7 +1237,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
         }
 
         if (mr_m0_file == NULL) {
-            //MRDBGPRINTF( "_mr_readFile:mr_m0_file nil at \"%s\"!",filename);
+            // MRDBGPRINTF( "_mr_readFile:mr_m0_file nil at \"%s\"!",filename);
             _mr_readFileShowInfo(filename, 1001);
             return 0;
         }
@@ -1250,8 +1261,8 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
             MEMCPY(&m0file_len, &mr_m0_file[pos], 4);
         }
 
-        //MRDBGPRINTF("readFile 11 len = %d", len);
-        //MRDBGPRINTF("readFile 21 len = %d", m0file_len);
+        // MRDBGPRINTF("readFile 11 len = %d", len);
+        // MRDBGPRINTF("readFile 21 len = %d", m0file_len);
         pos = pos + len;
         while (!found) {
             if (((pos + 4) >= m0file_len) || (len < 1) || (len >= MR_MAX_FILE_SIZE)) {
@@ -1424,7 +1435,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                   }
                 */
 
-                //mr_read1(filename, filebuf, *filelen);
+                // mr_read1(filename, filebuf, *filelen);
                 mr_close(f);
 
             } else {  //旧版mrp
@@ -1505,7 +1516,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                     }
                     oldlen = oldlen + nTmp;
                 }
-                //mr_read1(filename, filebuf, *filelen);
+                // mr_read1(filename, filebuf, *filelen);
                 mr_close(f);
             }  //旧版mrp
         }
@@ -1522,24 +1533,24 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
 
     reallen = *(uint32*)((uint8*)filebuf + *filelen - sizeof(uint32));
 
-    //MRDBGPRINTF("Debug:_mr_readFile:filelen = %d",reallen);
-    //MRDBGPRINTF("Debug:_mr_readFile:mem left = %d",LG_mem_left);
+    // MRDBGPRINTF("Debug:_mr_readFile:filelen = %d",reallen);
+    // MRDBGPRINTF("Debug:_mr_readFile:mem left = %d",LG_mem_left);
 
-    //MRDBGPRINTF("1base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
-    //MRDBGPRINTF("is_rom_file = %d",is_rom_file);
+    // MRDBGPRINTF("1base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
+    // MRDBGPRINTF("is_rom_file = %d",is_rom_file);
     mr_gzOutBuf = mr_malloc(reallen);
-    //MRDBGPRINTF("mr_gzOutBuf = %d",mr_gzOutBuf);
+    // MRDBGPRINTF("mr_gzOutBuf = %d",mr_gzOutBuf);
     oldlen = *filelen;
     *filelen = reallen;
-    //MRDBGPRINTF("2base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
+    // MRDBGPRINTF("2base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
     if (mr_gzOutBuf == NULL) {
         if (!is_rom_file)
             mr_free(mr_gzInBuf, oldlen);
-        //MRDBGPRINTF("_mr_readFile  \"%s\" Not memory unzip!", filename);
+        // MRDBGPRINTF("_mr_readFile  \"%s\" Not memory unzip!", filename);
         return 0;
     }
 
-    //MRDBGPRINTF("3base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
+    // MRDBGPRINTF("3base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
     if (mr_unzip() != 0) {
         if (!is_rom_file)
             mr_free(mr_gzInBuf, oldlen);
@@ -1548,13 +1559,13 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
         return 0;
     }
 
-    //MRDBGPRINTF("4base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
-    //MRDBGPRINTF("is_rom_file = %d",is_rom_file);
+    // MRDBGPRINTF("4base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
+    // MRDBGPRINTF("is_rom_file = %d",is_rom_file);
     if (!is_rom_file)
         mr_free(mr_gzInBuf, oldlen);
 
-    //MRDBGPRINTF("is_rom_file = %d",is_rom_file);
-    //MRDBGPRINTF("5base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
+    // MRDBGPRINTF("is_rom_file = %d",is_rom_file);
+    // MRDBGPRINTF("5base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
     return mr_gzOutBuf;
 }
 
@@ -1584,9 +1595,9 @@ int32 mr_checkMrp(char* mrp_name) {
     if ((nTmp != 16) || (headbuf[0] != 1196446285 /*1196446285*/) || (headbuf[1] <= 232)) {
         mr_close(f);
         mr_free(tempbuf, CHECK_MRP_BUF_SIZE);
-        //MRDBGPRINTF("%d", headbuf[0]);
-        //MRDBGPRINTF("%d", headbuf[1]);
-        //MRDBGPRINTF("%d", nTmp);
+        // MRDBGPRINTF("%d", headbuf[0]);
+        // MRDBGPRINTF("%d", headbuf[1]);
+        // MRDBGPRINTF("%d", nTmp);
         MRDBGPRINTF("mrc_checkMrp err %d", 2);
         return MR_FAILED - 3;
     }
@@ -1599,15 +1610,15 @@ int32 mr_checkMrp(char* mrp_name) {
         return MR_FAILED - 4;
     }
 
-    //2008-6-11
-    // if (tempbuf[192] != 2) // 展迅
+    // 2008-6-11
+    //  if (tempbuf[192] != 2) // 展迅
     if (tempbuf[192] != 1) {
         mr_close(f);
         mr_free(tempbuf, CHECK_MRP_BUF_SIZE);
         MRDBGPRINTF("mrc_checkMrp err %d", 31);
         return MR_FAILED - 5;
     }
-    //2008-6-11
+    // 2008-6-11
 
     MEMCPY(&crc32, &tempbuf[68], 4);
     MEMSET(&tempbuf[68], 0, 4);
@@ -1622,8 +1633,8 @@ int32 mr_checkMrp(char* mrp_name) {
     if (crc32 == mr_updcrc(tempbuf, 0)) {
         nTmp = MR_SUCCESS;
     } else {
-        //MRDBGPRINTF("%d", crc32);
-        //MRDBGPRINTF("%d", t);
+        // MRDBGPRINTF("%d", crc32);
+        // MRDBGPRINTF("%d", t);
         MRDBGPRINTF("mrc_checkMrp err %d", 4);
         nTmp = MR_FAILED - 6;
     }
@@ -1670,7 +1681,7 @@ static int MRF_TimerStart(mrp_State* L) {
     }
     mr_timer_p = (void*)pcFunction;
     MR_TIME_START(thistime);
-    //mr_timer_state = MR_TIMER_STATE_RUNNING;
+    // mr_timer_state = MR_TIMER_STATE_RUNNING;
     return 0;
 }
 
@@ -1678,7 +1689,7 @@ static int MRF_TimerStop(mrp_State* L) {
     // int n = ((int)  to_mr_tonumber(L,1,0));
     to_mr_tonumber(L, 1, 0);
     MR_TIME_STOP();
-    //mr_timer_state = MR_TIMER_STATE_IDLE;
+    // mr_timer_state = MR_TIMER_STATE_IDLE;
     return 0;
 }
 
@@ -1721,7 +1732,7 @@ static int MRF_TextWidth(mrp_State* L) {
 
     int TextSize;
     uint16* tempBuf;
-    //int tempret=0;
+    // int tempret=0;
     uint16 x = 0;
     uint16 y = 0;
 
@@ -1837,7 +1848,7 @@ static int MRF_DrawLine(mrp_State* L) {
     uint16 nativecolor;
     nativecolor = MAKERGB(r, g, b);
 
-    /*   
+    /*
     if (x1 < 0 || x1 >= MR_SCREEN_W || x2 < 0 || x2 >= MR_SCREEN_W ||
         y1 < 0 || y1 >= MR_SCREEN_H || y2 < 0 || y2 >= MR_SCREEN_H)
         return;
@@ -1920,7 +1931,7 @@ static int MRF_BitmapLoad(mrp_State* L) {
     if (*filename == '*') {
         return 0;
     }
-    //MRDBGPRINTF("BitmapLoad:1 %s", filename);
+    // MRDBGPRINTF("BitmapLoad:1 %s", filename);
     filebuf = _mr_readFile(filename, &filelen, 0);
     if (!filebuf) {
         mrp_pushfstring(L, "BitmapLoad %d:cannot read \"%s\"!", i, filename);
@@ -1931,7 +1942,7 @@ static int MRF_BitmapLoad(mrp_State* L) {
     mr_bitmap[i].w = w;
     mr_bitmap[i].h = h;
 
-    //MRDBGPRINTF("BitmapLoad:2 %s", filename);
+    // MRDBGPRINTF("BitmapLoad:2 %s", filename);
     if ((x == 0) && (y == 0) && (w == max_w)) {
         mr_bitmap[i].p = filebuf;
         mr_bitmap[i].buflen = filelen;
@@ -1954,16 +1965,16 @@ static int MRF_BitmapLoad(mrp_State* L) {
             }
         }
         mr_free(filebuf, filelen);
-        //MRDBGPRINTF("BitmapLoad:4 %s", filename);
+        // MRDBGPRINTF("BitmapLoad:4 %s", filename);
     } else {
-        //MRDBGPRINTF("BitmapLoad:5 %s", filename);
+        // MRDBGPRINTF("BitmapLoad:5 %s", filename);
         mr_free(filebuf, filelen);
         mrp_pushfstring(L, "BitmapLoad %d \"%s\":len err!", i, filename);
         mrp_error(L);
         return 0;
     }
 
-    //MRDBGPRINTF("BitmapLoad:3 %s", filename);
+    // MRDBGPRINTF("BitmapLoad:3 %s", filename);
     return 0;
 }
 
@@ -2297,7 +2308,7 @@ static int MRF_TileDraw(mrp_State* L) {
                                 (uint16) * (mr_bitmap[i].p), 0, 0, (uint16)tilew);
             }
         }
-    }  //for (dy = yStart; dy < yEnd; dy++)
+    }  // for (dy = yStart; dy < yEnd; dy++)
     return 0;
 }
 
@@ -2314,24 +2325,24 @@ static int MRF_TileShift(mrp_State* L) {
     }
 #endif
     switch (mode) {
-        case 0:  //up
+        case 0:  // up
             memmove2(mr_map[i],
                      mr_map[i] + mr_tile[i].w,
                      mr_tile[i].w * (mr_tile[i].h - 1) * 2);
             break;
-        case 1:  //down
+        case 1:  // down
             memmove2(mr_map[i] + mr_tile[i].w,
                      mr_map[i],
                      mr_tile[i].w * (mr_tile[i].h - 1) * 2);
             break;
-        case 2:  //left
+        case 2:  // left
             for (j = 0; j < mr_tile[i].h; j++) {
                 memmove2(mr_map[i] + mr_tile[i].w * j,
                          mr_map[i] + mr_tile[i].w * j + 1,
                          (mr_tile[i].w * -1) * 2);
             }
             break;
-        case 3:  //right
+        case 3:  // right
             for (j = 0; j < mr_tile[i].h; j++) {
                 memmove2(mr_map[i] + mr_tile[i].w * j + 1,
                          mr_map[i] + mr_tile[i].w * j,
@@ -2404,7 +2415,7 @@ static int MRF_GetTile(mrp_State* L) {
 #endif
     {
         int16 to_mr_ret = mr_map[i][mr_tile[i].w * y + x];
-        to_mr_pushnumber(L, (mrp_Number)to_mr_ret);
+        mrp_pushnumber(L, (mrp_Number)to_mr_ret);
     }
     return 1;
 }
@@ -2460,7 +2471,7 @@ static int MRF_GetRand(mrp_State* L) {
     int32 n = ((int32)mrp_tonumber(L, 1));
     {
         int32 to_mr_ret = (int32)mr_rand() % n;
-        to_mr_pushnumber(L, (mrp_Number)to_mr_ret);
+        mrp_pushnumber(L, (mrp_Number)to_mr_ret);
     }
     return 1;
 }
@@ -2531,7 +2542,7 @@ static void SoundSet(mrp_State* L, uint16 i, char* filename, int32 type) {
     if (*filename == '*') {
         return;
     }
-    //MRDBGPRINTF("SoundSet:1 %s", filename);
+    // MRDBGPRINTF("SoundSet:1 %s", filename);
     filebuf = _mr_readFile(filename, &filelen, 0);
     if (!filebuf) {
         mrp_pushfstring(L, "SoundSet %d:cannot read \"%s\"!", i, filename);
@@ -2587,8 +2598,8 @@ static int MRF_BgMusicSet(mrp_State* L) {
 }
 
 static int MRF_BgMusicStart(mrp_State* L) {
-    //char* filename = ((char*)  to_mr_tostring(L,1,0));
-    //int32 loop = (int32)to_mr_tonumber(L, 1, 1);
+    // char* filename = ((char*)  to_mr_tostring(L,1,0));
+    // int32 loop = (int32)to_mr_tonumber(L, 1, 1);
     int32 loop = (int32)to_mr_toboolean(L, 1, TRUE);
     if (!(mr_state == MR_STATE_RUN) || (!mr_soundOn)) {
         return 0;
@@ -2606,9 +2617,9 @@ static int MRF_Exit(mrp_State* L) {
     /*这里调用内存释放，内存的内容不能被
    清空，不然虚拟机会崩溃。如果内存会被
    清空，使用时钟延时释放内存。*/
-    //mr_mem_free(LG_mem_base, LG_mem_len);
+    // mr_mem_free(LG_mem_base, LG_mem_len);
 
-    //bi = bi|MR_FLAGS_RI;
+    // bi = bi|MR_FLAGS_RI;
     if (old_pack_filename[0]) {
         MEMSET(pack_filename, 0, sizeof(pack_filename));
         STRNCPY(pack_filename, old_pack_filename, sizeof(pack_filename) - 1);
@@ -2654,13 +2665,13 @@ static int SaveTable(mrp_State* L) {
     /* perms? rootobj? */
     mr_L_checktype(L, 1, MRP_TTABLE);
     /* perms rootobj? */
-    //mr_L_checktype(L, 1, MRP_TTABLE);
+    // mr_L_checktype(L, 1, MRP_TTABLE);
     /* perms rootobj */
 
     wi.f = mr_open(filename, MR_FILE_WRONLY | MR_FILE_CREATE);
     if (wi.f == 0) {
-        //mrp_pushfstring(L, "SaveTable:mr_open \"%s\" failed",filename);
-        //mrp_error(L);
+        // mrp_pushfstring(L, "SaveTable:mr_open \"%s\" failed",filename);
+        // mrp_error(L);
         MRDBGPRINTF("SaveTable:mr_open \"%s\" failed", filename);
         return 0;
     }
@@ -2684,7 +2695,7 @@ static int LoadTable(mrp_State* L) {
 
     mrp_settop(L, 2);
     mrp_pop(L, 1);
-    //mr_L_checktype(L, 1, MRP_TTABLE);
+    // mr_L_checktype(L, 1, MRP_TTABLE);
     /* perms rootobj */
     mr_L_checktype(L, 1, MRP_TTABLE);
 
@@ -2886,8 +2897,8 @@ static int MRF_RunFile(mrp_State* L) {
     char* runfileparameter = ((char*)to_mr_tostring(L, 3, 0));
 
     memset2(pack_filename, 0, sizeof(pack_filename));
-    //strcpy(pack_filename,"i/");//all installed appliation place under root_dir/i/
-    //strncat(pack_filename,filename, sizeof(pack_filename) - 3);
+    // strcpy(pack_filename,"i/");//all installed appliation place under root_dir/i/
+    // strncat(pack_filename,filename, sizeof(pack_filename) - 3);
     strncpy2(pack_filename, filename, sizeof(pack_filename) - 1);
     memset2(start_filename, 0, sizeof(start_filename));
     strncpy2(start_filename, runfilename, sizeof(start_filename) - 1);
@@ -2899,7 +2910,7 @@ static int MRF_RunFile(mrp_State* L) {
 
     mr_timer_p = (void*)"restart";
     MR_TIME_START(100);
-    //mr_timer_state = MR_TIMER_STATE_RUNNING;
+    // mr_timer_state = MR_TIMER_STATE_RUNNING;
     mr_state = MR_STATE_RESTART;
     return 0;
 }
@@ -2910,7 +2921,7 @@ int mr_Gb2312toUnicode(mrp_State* L) {
     int TextSize;
     uint16* tempBuf;
     // int tempret=0;
-    //tempBuf = c2u((const char*)text, &tempret, &TextSize);
+    // tempBuf = c2u((const char*)text, &tempret, &TextSize);
     tempBuf = c2u((const char*)text, NULL, &TextSize);
     if (!tempBuf) {
         mrp_pushfstring(L, "Gb2312toUnicode text[0]=%d: err!", *text);
@@ -2965,20 +2976,20 @@ static int MRF_closeNet(mrp_State* L) {
     mrp_pushstring(L, "socket");
     mrp_rawget(L, MRP_GLOBALSINDEX);
 
-    //add this for nil socket obj protect.
+    // add this for nil socket obj protect.
     if (!mrp_istable(L, -1)) {
         mrp_pop(L, 1);
         MRDBGPRINTF("Socket IDLE!");
-        to_mr_pushnumber(L, (mrp_Number)ret);
+        mrp_pushnumber(L, (mrp_Number)ret);
         return 1;
     }
-    //end
+    // end
 
     mrp_pushstring(L, "state");
     mrp_pushnumber(L, MRSOCK_CLOSED);
     mrp_rawset(L, -3);
     mrp_pop(L, 1);
-    to_mr_pushnumber(L, (mrp_Number)ret);
+    mrp_pushnumber(L, (mrp_Number)ret);
     return 1;
 }
 
@@ -3031,7 +3042,7 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
             ret = mr_startShake(input1);
             break;
         case 201:
-            //ret = mr_stopShake();
+            // ret = mr_stopShake();
             break;
         case 300:
             mr_soundOn = input1;
@@ -3075,7 +3086,7 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
                 mode = (const char*)to_mr_tostring(L, 2, "cmnet");
             }
             return mropen_socket(L, mode);
-            //mrp_settop(L, 0);  /* discard any results */
+            // mrp_settop(L, 0);  /* discard any results */
         }
 #endif
         break;
@@ -3090,13 +3101,13 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
             mrp_pushstring(L, "socket");
             mrp_rawget(L, MRP_GLOBALSINDEX); /* get traceback function */
 
-            //add this for nil socket obj protect.
+            // add this for nil socket obj protect.
             if (!mrp_istable(L, -1)) {
                 mrp_pop(L, 1);
                 MRDBGPRINTF("Socket IDLE!");
                 break;
             }
-            //end
+            // end
 
             mrp_pushstring(L, "state");
             mrp_pushnumber(L, MRSOCK_CLOSED);
@@ -3134,7 +3145,7 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
 
         case 500:
 #ifdef MR_SM_SURPORT
-            ret = _mr_load_sms_cfg();  //only for sm dsm;
+            ret = _mr_load_sms_cfg();  // only for sm dsm;
 #endif
             break;
         case 501:
@@ -3189,7 +3200,7 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
     }
 
     if (L) {
-        to_mr_pushnumber(L, (mrp_Number)ret);
+        mrp_pushnumber(L, (mrp_Number)ret);
         return 1;
     } else {
         return 0;
@@ -3231,7 +3242,7 @@ int _mr_pcall(int nargs, int nresults) {
 #else
 
     status = mrp_pcall(vm_state, nargs, nresults, 0); /* call main */
-    //MRDBGPRINTF("mr_read_asyn_cb 4");
+    // MRDBGPRINTF("mr_read_asyn_cb 4");
     if (status != 0) {
 #ifndef MR_APP_IGNORE_EXCEPTION
         if (mr_state == MR_STATE_STOP) {
@@ -3242,25 +3253,25 @@ int _mr_pcall(int nargs, int nresults) {
             } else {
                 mr_stop();
             }
-            //mr_state = MR_STATE_IDLE;
+            // mr_state = MR_STATE_IDLE;
         } else {
             if (!(bi & MR_FLAGS_EI) && (MR_SCREEN_MAX_W * MR_SCREEN_H > 1024)) {  //添加对没有屏幕缓存的保护
                 mr_state = MR_STATE_ERROR;
 
-                //1948 add exception set
+                // 1948 add exception set
                 if (mr_exception_str) {
                     _mr_showErrorInfo(mr_exception_str);
                     mr_exception_str = NULL;
                 } else {
                     _mr_showErrorInfo(mrp_tostring(vm_state, -1));
                 }
-                //1948 add exception set
+                // 1948 add exception set
 
                 mrp_pop(vm_state, 1); /* remove error message*/
             } else {
                 old_pack_filename[0] = 0;
                 mr_state = MR_STATE_ERROR;
-                //MRDBGPRINTF(mrp_tostring(vm_state, -1));
+                // MRDBGPRINTF(mrp_tostring(vm_state, -1));
                 mr_exit();
             }
         }
@@ -3354,14 +3365,14 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
             }
             break;
         }
-            //1948 add exception set
+            // 1948 add exception set
         case 5:
             mr_exception_str = input1;
             break;
         case 6:
             mr_exception_str = NULL;
             break;
-            //1948 add exception set
+            // 1948 add exception set
 
         case 9:
             mr_cacheSync((void*)((uint32)(input1) & (~0x0000001F)), ((len + 0x0000001F * 3) & (~0x0000001F)));
@@ -3394,23 +3405,23 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
                 unzip_len = LG(mr_gzInBuf + LOCLEN);
                 mr_gzOutBuf = mr_malloc(unzip_len);
             } else {
-                //unzip_len  = *(uint32*)(input1 + len - 4);
+                // unzip_len  = *(uint32*)(input1 + len - 4);
                 MEMCPY(&unzip_len, (input1 + len - 4), 4);
-                //MRDBGPRINTF("unzip_len1 = %d", unzip_len);
+                // MRDBGPRINTF("unzip_len1 = %d", unzip_len);
 
                 mr_gzOutBuf = mr_malloc(unzip_len);
             }
 #else
-            //unzip_len  = *(uint32*)(input1 + len - 4);
+            // unzip_len  = *(uint32*)(input1 + len - 4);
             MEMCPY(&unzip_len, (input1 + len - 4), 4);
-            //MRDBGPRINTF("unzip_len1 = %d", unzip_len);
+            // MRDBGPRINTF("unzip_len1 = %d", unzip_len);
 
             mr_gzOutBuf = mr_malloc(unzip_len);
 #endif
 
             if (mr_gzOutBuf == NULL) {
-                //mr_free(mr_gzInBuf, oldlen);
-                //mr_free(mr_gzOutBuf, ret);
+                // mr_free(mr_gzInBuf, oldlen);
+                // mr_free(mr_gzOutBuf, ret);
                 MRDBGPRINTF("unzip  Not memory unzip!");
                 return 0;
             }
@@ -3586,7 +3597,7 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
     }
 
     if (L) {
-        to_mr_pushnumber(L, (mrp_Number)ret);
+        mrp_pushnumber(L, (mrp_Number)ret);
         return 1;
     } else {
         return 0;
@@ -3682,7 +3693,7 @@ static int32 _mr_intra_start(char* startFile, const char* entry) {
 
 #ifdef COMPATIBILITY01
     mr_store_open(vm_state);
-    //to_mr_mythroad_open(vm_state);
+    // to_mr_mythroad_open(vm_state);
     mrp_register(vm_state, "SaveTable", SaveTable);
     mrp_register(vm_state, "LoadTable", LoadTable);
     mrp_register(vm_state, "GetSysInfo", _mr_GetSysInfo);
@@ -3833,9 +3844,9 @@ static int32 _mr_intra_start(char* startFile, const char* entry) {
         return MR_FAILED;
     }
 
-    //MRDBGPRINTF("before gc %d", mr_getTime());
-    //mrp_setgcthreshold(vm_state, 0);
-    //MRDBGPRINTF("after gc %d", mr_getTime());
+    // MRDBGPRINTF("before gc %d", mr_getTime());
+    // mrp_setgcthreshold(vm_state, 0);
+    // MRDBGPRINTF("after gc %d", mr_getTime());
 
     MRDBGPRINTF("After app init, memory left:%d", LG_mem_left);
     LUADBGPRINTF("After VM do file");
@@ -3914,7 +3925,7 @@ int32 mr_stop_ex(int16 freemem) {
 
     if (freemem) {
         if (mr_bitmap[BITMAPMAX].type == MR_SCREEN_FIRST_BUF) {
-            //mr_free(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
+            // mr_free(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
         } else if (mr_bitmap[BITMAPMAX].type == MR_SCREEN_SECOND_BUF) {
             mr_platEx(1002, (uint8*)mr_screenBuf, mr_bitmap[BITMAPMAX].buflen, (uint8**)NULL, NULL, NULL);
         }
@@ -3923,9 +3934,9 @@ int32 mr_stop_ex(int16 freemem) {
 
 #ifdef MR_EXIT_RELEASE_ALL
     if (!(bi & MR_FLAGS_RI)) {
-        //MRDBGPRINTF("clean all!");
+        // MRDBGPRINTF("clean all!");
 
-        //socket cann`t be release at exit
+        // socket cann`t be release at exit
         mrp_pushstring(vm_state, "socket");
         mrp_rawget(vm_state, MRP_GLOBALSINDEX); /* get traceback function */
 
@@ -3933,7 +3944,7 @@ int32 mr_stop_ex(int16 freemem) {
             mr_closeNetwork();
             mrp_pop(vm_state, 1);
         }
-        //end
+        // end
 
         mrp_close(vm_state);
     }
@@ -3944,15 +3955,15 @@ int32 mr_stop_ex(int16 freemem) {
         MRDBGPRINTF("mr_mem_free !!!!!");
         // exit(0);
     }
-    //mr_timerStop();
+    // mr_timerStop();
     return MR_SUCCESS;
 }
 
-int32 mr_stop(void)  //int16 freemem)
+int32 mr_stop(void)  // int16 freemem)
 {
     if (mr_stop_function) {
         int status = mr_stop_function();
-        mr_stop_function = NULL;  //1943
+        mr_stop_function = NULL;  // 1943
         if (status != MR_IGNORE)
             return status;
     }
@@ -3966,7 +3977,7 @@ int32 mr_pauseApp(void) {
         mr_state = MR_STATE_PAUSE;
     } else if (mr_state == MR_STATE_RESTART) {
         MR_TIME_STOP();
-        //mr_timer_state = MR_TIMER_STATE_IDLE;
+        // mr_timer_state = MR_TIMER_STATE_IDLE;
         return MR_SUCCESS;
     } else {
         return MR_IGNORE;
@@ -3996,8 +4007,8 @@ int32 mr_pauseApp(void) {
 #else
         _mr_pcall(0, 0);
 #endif
-        //MRDBGPRINTF("%s\n", mrp_tostring(vm_state, -1));
-        //mrp_pop(vm_state, 1);  /* remove error message*/
+        // MRDBGPRINTF("%s\n", mrp_tostring(vm_state, -1));
+        // mrp_pop(vm_state, 1);  /* remove error message*/
     } else {                  /* no suspend function */
         mrp_pop(vm_state, 1); /* remove suspend */
     }
@@ -4017,7 +4028,7 @@ int32 mr_resumeApp(void) {
     } else if (mr_state == MR_STATE_RESTART) {
         mr_timer_p = (void*)"restart";
         MR_TIME_START(100);
-        //mr_timer_state = MR_TIMER_STATE_RUNNING;
+        // mr_timer_state = MR_TIMER_STATE_RUNNING;
         return MR_SUCCESS;
     } else {
         return MR_IGNORE;
@@ -4047,20 +4058,20 @@ int32 mr_resumeApp(void) {
 #else
         _mr_pcall(0, 0);
 #endif
-        //MRDBGPRINTF("%s\n", mrp_tostring(vm_state, -1));
-        //mrp_pop(vm_state, 1);  /* remove error message*/
+        // MRDBGPRINTF("%s\n", mrp_tostring(vm_state, -1));
+        // mrp_pop(vm_state, 1);  /* remove error message*/
     } else {                  /* no resume function */
         mrp_pop(vm_state, 1); /* remove resume */
     }
     if (mr_timer_state == MR_TIMER_STATE_SUSPENDED) {
         MR_TIME_START(300);
-        //mr_timer_state = MR_TIMER_STATE_RUNNING;
+        // mr_timer_state = MR_TIMER_STATE_RUNNING;
     }
     return MR_SUCCESS;
 }
 
 int32 mr_event(int16 type, int32 param1, int32 param2) {
-    //MRDBGPRINTF("mr_event %d %d %d", type, param1, param2);
+    // MRDBGPRINTF("mr_event %d %d %d", type, param1, param2);
 
     if ((mr_state == MR_STATE_RUN) || ((mr_timer_run_without_pause) && (mr_state == MR_STATE_PAUSE))) {
         if (mr_event_function) {
@@ -4094,16 +4105,16 @@ int32 mr_event(int16 type, int32 param1, int32 param2) {
             MRDBGPRINTF("dealevent is nil!");
             mrp_pop(vm_state, 1); /* remove dealevent */
         }
-        //mrp_setgcthreshold(vm_state, 0);
+        // mrp_setgcthreshold(vm_state, 0);
 
-        //MRDBGPRINTF("type = %d", mrp_type(vm_state, -1));
-        return MR_SUCCESS;  //deal
+        // MRDBGPRINTF("type = %d", mrp_type(vm_state, -1));
+        return MR_SUCCESS;  // deal
     }
-    return MR_IGNORE;  //didnot deal
+    return MR_IGNORE;  // didnot deal
 }
 
 int32 mr_timer(void) {
-    //MRDBGPRINTF("timer %d,%d",mr_state, mr_timer_state);
+    // MRDBGPRINTF("timer %d,%d",mr_state, mr_timer_state);
     if (mr_timer_state != MR_TIMER_STATE_RUNNING) {
         MRDBGPRINTF("warning:mr_timer event unexpected!");
         return MR_IGNORE;
@@ -4112,15 +4123,15 @@ int32 mr_timer(void) {
 
     if ((mr_state == MR_STATE_RUN) || ((mr_timer_run_without_pause) && (mr_state == MR_STATE_PAUSE))) {
     } else if (mr_state == MR_STATE_RESTART) {
-        mr_stop();  //1943 修改为mr_stop
-        //mr_stop_ex(TRUE);      //1943
+        mr_stop();  // 1943 修改为mr_stop
+        // mr_stop_ex(TRUE);      //1943
         _mr_intra_start(start_filename, NULL);
         return MR_SUCCESS;
     } else {
         return MR_IGNORE;
     };
 
-    //MRDBGPRINTF("before timer");
+    // MRDBGPRINTF("before timer");
 
     if (mr_timer_function) {
         int status = mr_timer_function();
@@ -4148,16 +4159,16 @@ int32 mr_timer(void) {
 #else
         _mr_pcall(0, 0);
 #endif
-        //MRDBGPRINTF(mrp_tostring(vm_state, -1));
-        //mrp_pop(vm_state, 1);  /* remove error message*/
+        // MRDBGPRINTF(mrp_tostring(vm_state, -1));
+        // mrp_pop(vm_state, 1);  /* remove error message*/
     } else { /* no dealevent function */
-        //MRDBGPRINTF("timer %s function is nil!", (char*)p);
+        // MRDBGPRINTF("timer %s function is nil!", (char*)p);
         MRDBGPRINTF("timer function \"%s\"is nil!", (char*)mr_timer_p);
         mrp_pop(vm_state, 1); /* remove dealevent */
     }
 
-    //MRDBGPRINTF("after timer");
-    //mrp_setgcthreshold(vm_state, 0);
+    // MRDBGPRINTF("after timer");
+    // mrp_setgcthreshold(vm_state, 0);
     return MR_SUCCESS;
 }
 
@@ -4251,15 +4262,15 @@ static int32 _mr_change_to_current(void) {
 int32 _mr_save_sms_cfg(int32 f) {
     int32 ret;
 
-    //MRDBGPRINTF("mr_save_sms_cfg begin!");
-    //if((f == MR_FAILED)){
-    //   return MR_FAILED;
-    //}
+    // MRDBGPRINTF("mr_save_sms_cfg begin!");
+    // if((f == MR_FAILED)){
+    //    return MR_FAILED;
+    // }
 
-    //MRDBGPRINTF("mr_save_sms_cfg before check!");
+    // MRDBGPRINTF("mr_save_sms_cfg before check!");
     if (mr_sms_cfg_need_save) {
         mr_sms_cfg_need_save = FALSE;
-        //MRDBGPRINTF("mr_save_sms_cfg before mr_seek!");
+        // MRDBGPRINTF("mr_save_sms_cfg before mr_seek!");
 
 #ifdef MR_CFG_USE_A_DISK
         _mr_change_to_root();
@@ -4273,20 +4284,20 @@ int32 _mr_save_sms_cfg(int32 f) {
         }
         ret = mr_seek(f, 0, MR_SEEK_SET);
         if (ret == MR_FAILED) {
-            //MRDBGPRINTF("mr_save_sms_cfg mr_seek err!");
+            // MRDBGPRINTF("mr_save_sms_cfg mr_seek err!");
             mr_close(f);
             return MR_FAILED;
         }
-        //MRDBGPRINTF("mr_save_sms_cfg before mr_write!");
+        // MRDBGPRINTF("mr_save_sms_cfg before mr_write!");
         ret = mr_write(f, mr_sms_cfg_buf, MR_SMS_CFG_BUF_LEN);
         if (ret == MR_FAILED) {
-            //MRDBGPRINTF("mr_save_sms_cfg mr_write err!");
+            // MRDBGPRINTF("mr_save_sms_cfg mr_write err!");
             mr_close(f);
             return MR_FAILED;
         }
         mr_close(f);
     }
-    //MRDBGPRINTF("mr_save_sms_cfg end!");
+    // MRDBGPRINTF("mr_save_sms_cfg end!");
     return MR_SUCCESS;
 }
 
@@ -4341,12 +4352,12 @@ int32 _mr_load_sms_cfg(void) {
 }
 
 int32 _mr_smsGetBytes(int32 pos, char* p, int32 len) {
-    //MRDBGPRINTF("_mr_smsGetBytes");
+    // MRDBGPRINTF("_mr_smsGetBytes");
 
-    //memset(p, 0, len);
+    // memset(p, 0, len);
 
-    //nTmp = mr_seek(filehandle, pos, 0);
-    //nTmp = mr_read(filehandle, p, len);      //write the num in the end of the sms
+    // nTmp = mr_seek(filehandle, pos, 0);
+    // nTmp = mr_read(filehandle, p, len);      //write the num in the end of the sms
 
     if ((pos >= MR_SMS_CFG_BUF_LEN) || (pos < 0) || ((pos + len) >= MR_SMS_CFG_BUF_LEN)) {
         return MR_FAILED;
@@ -4356,17 +4367,17 @@ int32 _mr_smsGetBytes(int32 pos, char* p, int32 len) {
 }
 
 int32 _mr_smsSetBytes(int32 pos, char* p, int32 len) {
-    //memset(p, 0, len);
+    // memset(p, 0, len);
 
-    //nTmp = mr_seek(filehandle, pos, 0);
-    //nTmp = mr_read(filehandle, p, len);      //write the num in the end of the sms
+    // nTmp = mr_seek(filehandle, pos, 0);
+    // nTmp = mr_read(filehandle, p, len);      //write the num in the end of the sms
 
     if ((pos >= MR_SMS_CFG_BUF_LEN) || (pos < 0) || ((pos + len) >= MR_SMS_CFG_BUF_LEN)) {
         return MR_FAILED;
     }
     mr_sms_cfg_need_save = TRUE;
     MEMCPY(mr_sms_cfg_buf + pos, p, len);
-    //MRDBGPRINTF("mr_smsSetBytes %d", *p);
+    // MRDBGPRINTF("mr_smsSetBytes %d", *p);
     return MR_SUCCESS;
 }
 
@@ -4376,7 +4387,7 @@ int32 _mr_smsGetNum(int32 index, char* pNum) {
     char num[MR_MAX_NUM_LEN];
     uint32 len;
 
-    //MRDBGPRINTF("_mr_smsGetNum");
+    // MRDBGPRINTF("_mr_smsGetNum");
     //_mr_smsGetBytes(MR_MAX_NUM_LEN * index + MR_SECTION_LEN, pNum, MR_MAX_NUM_LEN);
     _mr_smsGetBytes(MR_MAX_NUM_LEN * index + MR_SECTION_LEN, num, MR_MAX_NUM_LEN);
     len = _mr_decode((uint8*)num, STRNLEN(num, MR_MAX_NUM_LEN - 1), (uint8*)pNum);
@@ -4390,7 +4401,7 @@ int32 _mr_smsGetNum(int32 index, char* pNum) {
    memset(pNum, 0, MR_MAX_NUM_LEN);
 
    filehandle = mr_open(DSM_CFG_FILE_NAME,  MR_FILE_RDONLY);//这里先不考虑create 文件
-   
+
    if (filehandle == 0)
    {
       mr_printf("mr_open1 %d", filehandle);
@@ -4420,28 +4431,28 @@ int32 _mr_smsGetNum(int32 index, char* pNum) {
 */
 
 /**********************************************
-*name:        _mr_smsCheckNum
-*description: check whether the sms was send by cmd num form the ffs
-*input:
-*                  pNum---pointer to the Num address
-*return:     
-*                  MR_SUCCESS---success, it is cmd number
-*                  MR_FAILED--failed, it is not cmd number
-*Note: 
-***********************************************/
+ *name:        _mr_smsCheckNum
+ *description: check whether the sms was send by cmd num form the ffs
+ *input:
+ *                  pNum---pointer to the Num address
+ *return:
+ *                  MR_SUCCESS---success, it is cmd number
+ *                  MR_FAILED--failed, it is not cmd number
+ *Note:
+ ***********************************************/
 int32 _mr_smsCheckNum(uint8* pNum) {
     int i;
-    //const char mrDYpath[] = "num_sms";      //current dir is "downdata/mr", just add file name to the discreption is ok
+    // const char mrDYpath[] = "num_sms";      //current dir is "downdata/mr", just add file name to the discreption is ok
     char num[MR_MAX_NUM_LEN];  //, filebuf[MR_MAX_NUM_LEN  * MR_CMD_NUM];
     char buf[MR_MAX_NUM_LEN];
     int32 find = MR_FAILED;
 
     MRDBGPRINTF("_mr_smsCheckNum");
 
-    //init
+    // init
     MEMSET(num, 0, sizeof(num));
 
-    //need ??? disable "+86" or "0086" from the number
+    // need ??? disable "+86" or "0086" from the number
     if (pNum[0] == '+') {
         if (pNum[1] == '8' && pNum[2] == '6')
             STRCPY(num, (char*)pNum + 3);
@@ -4454,7 +4465,7 @@ int32 _mr_smsCheckNum(uint8* pNum) {
             STRCPY((char*)num, (char*)pNum);
         }
     }
-    //strcpy((char *)num,(char *)pNum);
+    // strcpy((char *)num,(char *)pNum);
 
 #ifdef MR_DEBUG
 
@@ -4479,11 +4490,11 @@ int32 _mr_smsCheckNum(uint8* pNum) {
         //_mr_smsGetBytes(MR_SECTION_LEN + i * MR_MAX_NUM_LEN, buf, MR_MAX_NUM_LEN);
         _mr_smsGetNum(i, buf);
         if (buf[0] != 0) {
-            //MRDBGPRINTF("buf != 0");
-            //MRDBGPRINTF(buf);
+            // MRDBGPRINTF("buf != 0");
+            // MRDBGPRINTF(buf);
 
             if (STRCMP(buf, num) == 0) {
-                //find this num already exist, return
+                // find this num already exist, return
                 find = MR_SUCCESS;
                 break;
             }
@@ -4494,23 +4505,23 @@ int32 _mr_smsCheckNum(uint8* pNum) {
 }
 
 /**********************************************
-*name:        _mr_smsAddNum
-*description: add a cmd num form the ffs
-*input:
-*                  index---Num index
-*                  pNum---pointer to the Num address
-*return:     
-*                  MR_SUCCESS---success, 
-*                  MR_FAILED--failed
-*                  MR_IGNORE--already exist
-*Note: 
-***********************************************/
+ *name:        _mr_smsAddNum
+ *description: add a cmd num form the ffs
+ *input:
+ *                  index---Num index
+ *                  pNum---pointer to the Num address
+ *return:
+ *                  MR_SUCCESS---success,
+ *                  MR_FAILED--failed
+ *                  MR_IGNORE--already exist
+ *Note:
+ ***********************************************/
 int32 _mr_smsAddNum(int32 index, char* pNum) {
-    //int nTmp;
-    //const char mrDYpath[] = "num_sms";      //current dir is "downdata/mr", just add file name to the discreption is ok
+    // int nTmp;
+    // const char mrDYpath[] = "num_sms";      //current dir is "downdata/mr", just add file name to the discreption is ok
     int32 len = STRLEN(pNum);
     char num[MR_MAX_NUM_LEN];
-    //char* buf;
+    // char* buf;
     if (len > (((MR_MAX_NUM_LEN - 1) / 4 * 3))) {
         MRDBGPRINTF("num too long");
         return MR_FAILED;
@@ -4520,61 +4531,61 @@ int32 _mr_smsAddNum(int32 index, char* pNum) {
     MEMSET(num, 0, MR_MAX_NUM_LEN);
 
     _mr_encode((uint8*)pNum, len, (uint8*)num);
-    //STRNCPY(num, pNum, MR_MAX_NUM_LEN-1);
+    // STRNCPY(num, pNum, MR_MAX_NUM_LEN-1);
 
-    //nTmp = mr_seek(filehandle, MR_MAX_NUM_LEN * index + MR_SECTION_LEN, 0);
+    // nTmp = mr_seek(filehandle, MR_MAX_NUM_LEN * index + MR_SECTION_LEN, 0);
 
-    //nTmp = mr_write(filehandle, num, MR_MAX_NUM_LEN);      //write the num in the end of the sms
+    // nTmp = mr_write(filehandle, num, MR_MAX_NUM_LEN);      //write the num in the end of the sms
     _mr_smsSetBytes(MR_MAX_NUM_LEN * index + MR_SECTION_LEN, num, MR_MAX_NUM_LEN);
 
     return MR_SUCCESS;
 }
 
 /**********************************************
-*name:        _mr_smsDelNum
-*description: del a cmd num form the ffs
-*input:
-*                  index---Num index
-*return:     
-*                  MR_SUCCESS---success, 
-*                  MR_FAILED--failed
-*                  MR_IGNORE--already exist
-*Note: 
-***********************************************/
+ *name:        _mr_smsDelNum
+ *description: del a cmd num form the ffs
+ *input:
+ *                  index---Num index
+ *return:
+ *                  MR_SUCCESS---success,
+ *                  MR_FAILED--failed
+ *                  MR_IGNORE--already exist
+ *Note:
+ ***********************************************/
 int32 _mr_smsDelNum(int32 index) {
-    //int nTmp;
+    // int nTmp;
     char num[MR_MAX_NUM_LEN];
 
-    //MRDBGPRINTF("_mr_smsDelNum");
+    // MRDBGPRINTF("_mr_smsDelNum");
 
     MEMSET(num, 0, MR_MAX_NUM_LEN);
 
-    //nTmp = mr_seek(filehandle, MR_MAX_NUM_LEN * index + MR_SECTION_LEN, 0);
+    // nTmp = mr_seek(filehandle, MR_MAX_NUM_LEN * index + MR_SECTION_LEN, 0);
 
-    //nTmp = mr_write(filehandle, num, MR_MAX_NUM_LEN);      //write the num in the end of the sms
+    // nTmp = mr_write(filehandle, num, MR_MAX_NUM_LEN);      //write the num in the end of the sms
     _mr_smsSetBytes(MR_MAX_NUM_LEN * index + MR_SECTION_LEN, num, MR_MAX_NUM_LEN);
 
     return MR_SUCCESS;
 }
 
 /**********************************************
-*name:        _mr_smsUpdateURL
-*description: update URL form the ffs
-*input:
-*                  pURL---pointer to the URL
-*return:     
-*                  MR_SUCCESS---success, 
-*                  MR_FAILED--failed
-*                  MR_IGNORE--already exist
-*Note: 
-***********************************************/
+ *name:        _mr_smsUpdateURL
+ *description: update URL form the ffs
+ *input:
+ *                  pURL---pointer to the URL
+ *return:
+ *                  MR_SUCCESS---success,
+ *                  MR_FAILED--failed
+ *                  MR_IGNORE--already exist
+ *Note:
+ ***********************************************/
 int32 _mr_smsUpdateURL(uint8* pURL, uint8 len) {
-    //int nTmp;
-    //int32 len = STRLEN(pURL);
+    // int nTmp;
+    // int32 len = STRLEN(pURL);
     uint8 flag = 128;
     uint8 out[MR_SECTION_LEN];
 
-    //MRDBGPRINTF("_mr_smsUpdateURL");
+    // MRDBGPRINTF("_mr_smsUpdateURL");
     if (len > (((MR_SECTION_LEN - 1) / 4 * 3))) {
         MRDBGPRINTF("url too long");
         return MR_FAILED;
@@ -4582,14 +4593,14 @@ int32 _mr_smsUpdateURL(uint8* pURL, uint8 len) {
 
     //*(pURL+len) = 0; //保证字符串最后是\0
 
-    //nTmp = mr_seek(filehandle, CFG_USE_URL_UPDATE_OFFSET, 0);      //find the file end . moth: 0 , from the begining, 1 : from the current status. 2: from the end.
+    // nTmp = mr_seek(filehandle, CFG_USE_URL_UPDATE_OFFSET, 0);      //find the file end . moth: 0 , from the begining, 1 : from the current status. 2: from the end.
 
-    //nTmp = mr_write(filehandle, &flag , 1);      //SMS更新flag
+    // nTmp = mr_write(filehandle, &flag , 1);      //SMS更新flag
     _mr_smsSetBytes(CFG_USE_URL_UPDATE_OFFSET, (char*)&flag, 1);
 
-    //nTmp = mr_seek(filehandle, MR_SECTION_LEN*3, 0);
+    // nTmp = mr_seek(filehandle, MR_SECTION_LEN*3, 0);
 
-    //nTmp = mr_write(filehandle, pURL, len);      //write the num in the end of the sms
+    // nTmp = mr_write(filehandle, pURL, len);      //write the num in the end of the sms
     MEMSET(out, 0, sizeof(out));
     len = _mr_encode(pURL, len, out);
     _mr_smsSetBytes(MR_SECTION_LEN * 3, (char*)out, MR_SECTION_LEN);
@@ -4600,19 +4611,19 @@ int32 _mr_smsUpdateURL(uint8* pURL, uint8 len) {
 }
 
 /**********************************************
-*name:        _mr_smsDsmSave
-*description: save a sms content to the ffs
-*input:
-*                  pSMSContent---pointer to the input sms content buf
-*                  
-*return:     
-*                  MR_SUCCESS---save success
-*                  MR_FAILED--save failed
-*Note: 
-***********************************************/
+ *name:        _mr_smsDsmSave
+ *description: save a sms content to the ffs
+ *input:
+ *                  pSMSContent---pointer to the input sms content buf
+ *
+ *return:
+ *                  MR_SUCCESS---save success
+ *                  MR_FAILED--save failed
+ *Note:
+ ***********************************************/
 int32 _mr_smsDsmSave(char* pSMSContent, int32 len) {
-    //int nTmp;
-    //const char mrDYpath[] = "dm_sms";      //current dir is "downdata/mr", just add file name to the discreption is ok
+    // int nTmp;
+    // const char mrDYpath[] = "dm_sms";      //current dir is "downdata/mr", just add file name to the discreption is ok
     uint8 contnet[MR_SECTION_LEN];
     uint8 flag = 128;
     int32 index;
@@ -4628,40 +4639,40 @@ int32 _mr_smsDsmSave(char* pSMSContent, int32 len) {
         return MR_FAILED;
     }
 
-    //nTmp = mr_seek(filehandle, CFG_USE_SM_UPDATE_OFFSET, 0);      //find the file end . moth: 0 , from the begining, 1 : from the current status. 2: from the end.
-    //nTmp = mr_write(filehandle, &flag , 1);      //SMS更新flag
+    // nTmp = mr_seek(filehandle, CFG_USE_SM_UPDATE_OFFSET, 0);      //find the file end . moth: 0 , from the begining, 1 : from the current status. 2: from the end.
+    // nTmp = mr_write(filehandle, &flag , 1);      //SMS更新flag
     _mr_smsSetBytes(CFG_USE_SM_UPDATE_OFFSET, (char*)&flag, 1);
 
-    //nTmp = mr_seek(filehandle, CFG_SM_FLAG_OFFSET+index, 0);      //find the file end . moth: 0 , from the begining, 1 : from the current status. 2: from the end.
-    //nTmp = mr_write(filehandle, &flag , 1);      //SMS消息指示
+    // nTmp = mr_seek(filehandle, CFG_SM_FLAG_OFFSET+index, 0);      //find the file end . moth: 0 , from the begining, 1 : from the current status. 2: from the end.
+    // nTmp = mr_write(filehandle, &flag , 1);      //SMS消息指示
     _mr_smsSetBytes(CFG_SM_FLAG_OFFSET + index, (char*)&flag, 1);
 
-    //nTmp = mr_seek(filehandle, MR_SECTION_LEN * (index+4), 0);      //find the file end . moth: 0 , from the begining, 1 : from the current status. 2: from the end.
+    // nTmp = mr_seek(filehandle, MR_SECTION_LEN * (index+4), 0);      //find the file end . moth: 0 , from the begining, 1 : from the current status. 2: from the end.
     //目前直接更新消息，版本暂时不做考虑。
-    //nTmp = mr_write(filehandle, contnet , MR_SECTION_LEN);      //write the sms message content in the end of the sms, including this message len.
+    // nTmp = mr_write(filehandle, contnet , MR_SECTION_LEN);      //write the sms message content in the end of the sms, including this message len.
     _mr_smsSetBytes(MR_SECTION_LEN * (index + 4), (char*)contnet, MR_SECTION_LEN);
 
     return MR_SUCCESS;
 }
 
 /**********************************************
-*name:        _mr_smsReplyServer
-*description: send a sms back to server
-*input:
-*                  pNum---pointer to the input number address
-*                  
-*return:     
-*                  MR_SUCCESS---send sms success
-*                  MR_FAILED--send sms failed
-*Note: 
-***********************************************/
+ *name:        _mr_smsReplyServer
+ *description: send a sms back to server
+ *input:
+ *                  pNum---pointer to the input number address
+ *
+ *return:
+ *                  MR_SUCCESS---send sms success
+ *                  MR_FAILED--send sms failed
+ *Note:
+ ***********************************************/
 int32 _mr_smsReplyServer(char* pNum, uint8* old_IMSI) {
     uint8 sms[MR_SECTION_LEN];
     uint8 smsstring[MR_MAX_SM_LEN];
     mr_userinfo info;
     uint32 offset = 0;
     // uint32 i;
-    //int32 f;
+    // int32 f;
 
     if (mr_getUserInfo(&info) != MR_SUCCESS) {
         return MR_FAILED;
@@ -4684,16 +4695,16 @@ int32 _mr_smsReplyServer(char* pNum, uint8* old_IMSI) {
    //mr_read(f, &sms[offset], 4);
 
 
-   
+
    //    _mr_smsGetBytes(0, (char*)&sms[offset], 4);
    //     *((uint32*)&sms[offset]) = htonl(*((uint32*)&sms[offset]));
    _mr_smsGetBytes(0, (char*)&i, 4);
    i = htonl(i);
    MEMCPY((char*)&sms[offset], (char*)&i, 4);
 
-   
+
    offset = offset + 4;
-   
+
    //32个消息版本号
    for(i=0;i<32;i++)
    {
@@ -4719,7 +4730,7 @@ int32 _mr_smsReplyServer(char* pNum, uint8* old_IMSI) {
     //长度16+1
     sms[offset] = 17;
     offset = offset + 1;
-    //IMEI
+    // IMEI
     sms[offset] = 2;
     offset = offset + 1;
     MEMCPY(&sms[offset], &info.IMEI, sizeof(info.IMEI));
@@ -4728,7 +4739,7 @@ int32 _mr_smsReplyServer(char* pNum, uint8* old_IMSI) {
     //长度16+1
     sms[offset] = 17;
     offset = offset + 1;
-    //IMSI
+    // IMSI
     sms[offset] = 3;
     offset = offset + 1;
     MEMCPY(&sms[offset], &info.IMSI, sizeof(info.IMSI));
@@ -4747,10 +4758,10 @@ int32 _mr_smsReplyServer(char* pNum, uint8* old_IMSI) {
     _mr_encode(sms, offset, smsstring);
     mr_sendSms((char*)pNum, (char*)smsstring, MR_ENCODE_ASCII | MR_SMS_REPORT_FLAG | MR_SMS_RESULT_FLAG);
 
-    //MRDBGPRINTF("Debug:send sms content=");
-    //MRDBGPRINTF((char*)smsstring);
-    //MRDBGPRINTF("Debug:send sms num=");
-    //MRDBGPRINTF((char*)pNum);
+    // MRDBGPRINTF("Debug:send sms content=");
+    // MRDBGPRINTF((char*)smsstring);
+    // MRDBGPRINTF("Debug:send sms num=");
+    // MRDBGPRINTF((char*)pNum);
 
     return MR_SUCCESS;
 }
@@ -4766,7 +4777,7 @@ int32 _mr_checkSMSFile(void)
 }
 */
 
-static int32 _mr_smsIndiaction(uint8* pContent, int32 nLen, uint8* pNum, int32 type)  //nLen 变为 int32，方便以后扩展
+static int32 _mr_smsIndiaction(uint8* pContent, int32 nLen, uint8* pNum, int32 type)  // nLen 变为 int32，方便以后扩展
 {
     uint8 outbuf[160];
     int32 memlen;
@@ -4802,7 +4813,7 @@ static int32 _mr_smsIndiaction(uint8* pContent, int32 nLen, uint8* pNum, int32 t
         }
     }
 
-    //decode the content
+    // decode the content
     if ((nLen < 12) || (nLen > 160)) {
         return MR_IGNORE;
     }
@@ -4810,7 +4821,7 @@ static int32 _mr_smsIndiaction(uint8* pContent, int32 nLen, uint8* pNum, int32 t
     /*
 短信接口说明：
 1、   每条短信内容120个字节。
-2、   网络发往手机的短消息；前两个字节作为本条短信内容指示： 
+2、   网络发往手机的短消息；前两个字节作为本条短信内容指示：
    a)   FA  F1：DSM配置短信；内容：如"DSM配置短信格式说明"。
    b)   FA  F2：DSM更新短信；内容：如前面（"DSM更新短信格式说明"）。
 3、   手机发往网络的短消息；前两个字节作为本条短信内容指示：
@@ -4830,7 +4841,7 @@ DSM配置短信格式说明：
 */
 
     //这里放宽了要求
-    //if( (_mr_smsCheckNum(pNum) == MR_SUCCESS))
+    // if( (_mr_smsCheckNum(pNum) == MR_SUCCESS))
     MEMSET(outbuf, 0, sizeof(outbuf));
     switch (type) {
         case MR_ENCODE_ASCII:
@@ -4838,7 +4849,7 @@ DSM配置短信格式说明：
                 //这里放宽了要求
                 memlen = _mr_decode(pContent + 4, nLen - 4, outbuf);
             } else {
-                //mr_printf("mr_sms not  cmd num");
+                // mr_printf("mr_sms not  cmd num");
                 const char* s1 = _mr_memfind((const char*)pContent, nLen, (const char*)"~#^~", 4);
                 const char* s2;
                 if (s1) {
@@ -4877,7 +4888,7 @@ DSM配置短信格式说明：
     }
 
     if (memlen < 0) {
-        //mr_printf("_mr_decode failed");
+        // mr_printf("_mr_decode failed");
         return MR_IGNORE;
     }
 
@@ -4898,7 +4909,7 @@ DSM配置短信格式说明：
             while (ret == MR_SUCCESS) {
                 int32 code = *chunk;
                 int32 tempret = MR_FAILED;
-                //uint8 flag=128;
+                // uint8 flag=128;
                 switch (code) {
                     case 1:
                         tempret = _mr_smsAddNum(*(chunk + 1), (char*)(chunk + 2));
@@ -4914,7 +4925,7 @@ DSM配置短信格式说明：
                         break;
                     case 5:
                         tempret = _mr_smsSetBytes(CFG_USE_UNICODE_OFFSET, (char*)(chunk + 1), 1);
-                        //MRDBGPRINTF("mr_smsIndiaction UNICODE!");
+                        // MRDBGPRINTF("mr_smsIndiaction UNICODE!");
                         break;
                     case 6:
                         tempret = _mr_smsSetBytes(((*(chunk + 1)) * 256) + (*(chunk + 2)), (char*)(chunk + 4), *(chunk + 3));
@@ -4928,13 +4939,13 @@ DSM配置短信格式说明：
                     default:
                         _mr_save_sms_cfg(f);
                         return MR_FAILED;
-                }  //switch
+                }  // switch
                 if (tempret != MR_SUCCESS) {
                     _mr_save_sms_cfg(f);
                     return MR_FAILED;
                 }
                 ret = _mr_getChunk(&in, &inlen, &chunk, &chunklen);  //取得下一个Chunk
-            }                                                        //while
+            }                                                        // while
         } else if ((outbuf[0] == 0xfa) && (outbuf[1] == 0xf2)) {
             _mr_smsDsmSave((char*)outbuf, memlen);
         }
@@ -4944,23 +4955,23 @@ DSM配置短信格式说明：
 }
 
 /**********************************************
-*name:        mr_smsIndiaction
-*description: get a new sms coming, check it whether was send by cmd server
-*input:
-*                  pNum---pointer to the Num address
-*                  pContent---pointer to the sms content
-*            nLen   ---
-*return:     
-*                  MR_SUCCESS---packet ok
-*                  MR_FAILED--something error when doing the sending action
-*            MR_IGNORE--- normal sms , do not do mr treating.
-*Note: 
-***********************************************/
-int32 mr_smsIndiaction(uint8* pContent, int32 nLen, uint8* pNum, int32 type)  //nLen 变为 int32，方便以后扩展
+ *name:        mr_smsIndiaction
+ *description: get a new sms coming, check it whether was send by cmd server
+ *input:
+ *                  pNum---pointer to the Num address
+ *                  pContent---pointer to the sms content
+ *            nLen   ---
+ *return:
+ *                  MR_SUCCESS---packet ok
+ *                  MR_FAILED--something error when doing the sending action
+ *            MR_IGNORE--- normal sms , do not do mr treating.
+ *Note:
+ ***********************************************/
+int32 mr_smsIndiaction(uint8* pContent, int32 nLen, uint8* pNum, int32 type)  // nLen 变为 int32，方便以后扩展
 {
     int32 ret;
-    //int32 f;
-    //f = _mr_checkSMSFile();
+    // int32 f;
+    // f = _mr_checkSMSFile();
     mr_sms_return_flag = 0;
     ret = _mr_smsIndiaction(pContent, nLen, pNum, type);
     if (mr_sms_return_flag == 1)
