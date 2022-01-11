@@ -40,7 +40,7 @@ vmrp实现原理与mrpoid基本相同，参考了mrpoid早期的实现原理，�
 
 目前使用到的工具和支持库：
 
-https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/sjlj/x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0.7z
+https://nchc.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-posix/sjlj/i686-8.1.0-release-posix-sjlj-rt_v6-rev0.7z
 
 https://github.com/aquynh/capstone/releases/download/4.0.1/capstone-4.0.1-win32.zip  （只有编译带DEBUG功能时才需要）
 
@@ -50,7 +50,7 @@ https://www.libsdl.org/release/SDL2-devel-2.0.10-mingw.tar.gz
 
 可能需要安装zlib，我是直接从官网下载源码安装的
 
-将capstone、SDL2、unicorn解压到./windows文件夹内，在windows下用mingw64(mingw32-make.exe)编译，我的是x86_64-8.1.0-release-posix-sjlj-rt_v6-rev0版本)
+将capstone、SDL2、unicorn解压到./windows文件夹内，在windows下用mingw32-make.exe编译，我的是i686-8.1.0-release-posix-sjlj-rt_v6-rev0版本)
 ```
 $ ls ./windows/ -l
 drwxr-xr-x 1 zengming 197121       0  2月 29  2020 capstone-4.0.1-win32
@@ -63,7 +63,7 @@ SDL2在linux可以通过下面的命令安装：
 sudo apt install libsdl2-dev
 ```
 
-直接`make`即可编译，使用`make DEBUG=1`可以编译出带调试功能的版本
+直接`mingw32-make`即可编译，使用`mingw32-make DEBUG=1`可以编译出带调试功能的版本
 
 另外，需要用斯凯SDK单独编译 /mythroad/build/build_full.bat 生成vmrp.mrp，提取里面的cfunction.ext，这么做的原因是mythroad层代码量非常大，arm编译和gcc编译有一点差别，例如char类型的变量值传递给uint16类型时在arm编译时可能char也是被当成uint8来处理的，而在gcc中这种情况char是有符号的，会导致bug，因此还不敢将全部代码整合到一起，目前正在mythroad分支中尝试合并
 
