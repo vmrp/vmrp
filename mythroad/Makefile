@@ -31,8 +31,6 @@ LOCAL_SRC_FILES_FULL := src/mr_api.c \
 LOCAL_SRC_FILES_FULL += mythroad.c encode.c     mr_pluto.c	mr_unzip.c	mr_base64.c mr_graphics.c mr_inflate.c \
                     string.c	printf.c	other.c	strtol.c	strtoul.c	dsm.c	fixR9.c	md5.c	mem.c	asm/r9r10.s  asm/globalValue.s
 
-LOCAL_SRC_FILES_FULL += tomr/tomr_to.c tomr/tomr_push.c #tomr/tomr_event.c tomr/tomr_is.c tomr/tomr_map.c  
-
 ifeq ($(LUADEC),1)
 LOCAL_SRC_FILES_FULL += luadec/luadec.c luadec/print.c luadec/StringBuffer.c luadec/structs.c luadec/proto.c 
 LOCAL_CFLAGS_FULL += -DLUADEC

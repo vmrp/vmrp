@@ -8,7 +8,7 @@ visible=1
 cpu=3
 vendor=1
 description=1
-include= ${MRPBUILDER_HOME}\..\include,${MRPBUILDER_HOME}\..\include\plugins,..\,..\src,..\tomr,..\include
+include= ${MRPBUILDER_HOME}\..\include,${MRPBUILDER_HOME}\..\include\plugins,..\,..\src,..\include
 output_format=mrp
 config=mtk240
 
@@ -75,13 +75,6 @@ file240=..\fixR9.c
 file241=..\asm\r9r10.s
 file242=..\md5.c
 file243=..\mem.c
-
-#以下三个注释掉的文件功能未知
-#file3306=..\tomr\tomr_event.c
-#file3307=..\tomr\tomr_is.c
-#file3308=..\tomr\tomr_map.c
-file3309=..\tomr\tomr_push.c
-file3400=..\tomr\tomr_to.c
 
 
 
