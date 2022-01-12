@@ -62,7 +62,7 @@ static void mr_K_fixjump (FuncState *fs, int pc, int dest) {
   Instruction *jmp = &fs->f->code[pc];
   int offset = dest-(pc+1);
   mrp_assert(dest != NO_JUMP);
-  if (ABS(offset) > MAXARG_sBx) //ouli brew
+  if (ABS(offset) > MAXARG_sBx)
     mr_X_syntaxerror(fs->ls, "control structure too long");
   SETARG_sBx(*jmp, offset);
 }
@@ -590,7 +590,7 @@ void mr_K_prefix (FuncState *fs, UnOpr op, expdesc *e) {
     codenot(fs, e);
 }
 #else
-void mr_K_prefix (FuncState *fs, UnOpr op, expdesc *e) { // 此处可能是5.0.3的代码
+void mr_K_prefix (FuncState *fs, UnOpr op, expdesc *e) { // ++
   if (op == OPR_MINUS) {
     mr_K_exp2val(fs, e);
     if (e->k == VK && ttisnumber(&fs->f->k[e->info]))
@@ -644,7 +644,7 @@ void mr_K_infix (FuncState *fs, BinOpr op, expdesc *v) {
   }
 }
 
-static const OpCode ops[] = {OP_EQ, OP_EQ, OP_LT, OP_LE, OP_LT, OP_LE}; //ouli brew
+static const OpCode ops[] = {OP_EQ, OP_EQ, OP_LT, OP_LE, OP_LT, OP_LE};
 
 
 static void codebinop (FuncState *fs, expdesc *res, BinOpr op,
@@ -654,7 +654,7 @@ static void codebinop (FuncState *fs, expdesc *res, BinOpr op,
     res->info = mr_K_codeABC(fs, opc, 0, o1, o2);
     res->k = VRELOCABLE;
   }
-#if 1 // 此处可能是5.0.3的代码
+#if 1 // ++
   else if ((op >= OPR_BAND) && (op <= OPR_BXOR)) {
      OpCode opc = cast(OpCode, (op - OPR_BAND) + OP_BAND);  /* ORDER OP */
      res->info = mr_K_codeABC(fs, opc, 0, o1, o2);

@@ -56,14 +56,14 @@ static void seterrorobj (mrp_State *L, int errcode, StkId oldtop) {
 }
 
 
-void mr_D_throw (mrp_State *L, int errcode) 
-{
+void mr_D_throw (mrp_State *L, int errcode) {
    if (L->errorJmp) {
       L->errorJmp->status = errcode;
       LONGJMP(L->errorJmp->b, 1);
-   } else {
+   }
+    else {
     G(L)->panic(L);
-    //exit(EXIT_FAILURE);  //ouli brew
+    //exit(EXIT_FAILURE);  // ++ 原lua未注释此行
   }
 }
 
@@ -73,13 +73,8 @@ int mr_D_rawrunprotected (mrp_State *L, Pfunc f, void *ud) {
   lj.status = 0;
   lj.previous = L->errorJmp;  /* chain new error handler */
   L->errorJmp = &lj;
-  
    if (SETJMP(lj.b) == 0)
-   {
       (*f)(L, ud);
-   }
-  
-    
   L->errorJmp = lj.previous;  /* restore old error handler */
   return lj.status;
 }
@@ -298,7 +293,7 @@ void mr_D_call (mrp_State *L, StkId func, int nResults) {
   mrp_assert(!(L->ci->state & CI_CALLING));
   if (++L->nCcalls >= MRP_MAXCCALLS) {
     if (L->nCcalls == MRP_MAXCCALLS)
-      mr_G_runerror(L, "stack(C) overflow");
+      mr_G_runerror(L, "C stack overflow");
     else if (L->nCcalls >= (MRP_MAXCCALLS + (MRP_MAXCCALLS>>3)))
       mr_D_throw(L, MRP_ERRERR);  /* error while handing stack error */
   }
@@ -382,10 +377,10 @@ MRP_API int mrp_yield (mrp_State *L, int nresults) {
   mrp_lock(L);
   ci = L->ci;
   if (L->nCcalls > 0)
-    mr_G_runerror(L, "yield err:2081"); //attempt to yield across metamethod/C-call boundary
+    mr_G_runerror(L, "attempt to yield across metamethod/C-call boundary");
   if (ci->state & CI_C) {  /* usual yield */
     if ((ci-1)->state & CI_C)
-      mr_G_runerror(L, "yield err:2082"); //cannot yield a C function
+      mr_G_runerror(L, "cannot yield a C function");
     if (L->top - nresults > L->base) {  /* is there garbage in the stack? */
       int i;
       for (i=0; i<nresults; i++)  /* move down results */
@@ -407,9 +402,7 @@ int mr_D_pcall (mrp_State *L, Pfunc func, void *u,
   lu_byte old_allowhooks = L->allowhook;
   ptrdiff_t old_errfunc = L->errfunc;
   L->errfunc = ef;
-  
   status = mr_D_rawrunprotected(L, func, u);
-
   if (status != 0) {  /* an error occurred? */
     StkId oldtop = restorestack(L, old_top);
     mr_F_close(L, oldtop);  /* close eventual pending closures */
@@ -442,10 +435,9 @@ static void f_parser (mrp_State *L, void *ud) {
   mr_C_checkGC(L);
   p = cast(struct SParser *, ud);
 
-   LUADBGPRINTF("Before f_parser mr_Y_parser");
+  LUADBGPRINTF("Before f_parser mr_Y_parser");
   tf = p->bin ? mr_U_undump(L, p->z, &p->buff) : mr_Y_parser(L, p->z, &p->buff);
   LUADBGPRINTF("After f_parser mr_Y_parser");
-
 
   cl = mr_F_newLclosure(L, 0, gt(L));
   cl->l.p = tf;
@@ -462,17 +454,13 @@ int mr_D_protectedparser (mrp_State *L, ZIO *z, int bin) {
   mr_Z_initbuffer(L, &p.buff);
   status = mr_D_rawrunprotected(L, f_parser, &p);
 
-   LUADBGPRINTF("After mr_D_protectedparser mr_D_rawrunprotected");
-
+  LUADBGPRINTF("Before mr_D_protectedparser mr_Z_freebuffer");
   mr_Z_freebuffer(L, &p.buff);
-
-   LUADBGPRINTF("After mr_D_protectedparser mr_Z_freebuffer");
+  LUADBGPRINTF("After mr_D_protectedparser mr_Z_freebuffer");
 
   if (status != 0) {  /* error? */
     StkId oldtop = restorestack(L, oldtopr);
-
-   LUADBGPRINTF("mr_D_protectedparser mr_D_rawrunprotected error");
-
+    LUADBGPRINTF("mr_D_protectedparser mr_D_rawrunprotected error");
     seterrorobj(L, status, oldtop);
   }
   return status;

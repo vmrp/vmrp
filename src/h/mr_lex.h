@@ -14,7 +14,8 @@
 #define FIRST_RESERVED	257
 
 /* maximum length of a reserved word */
-#define TOKEN_LEN	(sizeof("repeat")/sizeof(char))
+#define TOKEN_LEN	(sizeof("repeat")/sizeof(char)) // ++
+// #define TOKEN_LEN	(sizeof("function")/sizeof(char)) // 原lua
 
 
 /*

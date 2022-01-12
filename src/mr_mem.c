@@ -16,8 +16,7 @@
 ** block size; some allocators may use that.)
 */
 #ifndef l_realloc
-//#define l_realloc(b,os,s)	REALLOC(b,s)//ouli brew
-#define l_realloc(b,os,s)	mr_realloc(b,os,s)//ouli brew
+#define l_realloc(b,os,s)	mr_realloc(b,os,s)
 #endif
 
 /*
@@ -25,8 +24,7 @@
 ** allocators may use that.)
 */
 #ifndef l_free
-//#define l_free(b,os)	FREE(b)//ouli brew
-#define l_free(b,os)	mr_free(b, os)//ouli brew
+#define l_free(b,os)	mr_free(b, os)
 #endif
 
 
@@ -49,7 +47,6 @@ void *mr_M_growmr_aux (mrp_State *L, void *block, int *size, int size_elems,
                           cast(lu_mem, newsize)*cast(lu_mem, size_elems));
   *size = newsize;  /* update only when everything else is OK */
   return newblock;
-  
 }
 
 
@@ -66,7 +63,7 @@ void *mr_M_realloc (mrp_State *L, void *block, lu_mem oldsize, lu_mem size) {
     else return NULL;  /* avoid `nblocks' computations when oldsize==size==0 */
   }
   else if (size >= MAX_SIZET)
-    mr_G_runerror(L, "mem err: 2003"); //memory allocation error: block too big
+    mr_G_runerror(L, "memory allocation error: block too big");
   else {
     block = l_realloc(block, oldsize, size);
     if (block == NULL) {

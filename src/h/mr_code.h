@@ -25,7 +25,7 @@ typedef enum BinOpr {
   OPR_LT, OPR_LE, OPR_GT, OPR_GE,
   OPR_AND, OPR_OR,
 #if 1
-  OPR_BAND, OPR_BOR, OPR_BXOR,
+  OPR_BAND, OPR_BOR, OPR_BXOR, // ++
 #endif 
   OPR_NOBINOPR
 } BinOpr;
@@ -35,7 +35,7 @@ typedef enum BinOpr {
 #if 0
 typedef enum UnOpr { OPR_MINUS, OPR_NOT, OPR_NOUNOPR } UnOpr;
 #else
-typedef enum UnOpr { OPR_MINUS, OPR_NOT, OPR_BNOT, OPR_NOUNOPR } UnOpr;
+typedef enum UnOpr { OPR_MINUS, OPR_NOT, OPR_BNOT, OPR_NOUNOPR } UnOpr; // ++
 #endif
 
 

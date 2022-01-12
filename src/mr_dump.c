@@ -13,7 +13,7 @@
 typedef struct {
     mrp_State* L;
     mrp_Chunkwriter write;
-    int32 ver;
+    int32 ver; // ++ 原lua没有
     void* data;
 } DumpState;
 
@@ -116,6 +116,21 @@ static void DumpFunction(const Proto* f, const TString* p, DumpState* D) {
     DumpCode(f, D);
 }
 
+// static void DumpHeader(DumpState* D)
+// {
+//  DumpLiteral(LUA_SIGNATURE,D);
+//  DumpByte(VERSION,D); // VERSION=50
+//  DumpByte(luaU_endianness(),D);
+//  DumpByte(sizeof(int),D);
+//  DumpByte(sizeof(size_t),D);
+//  DumpByte(sizeof(Instruction),D);
+//  DumpByte(SIZE_OP,D);
+//  DumpByte(SIZE_A,D);
+//  DumpByte(SIZE_B,D);
+//  DumpByte(SIZE_C,D);
+//  DumpByte(sizeof(lua_Number),D);
+//  DumpNumber(TEST_NUMBER,D);
+// }
 static void DumpHeader(DumpState* D) {
     DumpLiteral(MRP_SIGNATURE, D);
     DumpByte(D->ver, D);
@@ -142,7 +157,7 @@ void mr_U_dump(mrp_State* L, const Proto* Main, mrp_Chunkwriter w, void* data) {
     D.L = L;
     D.write = w;
     D.data = data;
-    D.ver = 0x80;
+    D.ver = 0x80; // ++ 原lua没有
     DumpHeader(&D);
     DumpFunction(Main, NULL, &D);
 }

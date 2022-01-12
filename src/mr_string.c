@@ -48,7 +48,7 @@ static TString *newlstr (mrp_State *L, const char *str, size_t l, lu_hash h) {
   ts->tsv.marked = 0;
   ts->tsv.tt = MRP_TSTRING;
   ts->tsv.reserved = 0;
-  MEMCPY(ts+1, str, l*sizeof(char));//ouli brew
+  MEMCPY(ts+1, str, l*sizeof(char));
   ((char *)(ts+1))[l] = '\0';  /* ending 0 */
   tb = &G(L)->strt;
   h = lmod(h, tb->size);

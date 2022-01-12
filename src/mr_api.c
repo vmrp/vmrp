@@ -215,6 +215,7 @@ MRP_API const char *mrp_typename (mrp_State *L, int t) {
   return (t == MRP_TNONE) ? "no value" : mr_T_typenames[t];
 }
 
+// ++
 MRP_API const char *mrp_shorttypename (mrp_State *L, int t) {
   UNUSED(L);
   return (t == MRP_TNONE) ? "no value" : mr_T_short_typenames[t];
@@ -315,6 +316,7 @@ MRP_API const char *mrp_tostring (mrp_State *L, int idx) {
   }
 }
 
+// ++
 MRP_API const char *mrp_tostring_t (mrp_State *L, int idx) {
   StkId o = mr_A_indexAcceptable(L, idx);
   if (o == NULL)
@@ -355,6 +357,7 @@ MRP_API size_t mrp_strlen (mrp_State *L, int idx) {
   }
 }
 
+// ++
 MRP_API size_t mrp_strlen_t (mrp_State *L, int idx) {
   StkId o = mr_A_indexAcceptable(L, idx);
   if (o == NULL)
@@ -455,7 +458,7 @@ MRP_API void mrp_pushstring (mrp_State *L, const char *s) {
   if (s == NULL)
     mrp_pushnil(L);
   else
-    mrp_pushlstring(L, s, STRLEN(s));//ouli brew
+    mrp_pushlstring(L, s, STRLEN(s));
 }
 
 
@@ -722,9 +725,7 @@ MRP_API int mrp_pcall (mrp_State *L, int nargs, int nresults, int errfunc) {
   func = (errfunc == 0) ? 0 : savestack(L, mr_A_index(L, errfunc));
   c.func = L->top - (nargs+1);  /* function to be called */
   c.nresults = nresults;
-
   status = mr_D_pcall(L, f_call, &c, savestack(L, c.func), func);
-
   mrp_unlock(L);
   return status;
 }

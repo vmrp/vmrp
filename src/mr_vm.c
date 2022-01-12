@@ -300,7 +300,7 @@ int mr_V_equalval (mrp_State *L, const TObject *t1, const TObject *t2) {
 }
 
 
-void mr_V_concat (mrp_State *L, int total, int last) { // 对此函数的修改可能是从5.0.3中来的
+void mr_V_concat (mrp_State *L, int total, int last) { // ++ 对此函数的修改可能是从5.0.3中来的
   do {
     StkId top = L->base + last + 1;
     int n = 2;  /* number of elements handled in this pass (at least 2) */
@@ -728,7 +728,8 @@ StkId mr_V_execute (mrp_State *L) {
       case OP_TFORPREP: {  /* for compatibility only */
         if (ttistable(ra)) {
           setobjs2s(ra+1, ra);
-          setobj2s(ra, mr_H_getstr(hvalue(gt(L)), mr_S_new(L, "_next")));
+          setobj2s(ra, mr_H_getstr(hvalue(gt(L)), mr_S_new(L, "_next"))); // ++
+          // setobj2s(ra, luaH_getstr(hvalue(gt(L)), luaS_new(L, "next"))); // 原版lua
         }
         dojump(pc, GETARG_sBx(i));
         break;
@@ -776,7 +777,7 @@ StkId mr_V_execute (mrp_State *L) {
         mr_C_checkGC(L);
         break;
       }
-#if 1 // 可能是对位运算的扩展，原版lua没有
+#if 1 // ++ 对位运算的扩展，原版lua没有
       case OP_BNOT: {
         const TObject *rb = RKB(i);
         if (ttisnumber(rb)) {

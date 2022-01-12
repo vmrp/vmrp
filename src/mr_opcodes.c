@@ -45,8 +45,8 @@ void init_mr_opcodes(void) {
   mr_P_opnames[32] = "SETLISTO";
   mr_P_opnames[33] = "CLOSE";
 #if 0
-  mr_P_opnames[34] = "CLOSURE";
-#else
+  mr_P_opnames[34] = "CLOSURE"; // 原lua到此为止
+#else // ++ 斯凯扩展
   mr_P_opnames[34] = "CLOSURE";
   mr_P_opnames[35] = "BITNOT";
   mr_P_opnames[36] = "BITAND";
@@ -98,7 +98,7 @@ const lu_byte mr_P_opmodes[NUM_OPCODES] = {
  ,opmode(0, 0, 0, 0, 0, 0, iABx)		/* OP_SETLISTO */
  ,opmode(0, 0, 0, 0, 0, 0, iABC)		/* OP_CLOSE */
  ,opmode(0, 0, 0, 0, 1, 0, iABx)		/* OP_CLOSURE */
-#if 1 // 以下为扩展，原版lua没有
+#if 1 // ++ 以下为扩展，原版lua没有
  ,opmode(0, 1, 0, 0, 1, 0, iABC)      /* OP_BNOT */
  ,opmode(0, 0, 1, 1, 1, 0, iABC)      /* OP_BAND */
  ,opmode(0, 0, 1, 1, 1, 0, iABC)      /* OP_BOR */

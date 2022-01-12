@@ -153,14 +153,16 @@ MRP_API const char *mrp_setlocal (mrp_State *L, const mrp_Debug *ar, int n) {
 static void funcinfo (mrp_Debug *ar, StkId func) {
   Closure *cl = clvalue(func);
   if (cl->c.isC) {
-    ar->source = "=[Internal Func]";
+    ar->source = "=[Internal Func]"; // ++
+    // ar->source = "=[C]"; // 原lua
     ar->linedefined = -1;
     ar->what = "C";
   }
   else {
     ar->source = getstr(cl->l.p->source);
     ar->linedefined = cl->l.p->lineDefined;
-    ar->what = (ar->linedefined == 0) ? "main" : "Mr";
+    ar->what = (ar->linedefined == 0) ? "main" : "Mr"; // ++
+    // ar->what = (ar->linedefined == 0) ? "main" : "Lua"; // 原lua
   }
   mr_O_chunkid(ar->short_src, ar->source, MRP_IDSIZE);
 }
@@ -180,9 +182,11 @@ static const char *travglobals (mrp_State *L, const TObject *o) {
 
 static void info_tailcall (mrp_State *L, mrp_Debug *ar) {
   ar->name = ar->namewhat = "";
-  ar->what = "ignore";
+  ar->what = "ignore"; // ++
+  // ar->what = "tail"; // 原lua
   ar->linedefined = ar->currentline = -1;
-  ar->source = "=[ignore]";
+  ar->source = "=[ignore]"; // ++
+  // ar->source = "=(tail call)"; // 原lua
   mr_O_chunkid(ar->short_src, ar->source, MRP_IDSIZE);
   ar->nups = 0;
   setnilvalue(L->top);
@@ -233,7 +237,8 @@ MRP_API int mrp_getinfo (mrp_State *L, const char *what, mrp_Debug *ar) {
   if (*what == '>') {
     StkId f = L->top - 1;
     if (!ttisfunction(f))
-      mr_G_runerror(L, "miss getinfo");
+      mr_G_runerror(L, "miss getinfo"); // ++
+      // luaG_runerror(L, "value for `lua_getinfo' is not a function"); // 原lua
     status = mr_auxgetinfo(L, what + 1, ar, f, NULL);
     L->top--;  /* pop function */
   }
@@ -244,7 +249,7 @@ MRP_API int mrp_getinfo (mrp_State *L, const char *what, mrp_Debug *ar) {
   }
   else
     info_tailcall(L, ar);
-  if (STRCHR(what, 'f')) incr_top(L); //ouli brew
+  if (STRCHR(what, 'f')) incr_top(L);
   mrp_unlock(L);
   return status;
 }
@@ -510,17 +515,17 @@ void mr_G_typeerror (mrp_State *L, const TObject *o, const char *op) {
   const char *kind = (isinstack(L->ci, o)) ?
                          getobjname(L->ci, o - L->base, &name) : NULL;
   if (kind)
-    mr_G_runerror(L, "err:%s %s `%s' (%s)", //attempt to %s %s `%s' (a %s value)
+    mr_G_runerror(L, "attempt to %s %s `%s' (a %s value)",
                 op, kind, name, t);
   else
-    mr_G_runerror(L, "err:%s a %s value", op, t);  //attempt to %s a %s value
+    mr_G_runerror(L, "attempt to %s a %s value", op, t);
 }
 
 
 void mr_G_concaterror (mrp_State *L, StkId p1, StkId p2) {
   if (ttisstring(p1)) p1 = p2;
   mrp_assert(!ttisstring(p1));
-  mr_G_typeerror(L, p1, "cat(..)"); //concatenate
+  mr_G_typeerror(L, p1, "concatenate");
 }
 
 
@@ -528,20 +533,17 @@ void mr_G_aritherror (mrp_State *L, const TObject *p1, const TObject *p2) {
   TObject temp;
   if (mr_V_tonumber(p1, &temp) == NULL)
     p2 = p1;  /* first operand is wrong */
-  mr_G_typeerror(L, p2, "expect num(arith) but ");  //perform arithmetic on
+  mr_G_typeerror(L, p2, "perform arithmetic on");
 }
 
 
 int mr_G_ordererror (mrp_State *L, const TObject *p1, const TObject *p2) {
   const char *t1 = mr_T_typenames[ttype(p1)];
   const char *t2 = mr_T_typenames[ttype(p2)];
-  mr_G_runerror(L, "err:compare %s with %s", t1, t2);
-#if 0
   if (t1[2] == t2[2])
     mr_G_runerror(L, "attempt to compare two %s values", t1);
   else
     mr_G_runerror(L, "attempt to compare %s with %s", t1, t2);
-#endif
   return 0;
 }
 

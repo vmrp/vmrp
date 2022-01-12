@@ -180,7 +180,7 @@ static size_t readname (LexState *LS) {
 }
 
 
-//Hex Patch (可能是对十六进制数做了加强，原版可能不支持)
+// ++ Hex Patch (可能是对十六进制数做了加强，原版可能不支持)
 static int mr_O_hexstr2d (const char *s, mrp_Number *result) {
   char *endptr;
   mrp_Number res = strtoul2(s, &endptr, 0);
@@ -198,7 +198,7 @@ static void read_numeral (LexState *LS, int comma, SemInfo *seminfo) {
   size_t l = 0;
   checkbuffer(LS, l);
   if (comma) save(LS, '.', l);
-  //Hex Patch
+  // ++ Hex Patch
   if (LS->current == '0') {  /* check for hex prefix */
     save_and_next(LS, l);
     if (LS->current == 'x' || LS->current == 'X') {
@@ -246,7 +246,7 @@ static void read_numeral (LexState *LS, int comma, SemInfo *seminfo) {
     mr_X_lexerror(LS, "malformed number", TK_NUMBER);
 }
 
-// 可能是对C语言多行注释的支持，原版lua不支持
+// ++ 可能是对C语言多行注释的支持，原版lua不支持
 static void read_long_comment_string(LexState *LS) {
    int cont = 0;
    size_t l = 0;
@@ -314,7 +314,8 @@ static void read_long_string (LexState *LS, SemInfo *seminfo) {
     switch (LS->current) {
       case EOZ:
         save(LS, '\0', l);
-        mr_X_lexerror(LS, "long string unfinished", TK_EOS);
+        mr_X_lexerror(LS, (seminfo) ? "unfinished long string" :
+                                   "unfinished long comment", TK_EOS);
         break;  /* to avoid warnings */
       case '[':
         save_and_next(LS, l);
@@ -347,6 +348,7 @@ static void read_long_string (LexState *LS, SemInfo *seminfo) {
 }
 
 #if 1
+// ++ 原版lua没有
 static int hexval(char c)
 {
   if ((c >= '0') && (c <= '9')) return c - '0';
@@ -356,7 +358,7 @@ static int hexval(char c)
 }
 #endif
 
-
+// ++ 原版lua没有
 static void read_long_string_for_py_mode (LexState *LS, int del, SemInfo *seminfo) {
   size_t l = 2;
   checkbuffer(LS, l);
@@ -399,7 +401,7 @@ static void read_string (LexState *LS, int del, SemInfo *seminfo) {
   size_t l = 0;
   checkbuffer(LS, l);
   save_and_next(LS, l);
-#if 1        //ouli for '''
+#if 1        // ouli for ''' // ++ 原版lua没有
    if(LS->current == del){
       save_and_next(LS, l);
       if(LS->current == del){
@@ -434,7 +436,7 @@ static void read_string (LexState *LS, int del, SemInfo *seminfo) {
           case 't': save(LS, '\t', l); next(LS); break;
           case 'v': save(LS, '\v', l); next(LS); break;
           case '\n': save(LS, '\n', l); inclinenumber(LS); break;
-#if 1
+#if 1 // ++ 原版lua没有
           case 'x': case 'X': {
             int c = 0;
             next(LS);
@@ -463,8 +465,8 @@ static void read_string (LexState *LS, int del, SemInfo *seminfo) {
                 c = 10*c + (LS->current-'0');
                 next(LS);
               } while (++i<3 && mr_isdigit(LS->current));
-              // if (c > UCHAR_MAX) {
-              if (c > 0xFF) {
+              // if (c > UCHAR_MAX) { // 原lua
+              if (c > 0xFF) { // ++ 修改后
                 save(LS, '\0', l);
                 mr_X_lexerror(LS, "escape sequence too large", TK_STRING);
               }
@@ -493,7 +495,7 @@ int mr_X_lex (LexState *LS, SemInfo *seminfo) {
         inclinenumber(LS);
         continue;
       }
-#if 0
+#if 0 // ++ 原版lua是打开的
       case '-': {
         next(LS);
         if (LS->current != '-') return '-';
@@ -507,7 +509,7 @@ int mr_X_lex (LexState *LS, SemInfo *seminfo) {
         continue;
       }
 #endif
-      case '/': {
+      case '/': { // ++ 原版lua没有
         next(LS);
         if (LS->current == '*')
          {
@@ -537,12 +539,12 @@ int mr_X_lex (LexState *LS, SemInfo *seminfo) {
         if (LS->current != '=') return '<';
         else { next(LS); return TK_LE; }
       }
-      case '&': { // 可能是对C语言&&运算符的支持，原版lua不支持
+      case '&': { // ++ 可能是对C语言&&运算符的支持，原版lua不支持
         next(LS);
         if (LS->current != '&') return '&';
         else { next(LS); return TK_AND; }
       }
-      case '|': {
+      case '|': { // ++ 原版lua没有
         next(LS);
         if (LS->current != '|') return '|';
         else { next(LS); return TK_OR; }
@@ -552,14 +554,14 @@ int mr_X_lex (LexState *LS, SemInfo *seminfo) {
         if (LS->current != '=') return '>';
         else { next(LS); return TK_GE; }
       }
-#if 0
+#if 0 // ++ 原版lua是打开的
       case '~': {
         next(LS);
         if (LS->current != '=') return '~';
         else { next(LS); return TK_NE; }
       }
 #endif
-      case '!': {
+      case '!': { // 原版lua没有
         next(LS);
         if (LS->current != '=') return TK_NOT;
         else { next(LS); return TK_NE; }

@@ -65,7 +65,7 @@ static void LoadVector(LoadState* S, void* b, int m, size_t size) {
 static int LoadInt(LoadState* S) {
     int x;
     LoadBlock(S, &x, sizeof(x));
-    if (x < 0) mr_G_runerror(S->L, "bad integer in XX", S->name);
+    if (x < 0) mr_G_runerror(S->L, "bad integer in %s", S->name);
     return x;
 }
 
@@ -206,7 +206,7 @@ static void TestSize(LoadState* S, int s, const char* what) {
 #define TESTSIZE(s, w) TestSize(S, s, w)
 #define V(v) v / 16, v % 16
 
-static void LoadHeader(LoadState* S) { // 对原版有改动
+static void LoadHeader(LoadState* S) {
     int version;
     mrp_Number x, tx = TEST_NUMBER;
     LoadSignature(S);
@@ -218,7 +218,7 @@ static void LoadHeader(LoadState* S) { // 对原版有改动
         mr_G_runerror(S->L,"%s too old: read version %d.%d; %d.%d expected ",
                       S->name, V(version), V(VERSION_50));
     S->swap = (mr_U_endianness() != LoadByte(S)); /* need to swap bytes? */
-    if (version > VERSION_50) {
+    if (version > VERSION_50) { // ++ 原版lua没有进行比较直接进入else
     } else {
         TESTSIZE(sizeof(int), "int");
         TESTSIZE(sizeof(size_t), "size_t");
@@ -242,13 +242,13 @@ static Proto* LoadChunk(LoadState* S) {
 /*
 ** load precompiled chunk
 */
-Proto* mr_U_undump(mrp_State* L, ZIO* Z, Mbuffer* buff) { // 对原版有改动
+Proto* mr_U_undump(mrp_State* L, ZIO* Z, Mbuffer* buff) {
     LoadState S;
     const char* s = zname(Z);
-    if (*s == '$')
+    if (*s == '$') // ++ 原版是 if (*s=='@' || *s=='=')
         S.name = s + 1;
     else if (*s == MRP_SIGNATURE[0])
-        S.name = "buffer";
+        S.name = "buffer"; // ++ 原版是 S.name="binary string";
     else
         S.name = s;
     S.L = L;

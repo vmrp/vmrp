@@ -164,13 +164,13 @@ typedef unsigned long Instruction;
 
 /* minimum size for the string table (must be power of 2) */
 #ifndef MINSTRTABSIZE
-#define MINSTRTABSIZE	1024   //32
+#define MINSTRTABSIZE	1024   // ++ 原lua是32
 #endif
 
 
 /* minimum size for string buffer */
 #ifndef MRP_MINBUFFER
-#define MRP_MINBUFFER	1024   //32
+#define MRP_MINBUFFER	1024   // ++ 原lua是32
 #endif
 
 

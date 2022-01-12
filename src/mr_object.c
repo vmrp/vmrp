@@ -56,21 +56,6 @@ int mr_O_int2fb (unsigned int x) {
 
 
 int mr_O_log2 (unsigned int x) {
-   /*
-  static const lu_byte log_8[255] = {
-    0,
-    1,1,
-    2,2,2,2,
-    3,3,3,3,3,3,3,3,
-    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
-    5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
-    6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-    6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-    7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-    7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-    7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-    7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
-  }; */ //ouli brew
   if (x >= 0x00010000) {
     if (x >= 0x01000000) return log_8[((x>>24) & 0xff) - 1]+24;
     else return log_8[((x>>16) & 0xff) - 1]+16;
@@ -130,69 +115,21 @@ const char *mr_O_pushvfstring (mrp_State *L, const char *fmt, va_list argp) {
     incr_top(L);
     switch (*(e+1)) {
       case 's':
-#ifndef MR_TI254_MOD
         pushstr(L, va_arg(argp, char *));
-#else
-#if 1
-      pushstr(L, va_arg(argp, char *));
-#else
-        pushstr(L,(__va_argref(char*) 						    
-	 ? ((argp += sizeof(char**)),(**(char***)(argp-(sizeof(char**)))))    
-         : ((sizeof(char*) == sizeof(double)                                  
-             ? ((argp += 8), (*(char **)(argp - 8)))                          
-             : ((argp += 4), (*(char **)(argp - 4)))))));
-#endif
-#endif
         break;
       case 'c': {
         char buff[2];
-#ifndef MR_TI254_MOD
         buff[0] = cast(char, va_arg(argp, int));
-#else
-#if 1
-         buff[0] = cast(char, va_arg(argp, int));
-#else
-    buff[0] = cast(char, (__va_argref(int)                       
-? ((argp += sizeof(int*)),(**(int**)(argp-(sizeof(int*)))))    
-     : ((sizeof(int) == sizeof(double)                                  
-         ? ((argp += 8), (*(int*)(argp - 8)))                          
-         : ((argp += 4), (*(int*)(argp - 4)))))));
-#endif
-#endif
         buff[1] = '\0';
         pushstr(L, buff);
         break;
       }
       case 'd':
-#ifndef MR_TI254_MOD
         setnvalue(L->top, cast(mrp_Number, va_arg(argp, int)));
-#else
-#if 1
-        setnvalue(L->top, cast(mrp_Number, va_arg(argp, int)));
-#else
-    setnvalue(L->top, cast(mrp_Number, (__va_argref(int)                       
-? ((argp += sizeof(int*)),(**(int**)(argp-(sizeof(int*)))))    
-     : ((sizeof(int) == sizeof(double)                                  
-         ? ((argp += 8), (*(int*)(argp - 8)))                          
-         : ((argp += 4), (*(int*)(argp - 4))))))));
-#endif
-#endif
         incr_top(L);
         break;
       case 'f':
-#ifndef MR_TI254_MOD
         setnvalue(L->top, cast(mrp_Number, va_arg(argp, l_uacNumber)));
-#else
-#if 1
-        setnvalue(L->top, cast(mrp_Number, va_arg(argp, l_uacNumber)));
-#else
-    setnvalue(L->top, cast(mrp_Number,  (__va_argref(l_uacNumber)                       
-? ((argp += sizeof(l_uacNumber*)),(**(l_uacNumber**)(argp-(sizeof(l_uacNumber*)))))    
-     : ((sizeof(l_uacNumber) == sizeof(double)                                  
-         ? ((argp += 8), (*(l_uacNumber*)(argp - 8)))                          
-         : ((argp += 4), (*(l_uacNumber*)(argp - 4))))))));
-#endif
-#endif
         incr_top(L);
         break;
       case '%':

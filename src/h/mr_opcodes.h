@@ -177,9 +177,9 @@ name		args	description
     OP_SETLISTO, /*	A Bx							*/
 
     OP_CLOSE, /*	A 	close all variables in the stack up to (>=) R(A)*/
-#if 0
+#if 0 // ++ 原lua
 OP_CLOSURE/*	A Bx	R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))	*/
-#else
+#else // ++ 扩展功能
     OP_CLOSURE, /* A Bx  R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))  */
     OP_BNOT,    /* A B     R(A) := bitwise-complement R(B) */
     OP_BAND,    /* A B C   R(A) := R(B) bitwise-and R(C) */
@@ -189,9 +189,9 @@ OP_CLOSURE/*	A Bx	R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))	*/
 
 } OpCode;
 
-#if 0
+#if 0 // ++ 原lua
 #define NUM_OPCODES (cast(int, OP_CLOSURE + 1))
-#else
+#else // ++ 扩展功能
 #define NUM_OPCODES (cast(int, OP_BXOR + 1))
 #endif
 

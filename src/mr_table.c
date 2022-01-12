@@ -225,7 +225,7 @@ static void setnodevector (mrp_State *L, Table *t, int lsize) {
   int i;
   int size = twoto(lsize);
   if (lsize > MAXBITS)
-    mr_G_runerror(L, "key overflow");
+    mr_G_runerror(L, "table overflow");
   if (lsize == 0) {  /* no elements to hash part? */
     t->node = G(L)->dummynode;  /* use common `dummynode' */
     mrp_assert(ttisnil(gkey(t->node)));  /* assert invariants: */
