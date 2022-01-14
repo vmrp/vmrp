@@ -1226,6 +1226,14 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
     char* mr_m0_file;
     int is_rom_file = FALSE;
 
+#if 1
+    if (lookfor == 0) {  // 先尝试直接从文件加载
+        void* buf = readFile(filename, (uint32*)filelen);
+        if (buf != NULL) {
+            return buf;
+        }
+    }
+#endif
     if ((pack_filename[0] == '*') || (pack_filename[0] == '$')) { /*m0 file or ram file?*/
         uint32 pos = 0;
         uint32 m0file_len;

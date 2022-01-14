@@ -1,5 +1,6 @@
 #include "./include/other.h"
 #include "./include/mrporting.h"
+#include "./include/mem.h"
 
 int wstrlen(char* txt) {
     int i = 0;
@@ -35,6 +36,59 @@ void writeFile(char* filename, void* p, uint32 l) {
         mr_printf("writeFile err");
     }
     mr_close(f);
+}
+
+// 读取整个文件的内容
+// 如果传递了filelen参数，则文件的长度通过filelen输出，并且内存需要用mr_free()释放
+// 如果filelen为NULL，则返回的内存需要用mr_freeExt()释放
+void* readFile(const char* filename, uint32* filelen) {
+    int32 fl, fh, oldlen, rl;
+    char* filebuf;
+
+    if (mr_info(filename) != MR_IS_FILE) {
+        return NULL;
+    }
+    fl = mr_getLen(filename);
+    if (fl <= 0) {
+        return NULL;
+    }
+    if (filelen == NULL) {
+        filebuf = mr_mallocExt(fl);
+    } else {
+        filebuf = mr_malloc(fl);
+    }
+    if (filebuf == NULL) {
+        return NULL;
+    }
+    fh = mr_open(filename, MR_FILE_RDONLY);
+    if (fh == 0) {
+        if (filelen == NULL) {
+            mr_freeExt(filebuf);
+        } else {
+            mr_free(filebuf, fl);
+        }
+        return NULL;
+    }
+
+    oldlen = 0;
+    while (oldlen < fl) {
+        rl = mr_read(fh, (char*)filebuf + oldlen, fl - oldlen);
+        if (rl == MR_FAILED) {
+            if (filelen == NULL) {
+                mr_freeExt(filebuf);
+            } else {
+                mr_free(filebuf, fl);
+            }
+            mr_close(fh);
+            return NULL;
+        }
+        oldlen = oldlen + rl;
+    }
+    mr_close(fh);
+    if (filelen != NULL) {
+        *filelen = fl;
+    }
+    return filebuf;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -100,8 +154,8 @@ static const uint32 crc_32_tab[] = {
  * Run a set of bytes through the crc shift register.  If s is a NULL
  * pointer, then initialize the crc shift register contents instead.
  * Return the current crc in either case.
-    s;                  pointer to bytes to pump through 
-     n;              number of bytes in s[] 
+    s;                  pointer to bytes to pump through
+     n;              number of bytes in s[]
  */
 uint32 mr_updcrc(uint8* s, unsigned n) {
     register uint32 c; /* temporary variable */

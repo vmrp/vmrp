@@ -524,14 +524,12 @@ static const char *getF (mrp_State *L, void *ud, size_t *size) {
 
 static int errfile (mrp_State *L, int fnameindex) {
   const char *filename = mrp_tostring(L, fnameindex) + 1;
-//ouli important
   mrp_pushfstring(L, "cannot read %s", filename);
   mrp_remove(L, fnameindex);
   return MRP_ERRFILE;
 }
 
 
-// 与原版lua不同的是，mrp中文件是从mrp加载
 MRPLIB_API int mr_L_loadfile (mrp_State *L, const char *filename) {
    int status;
    int fnameindex = mrp_gettop(L) + 1; /* index of filename on the stack */
@@ -541,42 +539,11 @@ MRPLIB_API int mr_L_loadfile (mrp_State *L, const char *filename) {
 
    LUADBGPRINTF("mr_L_loadfile sart");
    mrp_pushfstring(L, "@%s", filename);  // Open the file for writing using the generated file name
-#if 1
-   if (mr_info(filename) == MR_IS_FILE) { // 先尝试直接从文件加载
-     int fh;
-     filelen = mr_getLen(filename);
-     buff = mr_malloc(filelen);
-     if (buff != NULL) {
-      fh = mr_open(filename, MR_FILE_RDONLY);
-      if (fh == 0) {
-        mr_free(buff, filelen);
-        buff = NULL;
-      } else {
-        int len = filelen;
-        int rLen = 0;
-        char *ptr = buff;
-        do {
-          ptr += rLen;
-          rLen = mr_read(fh, ptr, len);
-          if (rLen == MR_FAILED) {
-            mr_free(buff, filelen);
-            buff = NULL;
-            break;
-          }
-          len -= rLen;
-        } while (len > 0);
-        mr_close(fh);
-      }
-     }
-   }
-#endif
-   if (buff == NULL) { // 尝试从mrp内加载
-    buff = _mr_readFile((const char *)filename, &filelen, 0);
-    if (!buff) {
-      mrp_settop(L, fnameindex); /* ignore results from `mrp_load' */
-      LUADBGPRINTF("_mr_readFile Failed");
-      return errfile(L, fnameindex);
-    }
+   buff = _mr_readFile((const char *)filename, &filelen, 0);
+   if (!buff) {
+     mrp_settop(L, fnameindex); /* ignore results from `mrp_load' */
+     LUADBGPRINTF("_mr_readFile Failed");
+     return errfile(L, fnameindex);
    }
    ls.s = buff;
    ls.size = filelen;
