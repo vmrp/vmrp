@@ -81,8 +81,8 @@ static char font_sky16_bitbuf[32];
 static int font_sky16_f;
 
 static int xl_font_sky16_init() {  //字体初始化，打开字体文件
-    font_sky16_f = mr_open("system/gb16.uc2", 0);
-    if (font_sky16_f <= 0) {
+    font_sky16_f = mr_open("system/gb16.uc2", MR_FILE_RDONLY);
+    if (font_sky16_f == 0) {
         LOGW("%s", "font load fail");
         return -1;
     }

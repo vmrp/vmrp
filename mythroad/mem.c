@@ -49,7 +49,7 @@ void* mr_malloc(uint32 len) {
 
     len = (uint32)realLGmemSize(len);
     if (len >= LG_mem_left) {
-        MRDBGPRINTF("mr_malloc no memory");
+        MRDBGPRINTF("mr_malloc no memory, left:%d", LG_mem_left);
         goto err;
     }
     if (!len) {
@@ -93,7 +93,7 @@ void* mr_malloc(uint32 len) {
         previous = nextfree;
         nextfree = (LG_mem_free_t*)(LG_mem_base + nextfree->next);
     }
-    MRDBGPRINTF("mr_malloc no memory");
+    MRDBGPRINTF("mr_malloc no memory, left:%d", LG_mem_left);
 err:
     return 0;
 end:

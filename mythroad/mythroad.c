@@ -605,7 +605,6 @@ void _DrawBitmap(uint16* p, int16 x, int16 y, uint16 w, uint16 h, uint16 rop, ui
 }
 
 void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
-    //   mr_drawRect(x,y,w,h,MAKERGB(r, g, b));
     uint16 *dstp, *srcp;
     int MaxY = MIN(MR_SCREEN_H, y + h);
     int MaxX = MIN(MR_SCREEN_W, x + w);
@@ -617,57 +616,12 @@ void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
     nativecolor = MAKERGB(r, g, b);
 
     if ((MaxY > MinY) && (MaxX > MinX)) {
-#if 0
-      // for align speed test
-      srcp = MR_MALLOC((MaxX - MinX)<<1+8);
-      dstp = srcp;
-      for (dx = MinX; dx < MaxX; dx++)
-       {
-          *dstp= nativecolor;
-          dstp++;
-       }
-      for (dy=MinY; dy < MaxY; dy++)
-      {
-         dstp = mr_screenBuf + dy * MR_SCREEN_MAX_W + MinX;
-         memcpy(dstp, srcp+1, (MaxX - MinX)<<1);
-         /*
-         for (dx = MinX; dx < MaxX; dx++)
-         {
-            *dstp = nativecolor;
-            dstp++;
-         }
-         */
-        }
-        MR_FREE(srcp, (MaxX - MinX)<<1+8);
-#endif
-#if 0
-      // for align test, shut down
-      dstp = mr_screenBuf + MinY * MR_SCREEN_MAX_W + MinX;
-      srcp = dstp;
-      for (dx = MinX; dx < MaxX; dx++)
-       {
-          *dstp = nativecolor;
-          dstp++;
-       }
-      for (dy=MinY+1; dy < MaxY; dy++)
-      {
-         dstp = mr_screenBuf + dy * MR_SCREEN_MAX_W + MinX;
-         //memcpy(dstp, srcp, (MaxX - MinX)<<1);
-         for (dx = MinX; dx < MaxX; dx++)
-         {
-            *dstp = nativecolor;
-            dstp++;
-         }
-      }
-
-#else
         dstp = MR_SCREEN_CACHE_POINT(MinX, MinY);
         srcp = dstp;
         for (dx = MinX; dx < MaxX; dx++) {
             *dstp = nativecolor;
             dstp++;
         }
-
         if (((uint32)srcp & 0x00000003) != 0) {
             // srcp = ((srcp+1) & 0xfffffffc);
             srcp++;
@@ -677,28 +631,13 @@ void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
                 // dstp = ((dstp+1) & 0xfffffffc);
                 dstp++;
                 MEMCPY(dstp, srcp, (MaxX - MinX - 1) << 1);
-                /*
-                for (dx = MinX; dx < MaxX; dx++)
-                {
-                *dstp = nativecolor;
-                dstp++;
-                }
-                */
             }
         } else {
             for (dy = MinY + 1; dy < MaxY; dy++) {
                 dstp = MR_SCREEN_CACHE_POINT(MinX, dy);
                 MEMCPY(dstp, srcp, (MaxX - MinX) << 1);
-                /*
-                for (dx = MinX; dx < MaxX; dx++)
-                {
-                *dstp = nativecolor;
-                dstp++;
-                }
-                */
             }
         }
-#endif
     }
     return;
 }
@@ -1120,7 +1059,6 @@ static int MRF_BmGetScr(mrp_State* L) {
     mr_bitmap[i].buflen = MR_SCREEN_W * MR_SCREEN_H * MR_SCREEN_DEEP;
     dstp = mr_bitmap[i].p;
     for (dy = 0; dy < MR_SCREEN_H; dy++) {
-        // srcp = mr_screenBuf + dy * MR_SCREEN_MAX_W;
         srcp = MR_SCREEN_CACHE_POINT(0, dy);
         for (dx = 0; dx < MR_SCREEN_W; dx++) {
             *dstp = *srcp;

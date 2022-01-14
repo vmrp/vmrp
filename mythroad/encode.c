@@ -4,6 +4,7 @@
 #include "./include/mem.h"
 #include "./include/tables.h"
 #include "./include/other.h"
+#include "./include/mrporting.h"
 // ucs-2be与utf-16be基本是一样的，ucs2是固定一个字符两字节，而utf-16一个字符最大可以有4字节
 
 #ifdef USE_VM_C2U
@@ -67,6 +68,10 @@ uint16 *c2u(const char *cp, int *err, int *size) {
 }
 #else
 
+#ifdef USE_LOAD_TABLES_FROM_FILE
+static int32 ucs2gb_4e00_9fa5_f, tab_gb2ucs_8140_FE4F_f;
+#endif
+
 // 如果传了outMemLen参数，则必需用带len参数的free释放内存
 uint16 *GBStrToUCS2BEStr(uint8 *gbCode, uint32 *outMemLen) {
     uint32 i = 0, j = 0, len;
@@ -110,12 +115,21 @@ uint16 *GBStrToUCS2BEStr(uint8 *gbCode, uint32 *outMemLen) {
                     int Last = TAB_GB2UCS_8140_FE4F_SIZE - 1;
                     while (Last >= First) {
                         int Mid = (First + Last) >> 1;
-                        if (code < tab_gb2ucs_8140_FE4F[Mid].gb) {
+                        gb2ucs_st data;
+#ifdef USE_LOAD_TABLES_FROM_FILE
+                        if (mr_seek(tab_gb2ucs_8140_FE4F_f, sizeof(gb2ucs_st) * Mid, MR_SEEK_SET) != MR_SUCCESS) {
+                            break;
+                        }
+                        mr_read(tab_gb2ucs_8140_FE4F_f, &data, sizeof(gb2ucs_st));
+#else
+                        data = tab_gb2ucs_8140_FE4F[Mid];
+#endif
+                        if (code < data.gb) {
                             Last = Mid - 1;
-                        } else if (code > tab_gb2ucs_8140_FE4F[Mid].gb) {
+                        } else if (code > data.gb) {
                             First = Mid + 1;
-                        } else if (code == tab_gb2ucs_8140_FE4F[Mid].gb) {
-                            uint16 v = tab_gb2ucs_8140_FE4F[Mid].ucs;
+                        } else if (code == data.gb) {
+                            uint16 v = data.ucs;
                             unicode[j] = (v << 8) | (v >> 8);
                             break;
                         }
@@ -139,7 +153,15 @@ uint16 *c2u(const char *cp, int *err, int *size) {
 
 uint16 UCS2LECharToGBChar(uint16 ucs) {
     if (ucs >= 0x4E00 && ucs <= 0x9FA5) {
+#ifdef USE_LOAD_TABLES_FROM_FILE
+        uint16 c;
+        if (mr_seek(ucs2gb_4e00_9fa5_f, sizeof(uint16) * (ucs - 0x4E00), MR_SEEK_SET) == MR_SUCCESS) {
+            mr_read(ucs2gb_4e00_9fa5_f, &c, sizeof(uint16));
+            return c;
+        }
+#else
         return ucs2gb_4e00_9fa5[ucs - 0x4E00];
+#endif
     } else {
         int First = 0;
         int Last = UCS2GB_OTHER_SIZE - 1;
@@ -286,16 +308,16 @@ char *UCS2BEStrToUTF8Str(const uint8 *unicode, uint32 *outMemLen) {
 
 int32 encode_init() {
 #ifdef USE_LOAD_TABLES_FROM_FILE
-    tab_gb2ucs_8140_FE4F = readFile("system/tab_gb2ucs_8140_FE4F.dat", NULL);
-    if (tab_gb2ucs_8140_FE4F == NULL) {
-        return -1;
+    tab_gb2ucs_8140_FE4F_f = mr_open("system/tab_gb2ucs_8140_FE4F.dat", MR_FILE_RDONLY);
+    if (tab_gb2ucs_8140_FE4F_f == 0) {
+        return MR_FAILED;
     }
-    ucs2gb_4e00_9fa5 = readFile("system/ucs2gb_4e00_9fa5.dat", NULL);
-    if (ucs2gb_4e00_9fa5 == NULL) {
-        return -1;
+    ucs2gb_4e00_9fa5_f = mr_open("system/ucs2gb_4e00_9fa5.dat", MR_FILE_RDONLY);
+    if (ucs2gb_4e00_9fa5_f == 0) {
+        return MR_FAILED;
     }
 #endif
-    return 0;
+    return MR_SUCCESS;
 }
 
 /*

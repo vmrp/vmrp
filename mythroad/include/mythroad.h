@@ -181,10 +181,4 @@ typedef void (*mrc_timerCB)(int32 data);
 
 
 
-/*下面是当不能取得屏幕缓冲指针时使用的接口 (不完全)   */
-//extern void mr_drawBitmap(uint16* bmp, int16 x, int16 y, uint16 w, uint16 h, uint16 rop, uint16 transcolor);
-//extern void mr_drawRect(int16 x, int16 y, uint16 w, uint16 h, uint32 color);
-//extern int mr_check(uint16*p, int16 x, int16 y, uint16 w, uint16 h, uint16 transcoler, uint16 color_check);
-//extern void mr_effect(int16 x, int16 y, int16 w, int16 h, int16 perr, int16 perg, int16 perb);
-
 #endif

@@ -1,8 +1,7 @@
 #ifndef __TABLES_H__
 #define __TABLES_H__
 
-// #define USE_VM_C2U
-#define USE_LOAD_TABLES_FROM_FILE  // 采用文件方式加载码表
+// #define USE_LOAD_TABLES_FROM_FILE  // 采用文件方式加载码表
 
 #ifdef USE_VM_C2U
 #include "type.h"
@@ -515,11 +514,9 @@ typedef struct gb2ucs_st {
 } gb2ucs_st;
 
 #define TAB_GB2UCS_8140_FE4F_SIZE 21791
-#define TAB_GB2UCS_8140_FE4F_LEN (sizeof(gb2ucs_st) * TAB_GB2UCS_8140_FE4F_SIZE)
 
 #ifdef USE_LOAD_TABLES_FROM_FILE
 // 用这种方式写出文件 mrc_write(f, (void*)tab_gb2ucs_8140_FE4F, sizeof(tab_gb2ucs_8140_FE4F));
-static gb2ucs_st *tab_gb2ucs_8140_FE4F;
 #else
 // clang-format off
 static const gb2ucs_st tab_gb2ucs_8140_FE4F[TAB_GB2UCS_8140_FE4F_SIZE] = {
@@ -2951,11 +2948,9 @@ static const gb2ucs_st tab_gb2ucs_8140_FE4F[TAB_GB2UCS_8140_FE4F_SIZE] = {
 #endif  // USE_VM_C2U
 
 #define UCS2GB_4E00_9FA5_SIZE 20902
-#define UCS2GB_4E00_9FA5_LEN (sizeof(unsigned short) * UCS2GB_4E00_9FA5_SIZE)
 
 #ifdef USE_LOAD_TABLES_FROM_FILE
 // 用这种方式写出文件 mrc_write(f, (void*)ucs2gb_4e00_9fa5, sizeof(ucs2gb_4e00_9fa5));
-static unsigned short *ucs2gb_4e00_9fa5;
 #else
 // clang-format off
 static const unsigned short ucs2gb_4e00_9fa5[UCS2GB_4E00_9FA5_SIZE] = {

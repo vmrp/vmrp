@@ -60,10 +60,11 @@ int32 mrc_findStart(const char *name, char *buffer, uint32 len);
 int32 mrc_findGetNext(int32 h, char *buffer, uint32 len);
 int32 mrc_findStop(int32 h);
 void mrc_refreshScreen(int16 x, int16 y, uint16 w, uint16 h);
+uint16 *w_getScreenBuffer(void);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 DSM_REQUIRE_FUNCS *funcs;
-int32 timer;
+int32 timer, isRunning;
 
 void show(char *str) {
     mrc_clearScreen(0, 0, 0);
@@ -73,20 +74,21 @@ void show(char *str) {
 }
 
 void vmrp_drawBitmap(uint16 *data, int16 x, int16 y, uint16 w, uint16 h) {
-    int32 i, j, xx, yy;
-    uint16 color;
-    for (i = 0; i < w; i++) {
-        for (j = 0; j < h; j++) {
-            xx = x + i;
-            yy = y + j;
-            if (xx < 0 || yy < 0 || xx >= SCREEN_WIDTH || yy >= SCREEN_HEIGHT) {
-                continue;
-            }
-            color = *(data + (xx + yy * SCREEN_WIDTH));
-            mrc_drawPoint(xx, yy, color);
-            mrc_refreshScreen(xx, yy, 1, 1);  //可优化
-        }
-    }
+    mrc_refreshScreen(x, y, w, h);
+    // int32 i, j, xx, yy;
+    // uint16 color;
+    // for (i = 0; i < w; i++) {
+    //     for (j = 0; j < h; j++) {
+    //         xx = x + i;
+    //         yy = y + j;
+    //         if (xx < 0 || yy < 0 || xx >= SCREEN_WIDTH || yy >= SCREEN_HEIGHT) {
+    //             continue;
+    //         }
+    //         color = *(data + (xx + yy * SCREEN_WIDTH));
+    //         mrc_drawPoint(xx, yy, color);
+    //         mrc_refreshScreen(xx, yy, 1, 1);  //可优化
+    //     }
+    // }
 }
 
 void vmrp_log(char *msg) {
@@ -138,20 +140,29 @@ int32 vmrp_initNetwork(NETWORK_CB cb, const char *mode, void *userData) {
 }
 
 int32 vmrp_mem_get(char **mem_base, uint32 *mem_len) {
-    int32 len = mrc_getMemoryRemain();
-    int32 step = 1024 * 10;
-    do {
-        len -= step;
-        *mem_base = mrc_malloc(len);
-        if (*mem_base != NULL) {
-            char buf[128];
-            mrc_sprintf(buf, "mem_get:%d", len);
-            show(buf);
-            *mem_len = len;
-            return MR_SUCCESS;
-        }
-    } while (len > step);
+    uint32 len = 1024 * 300;
+    *mem_base = mrc_malloc(len);
+    if (*mem_base != NULL) {
+        show("mem get 200k");
+        *mem_len = len;
+        return MR_SUCCESS;
+    }
     show("mem_get err");
+
+    // int32 len = mrc_getMemoryRemain();
+    // int32 step = 1024 * 300;
+    // do {
+    //     len -= step;
+    //     *mem_base = mrc_malloc(len);
+    //     if (*mem_base != NULL) {
+    //         char buf[128];
+    //         mrc_sprintf(buf, "mem_get:%d", len);
+    //         show(buf);
+    //         *mem_len = len;
+    //         return MR_SUCCESS;
+    //     }
+    // } while (len > step);
+    // show("mem_get err");
     return MR_FAILED;
 }
 
@@ -173,11 +184,17 @@ int32 vmrp_timerStop(void) {
     return MR_SUCCESS;
 }
 
+void start(int32 data) {
+    mr_start_dsm("start.mrp", "start.mr", NULL);
+    isRunning = 1;
+}
+
 int32 mrc_init(void) {
     initNetWorkCb = NULL;
     initNetWorkUserData = NULL;
     getHostByNameCb = NULL;
     getHostByNameUserData = NULL;
+    isRunning = 0;
 
     funcs = mrc_malloc(sizeof(DSM_REQUIRE_FUNCS));
     timer = mrc_timerCreate();
@@ -246,7 +263,8 @@ int32 mrc_init(void) {
         mrc_sprintf(buf, "mem left:%d", len);
         show(buf);
     }
-    return mr_start_dsm("start.mrp", "start.mr", NULL);
+    mrc_timerStart(timer, 100, 0, start, 0);
+    return MR_SUCCESS;
 }
 
 int32 mrc_exitApp(void) {
@@ -254,16 +272,24 @@ int32 mrc_exitApp(void) {
 }
 
 int32 mrc_event(int32 code, int32 p0, int32 p1) {
-    // return mr_event(code, p0, p1);
+    if (isRunning) {
+        return mr_event(code, p0, p1);
+    }
     return MR_SUCCESS;
 }
 
 int32 mrc_pause() {
-    return mr_pauseApp();
+    if (isRunning) {
+        return mr_pauseApp();
+    }
+    return MR_SUCCESS;
 }
 
 int32 mrc_resume() {
-    return mr_resumeApp();
+    if (isRunning) {
+        return mr_resumeApp();
+    }
+    return MR_SUCCESS;
 }
 
 int32 mrc_extRecvAppEventEx(int32 code, int32 param0, int32 param1) {
