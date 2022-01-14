@@ -399,6 +399,9 @@ int32 mr_rmDir(const char *name) {
 }
 
 int32 mr_findGetNext(int32 search_handle, char *buffer, uint32 len) {
+#ifdef USE_FINDDIR
+    return dsmInFuncs->mrc_findGetNext(search_handle, buffer, len);
+#else
     char *d_name = dsmInFuncs->readdir(search_handle);
     if (d_name != NULL) {
         if (dsmInFuncs->flags & FLAG_USE_UTF8_FS) {
@@ -413,26 +416,35 @@ int32 mr_findGetNext(int32 search_handle, char *buffer, uint32 len) {
     }
     LOGI("mr_findGetNext %d (NULL)", search_handle);
     return MR_FAILED;
+#endif
 }
 
 int32 mr_findStop(int32 search_handle) {
+#ifdef USE_FINDDIR
+    return dsmInFuncs->mrc_findStop(search_handle);
+#else
     return dsmInFuncs->closedir(search_handle);
+#endif
 }
 
 int32 mr_findStart(const char *name, char *buffer, uint32 len) {
-    int32 ret;
+    int32 ret = MR_FAILED;
     char fullpathname[DSM_MAX_FILE_LEN];
 
     get_filename(fullpathname, name);
     LOGI("mr_findStart(%s)", fullpathname);
 
+#ifdef USE_FINDDIR
+    ret = dsmInFuncs->mrc_findStart(fullpathname, buffer, len);
+#else
     ret = dsmInFuncs->opendir(fullpathname);
     if (ret != MR_FAILED) {
         mr_findGetNext(ret, buffer, len);
-        return ret;
+    } else {
+        LOGE("mr_findStart %s: opendir FAIL!", fullpathname);
     }
-    LOGE("mr_findStart %s: opendir FAIL!", fullpathname);
-    return MR_FAILED;
+#endif
+    return ret;
 }
 
 int32 mr_ferrno(void) {
@@ -889,6 +901,9 @@ void dsm_prepare(void) {
     dsmInFuncs->mkDir(DSM_DRIVE_B);
     dsmInFuncs->mkDir(DSM_DRIVE_X);
     xl_font_sky16_init();
+    if (encode_init() == MR_FAILED) {
+        LOGW("%s", "encode load fail");
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

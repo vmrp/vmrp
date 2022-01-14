@@ -176,7 +176,7 @@ char *my_readdir(int32_t f) {
     if (obj == NULL) {
         return NULL;
     }
-    struct dirent *pDt = readdir((DIR *)obj->data);
+    struct dirent *pDt = readdir((DIR *)obj->data); // 手册说返回的内存可能是静态分配的，不要尝试free()
     if (pDt != NULL) {
         return pDt->d_name;
     }

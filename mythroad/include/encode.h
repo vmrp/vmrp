@@ -13,5 +13,6 @@ uint16 *GBStrToUCS2BEStr(uint8 *gbCode, uint32 *outMemLen);
 char *UCS2BEStrToGBStr(uint16 *uniStr, uint32 *outMemLen);
 char *UTF8StrToGBStr(uint8 *str, uint32 *outMemLen);
 char *UCS2BEStrToUTF8Str(const uint8 *unicode, uint32 *outMemLen);
+int32 encode_init(void);
 
 #endif

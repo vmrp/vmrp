@@ -3,6 +3,7 @@
 
 #include "./include/mem.h"
 #include "./include/tables.h"
+#include "./include/other.h"
 // ucs-2be与utf-16be基本是一样的，ucs2是固定一个字符两字节，而utf-16一个字符最大可以有4字节
 
 #ifdef USE_VM_C2U
@@ -42,7 +43,7 @@ uint16 *c2u(const char *cp, int *err, int *size) {
                 mr_free(uc, *size);
                 return NULL;
             } else {
-                //uc[cnt++] = (uint16)0xFFFD;
+                // uc[cnt++] = (uint16)0xFFFD;
                 uc[cnt++] = 0xFDFF;
             }
             i += 2;
@@ -56,7 +57,7 @@ uint16 *c2u(const char *cp, int *err, int *size) {
             mr_free(uc, *size);
             return (NULL);
         } else {
-            //uc[cnt++] = (uint16)0xFFFD;
+            // uc[cnt++] = (uint16)0xFFFD;
             uc[cnt++] = 0xFDFF;
             i += 2;
         }
@@ -281,6 +282,20 @@ char *UCS2BEStrToUTF8Str(const uint8 *unicode, uint32 *outMemLen) {
     }
     utf8[i] = '\0';
     return utf8;
+}
+
+int32 encode_init() {
+#ifdef USE_LOAD_TABLES_FROM_FILE
+    tab_gb2ucs_8140_FE4F = readFile("system/tab_gb2ucs_8140_FE4F.dat", NULL);
+    if (tab_gb2ucs_8140_FE4F == NULL) {
+        return -1;
+    }
+    ucs2gb_4e00_9fa5 = readFile("system/ucs2gb_4e00_9fa5.dat", NULL);
+    if (ucs2gb_4e00_9fa5 == NULL) {
+        return -1;
+    }
+#endif
+    return 0;
 }
 
 /*

@@ -1,11 +1,13 @@
 #ifndef __TABLES_H__
 #define __TABLES_H__
 
-#include "type.h"
-
 // #define USE_VM_C2U
+#define USE_LOAD_TABLES_FROM_FILE  // 采用文件方式加载码表
 
 #ifdef USE_VM_C2U
+#include "type.h"
+
+// clang-format off
 static const uint16 gb2312_a1[94] = {12288, 12289, 12290, 12539, 713, 711, 168, 12291, 12293, 8213, 65374, 8214, 8230, 8216, 8217,
                                      8220, 8221, 12308, 12309, 12296, 12297, 12298, 12299, 12300, 12301, 12302, 12303, 12310, 12311, 12304, 12305,
                                      177, 215, 247, 8758, 8743, 8744, 8721, 8719, 8746, 8745, 8712, 8759, 8730, 8869, 8741, 8736,
@@ -502,18 +504,24 @@ const uint16 *const mr_gb2312[] = {
     gb2312_e0, gb2312_e1, gb2312_e2, gb2312_e3, gb2312_e4, gb2312_e5, gb2312_e6, gb2312_e7, gb2312_e8, gb2312_e9, gb2312_ea, gb2312_eb, gb2312_ec, gb2312_ed, gb2312_ee, gb2312_ef,
     gb2312_f0, gb2312_f1, gb2312_f2, gb2312_f3, gb2312_f4, gb2312_f5, gb2312_f6, gb2312_f7,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-#else // USE_VM_C2U
+// clang-format on
+#else  // USE_VM_C2U
 
 // 以下是cp936码表
 
-
 typedef struct gb2ucs_st {
-	unsigned short gb;
-	unsigned short ucs;
+    unsigned short gb;
+    unsigned short ucs;
 } gb2ucs_st;
 
 #define TAB_GB2UCS_8140_FE4F_SIZE 21791
+#define TAB_GB2UCS_8140_FE4F_LEN (sizeof(gb2ucs_st) * TAB_GB2UCS_8140_FE4F_SIZE)
 
+#ifdef USE_LOAD_TABLES_FROM_FILE
+// 用这种方式写出文件 mrc_write(f, (void*)tab_gb2ucs_8140_FE4F, sizeof(tab_gb2ucs_8140_FE4F));
+static gb2ucs_st *tab_gb2ucs_8140_FE4F;
+#else
+// clang-format off
 static const gb2ucs_st tab_gb2ucs_8140_FE4F[TAB_GB2UCS_8140_FE4F_SIZE] = {
 	{0x8140, 0x4E02}, {0x8141, 0x4E04}, {0x8142, 0x4E05}, {0x8143, 0x4E06}, {0x8144, 0x4E0F}, {0x8145, 0x4E12}, {0x8146, 0x4E17}, {0x8147, 0x4E1F}, {0x8148, 0x4E20}, 
 	{0x8149, 0x4E21}, {0x814A, 0x4E23}, {0x814B, 0x4E26}, {0x814C, 0x4E29}, {0x814D, 0x4E2E}, {0x814E, 0x4E2F}, {0x814F, 0x4E31}, {0x8150, 0x4E33}, {0x8151, 0x4E35}, 
@@ -2938,9 +2946,19 @@ static const gb2ucs_st tab_gb2ucs_8140_FE4F[TAB_GB2UCS_8140_FE4F_SIZE] = {
 	{0xFE45, 0xFA13}, {0xFE46, 0xFA14}, {0xFE47, 0xFA18}, {0xFE48, 0xFA1F}, {0xFE49, 0xFA20}, {0xFE4A, 0xFA21}, {0xFE4B, 0xFA23}, {0xFE4C, 0xFA24}, {0xFE4D, 0xFA27}, 
 	{0xFE4E, 0xFA28}, {0xFE4F, 0xFA29}, 
 };
-#endif // USE_VM_C2U 
+// clang-format on
+#endif  // USE_LOAD_TABLES_FROM_FILE
+#endif  // USE_VM_C2U
 
-static const unsigned short ucs2gb_4e00_9fa5[20902] = {
+#define UCS2GB_4E00_9FA5_SIZE 20902
+#define UCS2GB_4E00_9FA5_LEN (sizeof(unsigned short) * UCS2GB_4E00_9FA5_SIZE)
+
+#ifdef USE_LOAD_TABLES_FROM_FILE
+// 用这种方式写出文件 mrc_write(f, (void*)ucs2gb_4e00_9fa5, sizeof(ucs2gb_4e00_9fa5));
+static unsigned short *ucs2gb_4e00_9fa5;
+#else
+// clang-format off
+static const unsigned short ucs2gb_4e00_9fa5[UCS2GB_4E00_9FA5_SIZE] = {
 	0xD2BB, 0xB6A1, 0x8140, 0xC6DF, 0x8141, 0x8142, 0x8143, 0xCDF2, 0xD5C9, 
 	0xC8FD, 0xC9CF, 0xCFC2, 0xD8A2, 0xB2BB, 0xD3EB, 0x8144, 0xD8A4, 0xB3F3, 
 	0x8145, 0xD7A8, 0xC7D2, 0xD8A7, 0xCAC0, 0x8146, 0xC7F0, 0xB1FB, 0xD2B5, 
@@ -5265,14 +5283,16 @@ static const unsigned short ucs2gb_4e00_9fa5[20902] = {
 	0xC1FA, 0xB9A8, 0xEDE8, 0xFD94, 0xFD95, 0xFD96, 0xB9EA, 0xD9DF, 0xFD97, 
 	0xFD98, 0xFD99, 0xFD9A, 0xFD9B, 
 };
-
+// clang-format on
+#endif  // USE_LOAD_TABLES_FROM_FILE
 typedef struct ucs2gb_st {
-	unsigned short ucs;
-	unsigned short gb;
+    unsigned short ucs;
+    unsigned short gb;
 } ucs2gb_st;
 
 #define UCS2GB_OTHER_SIZE 889
 
+// clang-format off
 static const ucs2gb_st ucs2gb_other[UCS2GB_OTHER_SIZE] = {
 	{0x00A4, 0xA1E8}, {0x00A7, 0xA1EC}, {0x00A8, 0xA1A7}, {0x00B0, 0xA1E3}, {0x00B1, 0xA1C0}, {0x00B7, 0xA1A4}, {0x00D7, 0xA1C1}, {0x00E0, 0xA8A4}, {0x00E1, 0xA8A2}, 
 	{0x00E8, 0xA8A8}, {0x00E9, 0xA8A6}, {0x00EA, 0xA8BA}, {0x00EC, 0xA8AC}, {0x00ED, 0xA8AA}, {0x00F2, 0xA8B0}, {0x00F3, 0xA8AE}, {0x00F7, 0xA1C2}, {0x00F9, 0xA8B4}, 
@@ -5374,5 +5394,6 @@ static const ucs2gb_st ucs2gb_other[UCS2GB_OTHER_SIZE] = {
 	{0xFF55, 0xA3F5}, {0xFF56, 0xA3F6}, {0xFF57, 0xA3F7}, {0xFF58, 0xA3F8}, {0xFF59, 0xA3F9}, {0xFF5A, 0xA3FA}, {0xFF5B, 0xA3FB}, {0xFF5C, 0xA3FC}, {0xFF5D, 0xA3FD}, 
 	{0xFF5E, 0xA1AB}, {0xFFE0, 0xA1E9}, {0xFFE1, 0xA1EA}, {0xFFE2, 0xA956}, {0xFFE3, 0xA3FE}, {0xFFE4, 0xA957}, {0xFFE5, 0xA3A4}, 
 };
+// clang-format on
 
-#endif // __TABLES_H__
+#endif  // __TABLES_H__

@@ -52,9 +52,15 @@ typedef struct {
     int32 (*rename)(const char *oldname, const char *newname);
     int32 (*mkDir)(const char *path);
     int32 (*rmDir)(const char *path);
+#ifdef USE_FINDDIR
+    int32 (*mrc_findStart)(const char *name, char *buffer, uint32 len);
+    int32 (*mrc_findGetNext)(int32 h, char *buffer, uint32 len);
+    int32 (*mrc_findStop)(int32 h);
+#else
     int32 (*opendir)(const char *name);
     char *(*readdir)(int32 f);
     int32 (*closedir)(int32 f);
+#endif
     int32 (*getLen)(const char *filename);
     void (*drawBitmap)(uint16 *bmp, int16 x, int16 y, uint16 w, uint16 h);
     int32 (*getHostByName)(const char *ptr, NETWORK_CB cb, void *userData);
