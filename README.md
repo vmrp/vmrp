@@ -12,6 +12,10 @@ https://vmrp.github.io/
 
 https://vmrp.github.io/vmrp_v1.0/main.html
 
+## 捐赠硬件
+
+模拟器的开发需要在真实的手机上测试，如果您有支持mrp的手机愿意捐赠出来用作研究，欢迎联系我
+
 # 实现原理
 
 由于mrpoid模拟器受限于安卓系统，于是决定开发一款真正的模拟器

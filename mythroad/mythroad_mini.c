@@ -1290,7 +1290,13 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
         goto end;
     }
 
-    reallen = *(uint32*)((uint8*)filebuf + *filelen - sizeof(uint32));
+    // reallen会因为内存对齐的原因导致得到错误的数据
+    // reallen = *(uint32*)((uint8*)filebuf + *filelen - sizeof(uint32));
+    {
+        uint8* ptr = (uint8*)filebuf + *filelen - sizeof(uint32);
+        reallen = (ptr[3] << 24) | (ptr[2] << 16) | (ptr[1] << 8) | ptr[0];
+    }
+    MRDBGPRINTF("_mr_readFile %d", reallen);
 
     oldlen = *filelen;
     *filelen = reallen;

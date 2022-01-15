@@ -1477,9 +1477,14 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
         return filebuf;
     }
 
-    reallen = *(uint32*)((uint8*)filebuf + *filelen - sizeof(uint32));
+    // reallen会因为内存对齐的原因导致得到错误的数据
+    // reallen = *(uint32*)((uint8*)filebuf + *filelen - sizeof(uint32));
+    {
+        uint8* ptr = (uint8*)filebuf + *filelen - sizeof(uint32);
+        reallen = (ptr[3] << 24) | (ptr[2] << 16) | (ptr[1] << 8) | ptr[0];
+    }
+    MRDBGPRINTF("_mr_readFile %d", reallen);
 
-    // MRDBGPRINTF("Debug:_mr_readFile:filelen = %d",reallen);
     // MRDBGPRINTF("Debug:_mr_readFile:mem left = %d",LG_mem_left);
 
     // MRDBGPRINTF("1base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
@@ -3599,7 +3604,13 @@ static int32 _mr_intra_start(char* appExName, const char* entry) {
         }
     }
 #else
+
+#ifdef USE_GET_SCREEN_BUFFER
+    mr_screenBuf = mr_getScreenBuffer();
+#else
     mr_screenBuf = (uint16*)MR_MALLOC(MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP);
+#endif
+
     mr_bitmap[BITMAPMAX].type = MR_SCREEN_FIRST_BUF;
     mr_bitmap[BITMAPMAX].buflen = MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP;
 #endif

@@ -61,6 +61,8 @@ int32 mrc_findGetNext(int32 h, char *buffer, uint32 len);
 int32 mrc_findStop(int32 h);
 void mrc_refreshScreen(int16 x, int16 y, uint16 w, uint16 h);
 uint16 *w_getScreenBuffer(void);
+extern int (*MR_STRLEN)(const char *s);
+#define mrc_strlen(s) MR_STRLEN(s)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 DSM_REQUIRE_FUNCS *funcs;
@@ -92,7 +94,14 @@ void vmrp_drawBitmap(uint16 *data, int16 x, int16 y, uint16 w, uint16 h) {
 }
 
 void vmrp_log(char *msg) {
-    mrc_printf("%s", msg);
+    int32 hFile = mrc_open("log.txt", 2);  // 采用只写的方式，如果文件不存在则不会进入写日志功能
+    if (hFile) {
+        mrc_seek(hFile, 0, 2);
+        mrc_write(hFile, msg, mrc_strlen(msg));
+        mrc_write(hFile, "\r\n", mrc_strlen("\r\n"));
+        mrc_close(hFile);
+    }
+    mrc_printf("mrp:%s", msg);
 }
 
 int32 vmrp_stopShake() {
@@ -140,10 +149,10 @@ int32 vmrp_initNetwork(NETWORK_CB cb, const char *mode, void *userData) {
 }
 
 int32 vmrp_mem_get(char **mem_base, uint32 *mem_len) {
-    uint32 len = 1024 * 300;
+    uint32 len = 1024 * 320;
     *mem_base = mrc_malloc(len);
     if (*mem_base != NULL) {
-        show("mem get 200k");
+        show("mem get suc");
         *mem_len = len;
         return MR_SUCCESS;
     }
@@ -255,6 +264,9 @@ int32 mrc_init(void) {
     funcs->mr_editCreate = mrc_editCreate;
     funcs->mr_editRelease = mrc_editRelease;
     funcs->mr_editGetText = mrc_editGetText;
+#ifdef USE_GET_SCREEN_BUFFER
+    funcs->getScreenBuffer = w_getScreenBuffer;
+#endif
     funcs->flags = 0;
     dsm_init(funcs);
     {

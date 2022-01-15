@@ -540,6 +540,10 @@ extern int32 mr_send(int32 s, const char* buf, int len);
 extern int32 mr_sendto(int32 s, const char* buf, int len, int32 ip, uint16 port);
 extern int32 mr_getSocketState(int s);
 
+#ifdef USE_GET_SCREEN_BUFFER
+extern uint16 *mr_getScreenBuffer(void);
+#endif
+
 typedef struct
 {
     int32 index;

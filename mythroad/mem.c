@@ -13,7 +13,7 @@ uint32 Origin_LG_mem_len;
 char* LG_mem_end;
 uint32 LG_mem_left;  // 剩余内存
 
-#define realLGmemSize(x) (((x) + 7) & (0xfffffff8))
+#define realLGmemSize(x) (((x) + 7) & (~7))
 #define MRDBGPRINTF mr_printf
 
 int32 _mr_mem_init(void) {
@@ -49,7 +49,7 @@ void* mr_malloc(uint32 len) {
 
     len = (uint32)realLGmemSize(len);
     if (len >= LG_mem_left) {
-        MRDBGPRINTF("mr_malloc no memory, left:%d", LG_mem_left);
+        MRDBGPRINTF("no memory, want:%d left:%d", len, LG_mem_left);
         goto err;
     }
     if (!len) {
@@ -93,7 +93,7 @@ void* mr_malloc(uint32 len) {
         previous = nextfree;
         nextfree = (LG_mem_free_t*)(LG_mem_base + nextfree->next);
     }
-    MRDBGPRINTF("mr_malloc no memory, left:%d", LG_mem_left);
+    MRDBGPRINTF("no memory2, want:%d left:%d", len, LG_mem_left);
 err:
     return 0;
 end:

@@ -88,6 +88,10 @@ typedef struct {
     int32 (*mr_editRelease)(int32 edit);
     const char *(*mr_editGetText)(int32 edit);
 
+#ifdef USE_GET_SCREEN_BUFFER
+    uint16 *(*getScreenBuffer)(void);
+#endif
+
     // 变量放在最后
     int32 flags;  // 调整运行时的一些参数，目前只有调整文件系统路径名是否使用UTF8编码这一个功能
 } DSM_REQUIRE_FUNCS;

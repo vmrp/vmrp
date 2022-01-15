@@ -888,6 +888,12 @@ int32 mr_sendto(int32 s, const char *buf, int len, int32 ip, uint16 port) {
     return dsmInFuncs->mr_sendto(s, buf, len, ip, port);
 }
 
+#ifdef USE_GET_SCREEN_BUFFER
+uint16 *mr_getScreenBuffer(void) {
+    return dsmInFuncs->getScreenBuffer();
+}
+#endif
+
 // Anti-Apple
 #if defined(__APPLE__) || defined(__OSX__)
 #error "我不喜欢苹果公司及其产品，禁止在任何苹果公司的产品中使用此代码"
