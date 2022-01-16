@@ -42,7 +42,7 @@ file14=..\src\mr_vm.c
 file15=..\src\mr_zio.c
 
 #不带parser，无法解析lua，只能运行编译后的mr
-#file16=..\src\mr_noparser.c
+#file16=..\src\parser\mr_noparser.c
 #带parser
 file16=..\src\parser\mr_code.c
 file17=..\src\parser\mr_lex.c

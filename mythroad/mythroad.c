@@ -470,14 +470,6 @@ void _DrawBitmap(uint16* p, int16 x, int16 y, uint16 w, uint16 h, uint16 rop, ui
                                 dstp = MR_SCREEN_CACHE_POINT(MinX, dy);
                                 srcp = BitmapFlip ? p + (h - 1 - (dy - y)) * w + (MinX - x) : p + (dy - y) * w + (MinX - x);
                                 MEMCPY(dstp, srcp, (MaxX - MinX) << 1);
-                                /*
-                                    for (dx = MinX; dx < MaxX; dx++)
-                                    {
-                                        *dstp = *srcp;
-                                        dstp++;
-                                        srcp++;
-                                    }
-                                */
                             }
                         }
                         break;
@@ -536,14 +528,6 @@ void _DrawBitmap(uint16* p, int16 x, int16 y, uint16 w, uint16 h, uint16 rop, ui
                         dstp = MR_SCREEN_CACHE_POINT(MinX, dy);
                         srcp = p + (dy - y + sy) * mw + (MinX - x + sx);
                         MEMCPY(dstp, srcp, (MaxX - MinX) << 1);
-                        /*
-                            for (dx = MinX; dx < MaxX; dx++)
-                            {
-                                *dstp = *srcp;
-                                dstp++;
-                                srcp++;
-                            }
-                        */
                     }
                 }
                 break;
@@ -645,7 +629,6 @@ void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
 int32 _DrawText(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int is_unicode, uint16 font) {
     int TextSize;
     uint16* tempBuf;
-    // int tempret=0;
 
 #ifdef MYTHROAD_DEBUG
     if (!pcText) {
@@ -783,7 +766,6 @@ int32 _DrawText(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int i
 int32 _DrawTextEx(char* pcText, int16 x, int16 y, mr_screenRectSt rect, mr_colourSt colorst, int flag, uint16 font) {
     int TextSize, endchar_index;
     uint16* tempBuf;
-    // int tempret=0;
     endchar_index = 0;
 
     if (!pcText) {
@@ -1683,7 +1665,6 @@ static int MRF_TextWidth(mrp_State* L) {
 
     int TextSize;
     uint16* tempBuf;
-    // int tempret=0;
     uint16 x = 0;
     uint16 y = 0;
 
@@ -2867,22 +2848,16 @@ static int MRF_RunFile(mrp_State* L) {
 }
 
 int mr_Gb2312toUnicode(mrp_State* L) {
-    char* text = ((char*)to_mr_tostring(L, 1, 0));
-
     int TextSize;
-    uint16* tempBuf;
-    // int tempret=0;
-    // tempBuf = c2u((const char*)text, &tempret, &TextSize);
-    tempBuf = c2u((const char*)text, NULL, &TextSize);
+    char* text = ((char*)to_mr_tostring(L, 1, 0));
+    uint16* tempBuf = c2u((const char*)text, NULL, &TextSize);
     if (!tempBuf) {
         mrp_pushfstring(L, "Gb2312toUnicode text[0]=%d: err!", *text);
         mrp_error(L);
         return 0;
     }
-
     mrp_pushlstring(L, (const char*)tempBuf, TextSize);
     MR_FREE((void*)tempBuf, TextSize);
-
     return 1;
 }
 
@@ -3855,7 +3830,6 @@ int32 mr_start_dsm(char* filename, char* ext, char* entry) {
     if (!ext) {
         ext = MR_START_FILE;
     }
-    // return _mr_intra_start(ext, filename);
     return _mr_intra_start(ext, entry);
 }
 
@@ -5031,8 +5005,7 @@ int _mr_isMr(char* input) {
         enc[13] = MR_VERSION % 247;
         enc[14] = info.ver % 253;
         enc[15] = info.ver % 241;
-        encode02(enc, 16, (info.IMEI[0] % 10) * 21 + info.IMEI[6],
-                 ((info.IMEI[11] + info.IMEI[12]) % 10) * 21 + info.IMEI[14]);
+        encode02(enc, 16, (info.IMEI[0] % 10) * 21 + info.IMEI[6], ((info.IMEI[11] + info.IMEI[12]) % 10) * 21 + info.IMEI[14]);
         if (MEMCMP(enc, input, 16) == 0) {
             ret = MR_SUCCESS;
         }
@@ -5042,11 +5015,11 @@ int _mr_isMr(char* input) {
 }
 
 uint32 mr_ltoh(char* startAddr) {
-    return (startAddr[3] << 24) | ((startAddr[2] & 0xff) << 16) | ((startAddr[1] & 0xff) << 8) | (startAddr[0] & 0xff);
+    return (startAddr[3] << 24) | (startAddr[2] << 16) | (startAddr[1] << 8) | startAddr[0];
 }
 
 uint32 mr_ntohl(char* startAddr) {
-    return ((startAddr[0] & 0xff) << 24) | ((startAddr[1] & 0xff) << 16) | ((startAddr[2] & 0xff) << 8) | (startAddr[3] & 0xFF);
+    return (startAddr[0] << 24) | (startAddr[1] << 16) | (startAddr[2] << 8) | startAddr[3];
 }
 
 #if 0
