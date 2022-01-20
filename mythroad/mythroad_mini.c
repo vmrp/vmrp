@@ -555,7 +555,7 @@ void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
     if ((MaxY > MinY) && (MaxX > MinX)) {
 #if 0
 		// for align speed test
-		srcp = MR_MALLOC((MaxX - MinX)<<1+8);
+		srcp = mr_malloc((MaxX - MinX)<<1+8);
 		dstp = srcp;
 		for (dx = MinX; dx < MaxX; dx++)
 		{
@@ -574,7 +574,7 @@ void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
 			}
 			*/
 		}
-		MR_FREE(srcp, (MaxX - MinX)<<1+8);
+		mr_free(srcp, (MaxX - MinX)<<1+8);
 #endif
 #if 0
 		// for align test, shut down
@@ -768,7 +768,7 @@ int32 _DrawText(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int i
         };
     }
     if (!is_unicode) {
-        MR_FREE((void*)tempBuf, TextSize);
+        mr_free((void*)tempBuf, TextSize);
     }
 end:
     return 0;
@@ -986,7 +986,7 @@ int32 _DrawTextEx(char* pcText, int16 x, int16 y, mr_screenRectSt rect, mr_colou
     }
 
     if (!(flag & DRAW_TEXT_EX_IS_UNICODE)) {
-        MR_FREE((void*)tempBuf, TextSize);
+        mr_free((void*)tempBuf, TextSize);
     }
 end:
     return endchar_index;
@@ -1180,7 +1180,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
             }
             {  //新版mrp
                 uint32 indexlen = headbuf[1] + 8 - headbuf[3];
-                uint8* indexbuf = MR_MALLOC(indexlen);
+                uint8* indexbuf = mr_malloc(indexlen);
                 uint32 pos = 0;
                 uint32 file_pos = 0, file_len = 0;
                 if (!indexbuf) {
@@ -1191,7 +1191,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                 nTmp = mr_seek(f, headbuf[3] - 16, MR_SEEK_CUR);
                 if (nTmp < 0) {
                     mr_close(f);
-                    MR_FREE(indexbuf, indexlen);
+                    mr_free(indexbuf, indexlen);
                     _mr_readFileShowInfo(filename, 3002);
                     goto err;
                 }
@@ -1200,7 +1200,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
 
                 if ((nTmp != (int32)indexlen)) {
                     mr_close(f);
-                    MR_FREE(indexbuf, indexlen);
+                    mr_free(indexbuf, indexlen);
                     _mr_readFileShowInfo(filename, 3003);
                     goto err;
                 }
@@ -1210,7 +1210,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                     pos = pos + 4;
                     if (((len + pos) > indexlen) || (len < 1) || (len >= MR_MAX_FILENAME_SIZE)) {
                         mr_close(f);
-                        MR_FREE(indexbuf, indexlen);
+                        mr_free(indexbuf, indexlen);
                         _mr_readFileShowInfo(filename, 3004);
                         goto err;
                     }
@@ -1221,7 +1221,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                     if (STRCMP(filename, TempName) == 0) {
                         if (lookfor == 1) {
                             mr_close(f);
-                            MR_FREE(indexbuf, indexlen);
+                            mr_free(indexbuf, indexlen);
                             goto ret1;
                         }
                         found = 1;
@@ -1231,7 +1231,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                         pos = pos + 4;
                         if ((file_pos + file_len) > headbuf[2]) {
                             mr_close(f);
-                            MR_FREE(indexbuf, indexlen);
+                            mr_free(indexbuf, indexlen);
                             _mr_readFileShowInfo(filename, 3005);
                             goto err;
                         }
@@ -1239,17 +1239,17 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                         pos = pos + 12;
                         if (pos >= indexlen) {
                             mr_close(f);
-                            MR_FREE(indexbuf, indexlen);
+                            mr_free(indexbuf, indexlen);
                             _mr_readFileShowInfo(filename, 3006);
                             goto err;
                         }
                     } /*if (STRCMP(filename, TempName)==0)*/
                 }
 
-                MR_FREE(indexbuf, indexlen);
+                mr_free(indexbuf, indexlen);
 
                 *filelen = file_len;
-                filebuf = MR_MALLOC(file_len);
+                filebuf = mr_malloc(file_len);
                 if (filebuf == NULL) {
                     mr_close(f);
                     _mr_readFileShowInfo(filename, 3007);
@@ -1258,7 +1258,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
 
                 nTmp = mr_seek(f, file_pos, MR_SEEK_SET);
                 if (nTmp < 0) {
-                    MR_FREE(filebuf, file_len);
+                    mr_free(filebuf, file_len);
                     mr_close(f);
                     _mr_readFileShowInfo(filename, 3008);
                     goto err;
@@ -1268,7 +1268,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                 while (oldlen < file_len) {
                     nTmp = mr_read(f, (char*)filebuf + oldlen, file_len - oldlen);
                     if (nTmp <= 0) {
-                        MR_FREE(filebuf, file_len);
+                        mr_free(filebuf, file_len);
                         mr_close(f);
                         _mr_readFileShowInfo(filename, 3009);
                         goto err;
@@ -1301,23 +1301,23 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
     oldlen = *filelen;
     *filelen = reallen;
 
-    mr_gzOutBuf = MR_MALLOC(reallen);
+    mr_gzOutBuf = mr_malloc(reallen);
     if (mr_gzOutBuf == NULL) {
         if (!is_rom_file)
-            MR_FREE(mr_gzInBuf, oldlen);
+            mr_free(mr_gzInBuf, oldlen);
         goto err;
     }
 
     if (mr_unzip() != 0) {
         if (!is_rom_file)
-            MR_FREE(mr_gzInBuf, oldlen);
-        MR_FREE(mr_gzOutBuf, reallen);
+            mr_free(mr_gzInBuf, oldlen);
+        mr_free(mr_gzOutBuf, reallen);
         MRDBGPRINTF("_mr_readFile: \"%s\" Unzip err!", filename);
         goto err;
     }
 
     if (!is_rom_file)
-        MR_FREE(mr_gzInBuf, oldlen);
+        mr_free(mr_gzInBuf, oldlen);
 
     retv = mr_gzOutBuf;
 end:
@@ -1438,9 +1438,9 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
 
         case 408:
             if (mr_bitmap[BITMAPMAX].type == MR_SCREEN_FIRST_BUF) {
-                mr_bitmap[BITMAPMAX].p = (uint16*)MR_MALLOC(input1);
+                mr_bitmap[BITMAPMAX].p = (uint16*)mr_malloc(input1);
                 if (mr_bitmap[BITMAPMAX].p) {
-                    MR_FREE(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
+                    mr_free(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
                     mr_screenBuf = mr_bitmap[BITMAPMAX].p;
                     mr_bitmap[BITMAPMAX].buflen = input1;
                     ret = MR_SUCCESS;
@@ -1491,9 +1491,9 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
 
 int32 _mr_c_function_new(MR_C_FUNCTION f, int32 len) {
     if (mr_c_function_P) {
-        MR_FREE(mr_c_function_P, mr_c_function_P_len);
+        mr_free(mr_c_function_P, mr_c_function_P_len);
     }
-    mr_c_function_P = MR_MALLOC(len);
+    mr_c_function_P = mr_malloc(len);
     if (!mr_c_function_P) {
         mr_state = MR_STATE_ERROR;
         return MR_FAILED;
@@ -1513,7 +1513,7 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
     switch (input0) {
         case 2:
             if (mr_ram_file) {
-                MR_FREE(mr_ram_file, mr_ram_file_len);
+                mr_free(mr_ram_file, mr_ram_file_len);
                 mr_ram_file = NULL;
             }
             mr_ram_file = input1;
@@ -1842,7 +1842,7 @@ static int32 _mr_intra_start(char* appExName, const char* entry) {
             }
         }
         if (mr_screenBuf == NULL) {
-            mr_screenBuf = (uint16*)MR_MALLOC(MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP);
+            mr_screenBuf = (uint16*)mr_malloc(MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP);
             mr_bitmap[BITMAPMAX].type = MR_SCREEN_FIRST_BUF;
             mr_bitmap[BITMAPMAX].buflen = MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP;
         }
@@ -1946,7 +1946,7 @@ int32 mr_stop_ex(int16 freemem) {
 
     if (freemem) {
         if (mr_bitmap[BITMAPMAX].type == MR_SCREEN_FIRST_BUF) {
-            //MR_FREE(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
+            //mr_free(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
         } else if (mr_bitmap[BITMAPMAX].type == MR_SCREEN_SECOND_BUF) {
             mr_platEx(1002, (uint8*)mr_screenBuf, mr_bitmap[BITMAPMAX].buflen, (uint8**)NULL, NULL, NULL);
         }

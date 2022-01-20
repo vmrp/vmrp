@@ -17,7 +17,7 @@
 */
 #ifndef l_realloc
 //#define l_realloc(b,os,s)	REALLOC(b,s)//ouli brew
-#define l_realloc(b,os,s)	MR_REALLOC(b,os,s)//ouli brew
+#define l_realloc(b,os,s)	mr_realloc(b,os,s)
 #endif
 
 /*
@@ -26,7 +26,7 @@
 */
 #ifndef l_free
 //#define l_free(b,os)	FREE(b)//ouli brew
-#define l_free(b,os)	MR_FREE(b, os)//ouli brew
+#define l_free(b,os)	mr_free(b, os)
 #endif
 
 

@@ -284,12 +284,12 @@ static int b_pack (mrp_State *L) {
          mr_L_addlstring(&b, s, size);
 #else
          if(l < (size_t)size){
-            char * temp_buf = MR_MALLOC(size);
+            char * temp_buf = mr_malloc(size);
             if (temp_buf){
                MEMSET(temp_buf, 0, size);
                MEMCPY(temp_buf, s, l);
                mr_L_addlstring(&b, temp_buf, size);
-               MR_FREE(temp_buf, size);
+               mr_free(temp_buf, size);
             }else{
                mr_L_addlstring(&b, s, size);
             }
@@ -1178,12 +1178,12 @@ int32 _mr_u2c(char * input, int32 inlen, char* output, int32 outlen){
 static int str_u2c (mrp_State *L) {
    size_t l;
    uint8 * p = (uint8 *)mr_L_checklstring(L, 1, &l);
-   char* ascii = MR_MALLOC(l/2);
+   char* ascii = mr_malloc(l/2);
    if (l < 2){
       mrp_pushstring(L, "");
       return 1;
    }
-   ascii = MR_MALLOC((l/2) + 1);
+   ascii = mr_malloc((l/2) + 1);
    if (!ascii){
       mrp_pushstring(L, "");
       return 1;
@@ -1204,7 +1204,7 @@ static int str_u2c (mrp_State *L) {
    }
 #endif
    mrp_pushstring(L, ascii);
-   MR_FREE(ascii, (l/2) + 1);
+   mr_free(ascii, (l/2) + 1);
    return 1;
 }
 

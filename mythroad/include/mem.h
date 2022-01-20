@@ -5,8 +5,8 @@
 #include "type.h"
 
 typedef struct {
-    uint32 next;
-    uint32 len;
+    uint32 next;  // 下一个块的位置
+    uint32 len;   // 当前块的长度
 } LG_mem_free_t;
 
 extern uint32 LG_mem_min;
@@ -29,8 +29,5 @@ void* mr_mallocExt0(uint32 len);
 void mr_freeExt(void* p);
 void* mr_reallocExt(void* p, uint32 newLen);
 
-#define MR_MALLOC mr_malloc
-#define MR_FREE mr_free
-#define MR_REALLOC mr_realloc
 
 #endif
