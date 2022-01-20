@@ -758,7 +758,7 @@ int32 _DrawText(char* pcText, int16 x, int16 y, uint8 r, uint8 g, uint8 b, int i
         };
     }
     if (!is_unicode) {
-        MR_FREE((void*)tempBuf, TextSize);
+        mr_free((void*)tempBuf, TextSize);
     }
     return 0;
 }
@@ -973,7 +973,7 @@ int32 _DrawTextEx(char* pcText, int16 x, int16 y, mr_screenRectSt rect, mr_colou
     }
 
     if (!(flag & DRAW_TEXT_EX_IS_UNICODE)) {
-        MR_FREE((void*)tempBuf, TextSize);
+        mr_free((void*)tempBuf, TextSize);
     }
     return endchar_index;
 }
@@ -1025,11 +1025,11 @@ static int MRF_BmGetScr(mrp_State* L) {
         return 0;
     }
     if (mr_bitmap[i].p) {
-        MR_FREE(mr_bitmap[i].p, mr_bitmap[i].buflen);
+        mr_free(mr_bitmap[i].p, mr_bitmap[i].buflen);
         mr_bitmap[i].p = NULL;
     }
 
-    mr_bitmap[i].p = MR_MALLOC(MR_SCREEN_W * MR_SCREEN_H * MR_SCREEN_DEEP);
+    mr_bitmap[i].p = mr_malloc(MR_SCREEN_W * MR_SCREEN_H * MR_SCREEN_DEEP);
     if (!mr_bitmap[i].p) {
         mrp_pushfstring(L, "BmGetScr %d :No memory!", i);
         mrp_error(L);
@@ -1135,7 +1135,6 @@ static void _mr_readFileShowInfo(const char* filename, int32 code) {
 }
 
 void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
-    // int ret;
     int method;
     uint32 reallen, found = 0;
     int32 oldlen, nTmp;
@@ -1146,14 +1145,13 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
     char* mr_m0_file;
     int is_rom_file = FALSE;
 
-#if 1
-    if (lookfor == 0) {  // 先尝试直接从文件加载
-        void* buf = readFile(filename, (uint32*)filelen);
-        if (buf != NULL) {
-            return buf;
-        }
-    }
-#endif
+    // 原本先尝试直接从文件加载是放在这个位置，但是此时有内存申请释放的操作会导致一些游戏启动失败（红眼鬼剑.mrp）
+    // 可能是pack_filename[0] == '$'时用了什么骚操作，如果有内存操作会导致内存管理器的内存分布情况发生改变
+    // if (lookfor == 0) {  
+    //     uint32 len = 64;
+    //     uint32* p = mr_malloc(len);
+    //     mr_free(p, len);
+    // }
     if ((pack_filename[0] == '*') || (pack_filename[0] == '$')) { /*m0 file or ram file?*/
         uint32 pos = 0;
         uint32 m0file_len;
@@ -1182,7 +1180,6 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                     _mr_readFileShowInfo("unauthorized", 3);
                     return 0;
                 }
-            } else {
             }
 #endif
         } else {
@@ -1238,6 +1235,14 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
         filebuf = &mr_m0_file[pos];
         is_rom_file = TRUE;
     } else { /*read file from efs , EFS 中的文件*/
+#if 1
+        if (lookfor == 0) {  // 先尝试直接从文件加载
+            filebuf = readFile(filename, (uint32*)filelen);
+            if (filebuf) {
+                return filebuf;
+            }
+        }
+#endif
         f = mr_open(pack_filename, MR_FILE_RDONLY);
         if (f == 0) {
             _mr_readFileShowInfo(filename, 2002);
@@ -1255,7 +1260,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
             }
             if (headbuf[1] > 232) {  //新版mrp
                 uint32 indexlen = headbuf[1] + 8 - headbuf[3];
-                uint8* indexbuf = MR_MALLOC(indexlen);
+                uint8* indexbuf = mr_malloc(indexlen);
                 uint32 pos = 0;
                 uint32 file_pos, file_len;
                 if (!indexbuf) {
@@ -1266,7 +1271,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                 nTmp = mr_seek(f, headbuf[3] - 16, MR_SEEK_CUR);
                 if (nTmp < 0) {
                     mr_close(f);
-                    MR_FREE(indexbuf, indexlen);
+                    mr_free(indexbuf, indexlen);
                     _mr_readFileShowInfo(filename, 3002);
                     return 0;
                 }
@@ -1275,7 +1280,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
 
                 if ((nTmp != (int32)indexlen)) {
                     mr_close(f);
-                    MR_FREE(indexbuf, indexlen);
+                    mr_free(indexbuf, indexlen);
                     _mr_readFileShowInfo(filename, 3003);
                     return 0;
                 }
@@ -1285,7 +1290,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                     pos = pos + 4;
                     if (((len + pos) > indexlen) || (len < 1) || (len >= MR_MAX_FILENAME_SIZE)) {
                         mr_close(f);
-                        MR_FREE(indexbuf, indexlen);
+                        mr_free(indexbuf, indexlen);
                         _mr_readFileShowInfo(filename, 3004);
                         return 0;
                     }
@@ -1295,7 +1300,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                     if (STRCMP(filename, TempName) == 0) {
                         if (lookfor == 1) {
                             mr_close(f);
-                            MR_FREE(indexbuf, indexlen);
+                            mr_free(indexbuf, indexlen);
                             return (void*)1;
                         }
                         found = 1;
@@ -1305,7 +1310,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                         pos = pos + 4;
                         if ((file_pos + file_len) > headbuf[2]) {
                             mr_close(f);
-                            MR_FREE(indexbuf, indexlen);
+                            mr_free(indexbuf, indexlen);
                             _mr_readFileShowInfo(filename, 3005);
                             return 0;
                         }
@@ -1313,18 +1318,18 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                         pos = pos + 12;
                         if (pos >= indexlen) {
                             mr_close(f);
-                            MR_FREE(indexbuf, indexlen);
+                            mr_free(indexbuf, indexlen);
                             _mr_readFileShowInfo(filename, 3006);
                             return 0;
                         }
                     } /*if (STRCMP(filename, TempName)==0)*/
                 }
 
-                MR_FREE(indexbuf, indexlen);
+                mr_free(indexbuf, indexlen);
 
                 *filelen = file_len;
 
-                filebuf = MR_MALLOC((uint32)*filelen);
+                filebuf = mr_malloc((uint32)*filelen);
                 if (filebuf == NULL) {
                     mr_close(f);
                     _mr_readFileShowInfo(filename, 3007);
@@ -1333,7 +1338,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
 
                 nTmp = mr_seek(f, file_pos, MR_SEEK_SET);
                 if (nTmp < 0) {
-                    MR_FREE(filebuf, *filelen);
+                    mr_free(filebuf, *filelen);
                     mr_close(f);
                     _mr_readFileShowInfo(filename, 3008);
                     return 0;
@@ -1343,27 +1348,13 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                 while (oldlen < *filelen) {
                     nTmp = mr_read(f, (char*)filebuf + oldlen, *filelen - oldlen);
                     if (nTmp <= 0) {
-                        MR_FREE(filebuf, *filelen);
+                        mr_free(filebuf, *filelen);
                         mr_close(f);
                         _mr_readFileShowInfo(filename, 3009);
                         return 0;
                     }
                     oldlen = oldlen + nTmp;
                 }
-
-                /*
-
-                  oldlen = mr_read(f, filebuf, *filelen);
-                  if (oldlen <= 0)
-                  {
-                      MR_FREE(filebuf, *filelen);
-                      mr_close(f);
-                      _mr_readFileShowInfo(pack_filename, 2014);
-                      return 0;
-                  }
-                */
-
-                // mr_read1(filename, filebuf, *filelen);
                 mr_close(f);
 
             } else {  //旧版mrp
@@ -1426,7 +1417,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                     return 0;
                 }
 
-                filebuf = MR_MALLOC((uint32)*filelen);
+                filebuf = mr_malloc((uint32)*filelen);
                 if (filebuf == NULL) {
                     mr_close(f);
                     _mr_readFileShowInfo(filename, 2013);
@@ -1437,14 +1428,13 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
                 while (oldlen < *filelen) {
                     nTmp = mr_read(f, (char*)filebuf + oldlen, *filelen - oldlen);
                     if (nTmp <= 0) {
-                        MR_FREE(filebuf, *filelen);
+                        mr_free(filebuf, *filelen);
                         mr_close(f);
                         _mr_readFileShowInfo(filename, 2014);
                         return 0;
                     }
                     oldlen = oldlen + nTmp;
                 }
-                // mr_read1(filename, filebuf, *filelen);
                 mr_close(f);
             }  //旧版mrp
         }
@@ -1465,40 +1455,24 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
         uint8* ptr = (uint8*)filebuf + *filelen - sizeof(uint32);
         reallen = (ptr[3] << 24) | (ptr[2] << 16) | (ptr[1] << 8) | ptr[0];
     }
-    MRDBGPRINTF("_mr_readFile %d", reallen);
+    MRDBGPRINTF("_mr_readFile reallen:%d", reallen);
 
-    // MRDBGPRINTF("Debug:_mr_readFile:mem left = %d",LG_mem_left);
-
-    // MRDBGPRINTF("1base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
-    // MRDBGPRINTF("is_rom_file = %d",is_rom_file);
-    mr_gzOutBuf = MR_MALLOC(reallen);
-    // MRDBGPRINTF("mr_gzOutBuf = %d",mr_gzOutBuf);
+    mr_gzOutBuf = mr_malloc(reallen);
     oldlen = *filelen;
     *filelen = reallen;
-    // MRDBGPRINTF("2base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
     if (mr_gzOutBuf == NULL) {
-        if (!is_rom_file)
-            MR_FREE(mr_gzInBuf, oldlen);
-        // MRDBGPRINTF("_mr_readFile  \"%s\" Not memory unzip!", filename);
+        if (!is_rom_file) mr_free(mr_gzInBuf, oldlen);
+        MRDBGPRINTF("_mr_readFile '%s' No memory unzip!", filename);
         return 0;
     }
 
-    // MRDBGPRINTF("3base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
     if (mr_unzip() != 0) {
-        if (!is_rom_file)
-            MR_FREE(mr_gzInBuf, oldlen);
-        MR_FREE(mr_gzOutBuf, reallen);
-        MRDBGPRINTF("_mr_readFile: \"%s\" Unzip err!", filename);
+        if (!is_rom_file) mr_free(mr_gzInBuf, oldlen);
+        mr_free(mr_gzOutBuf, reallen);
+        MRDBGPRINTF("_mr_readFile: '%s' unzip err!", filename);
         return 0;
     }
-
-    // MRDBGPRINTF("4base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
-    // MRDBGPRINTF("is_rom_file = %d",is_rom_file);
-    if (!is_rom_file)
-        MR_FREE(mr_gzInBuf, oldlen);
-
-    // MRDBGPRINTF("is_rom_file = %d",is_rom_file);
-    // MRDBGPRINTF("5base=%d,end=%d",  (int32)LG_mem_base, (int32)LG_mem_end);
+    if (!is_rom_file) mr_free(mr_gzInBuf, oldlen);
     return mr_gzOutBuf;
 }
 
@@ -1509,14 +1483,14 @@ int32 mr_checkMrp(char* mrp_name) {
     int32 nTmp, crc32;
     uint8* tempbuf;
 
-    tempbuf = MR_MALLOC(CHECK_MRP_BUF_SIZE);
+    tempbuf = mr_malloc(CHECK_MRP_BUF_SIZE);
     if (tempbuf == NULL) {
         MRDBGPRINTF("mrc_checkMrp err %d", 0);
         return MR_FAILED - 1;
     }
     f = mr_open(mrp_name, MR_FILE_RDONLY);
     if (f == 0) {
-        MR_FREE(tempbuf, CHECK_MRP_BUF_SIZE);
+        mr_free(tempbuf, CHECK_MRP_BUF_SIZE);
         MRDBGPRINTF("mrc_checkMrp err %d", 1);
         return MR_FAILED - 2;
     }
@@ -1527,7 +1501,7 @@ int32 mr_checkMrp(char* mrp_name) {
     mr_updcrc((uint8*)&headbuf, sizeof(headbuf));
     if ((nTmp != 16) || (headbuf[0] != 1196446285 /*1196446285*/) || (headbuf[1] <= 232)) {
         mr_close(f);
-        MR_FREE(tempbuf, CHECK_MRP_BUF_SIZE);
+        mr_free(tempbuf, CHECK_MRP_BUF_SIZE);
         // MRDBGPRINTF("%d", headbuf[0]);
         // MRDBGPRINTF("%d", headbuf[1]);
         // MRDBGPRINTF("%d", nTmp);
@@ -1538,7 +1512,7 @@ int32 mr_checkMrp(char* mrp_name) {
     nTmp = mr_read(f, tempbuf, 224);
     if (nTmp != 224) {
         mr_close(f);
-        MR_FREE(tempbuf, CHECK_MRP_BUF_SIZE);
+        mr_free(tempbuf, CHECK_MRP_BUF_SIZE);
         MRDBGPRINTF("mrc_checkMrp err %d", 3);
         return MR_FAILED - 4;
     }
@@ -1547,7 +1521,7 @@ int32 mr_checkMrp(char* mrp_name) {
     //  if (tempbuf[192] != 2) // 展迅
     if (tempbuf[192] != 1) {
         mr_close(f);
-        MR_FREE(tempbuf, CHECK_MRP_BUF_SIZE);
+        mr_free(tempbuf, CHECK_MRP_BUF_SIZE);
         MRDBGPRINTF("mrc_checkMrp err %d", 31);
         return MR_FAILED - 5;
     }
@@ -1572,7 +1546,7 @@ int32 mr_checkMrp(char* mrp_name) {
         nTmp = MR_FAILED - 6;
     }
     mr_close(f);
-    MR_FREE(tempbuf, CHECK_MRP_BUF_SIZE);
+    mr_free(tempbuf, CHECK_MRP_BUF_SIZE);
     return nTmp;
 }
 
@@ -1704,7 +1678,7 @@ static int MRF_TextWidth(mrp_State* L) {
             };
         }
         if (!is_unicode) {
-            MR_FREE((void*)tempBuf, TextSize);
+            mr_free((void*)tempBuf, TextSize);
         }
         mrp_pushnumber(L, x);
         mrp_pushnumber(L, y);
@@ -1734,7 +1708,7 @@ static int MRF_TextWidth(mrp_State* L) {
                 }
                 ch = (uint16)(((tempBuf[0] << 8) + tempBuf[1]));
                 mr_getCharBitmap(ch, font, &width, &height);
-                MR_FREE((void*)tempBuf, TextSize);
+                mr_free((void*)tempBuf, TextSize);
             }
         }
         mrp_pushnumber(L, width);
@@ -1856,7 +1830,7 @@ static int MRF_BitmapLoad(mrp_State* L) {
         return 0;
     }
     if (mr_bitmap[i].p) {
-        MR_FREE(mr_bitmap[i].p, mr_bitmap[i].buflen);
+        mr_free(mr_bitmap[i].p, mr_bitmap[i].buflen);
         mr_bitmap[i].p = NULL;
     }
 
@@ -1879,9 +1853,9 @@ static int MRF_BitmapLoad(mrp_State* L) {
         mr_bitmap[i].p = filebuf;
         mr_bitmap[i].buflen = filelen;
     } else if (w * h * MR_SCREEN_DEEP < filelen) {
-        mr_bitmap[i].p = MR_MALLOC(w * h * MR_SCREEN_DEEP);
+        mr_bitmap[i].p = mr_malloc(w * h * MR_SCREEN_DEEP);
         if (!mr_bitmap[i].p) {
-            MR_FREE(filebuf, filelen);
+            mr_free(filebuf, filelen);
             mrp_pushfstring(L, "BitmapLoad %d \"%s\":No memory!", i, filename);
             mrp_error(L);
             return 0;
@@ -1896,11 +1870,11 @@ static int MRF_BitmapLoad(mrp_State* L) {
                 srcp++;
             }
         }
-        MR_FREE(filebuf, filelen);
+        mr_free(filebuf, filelen);
         // MRDBGPRINTF("BitmapLoad:4 %s", filename);
     } else {
         // MRDBGPRINTF("BitmapLoad:5 %s", filename);
-        MR_FREE(filebuf, filelen);
+        mr_free(filebuf, filelen);
         mrp_pushfstring(L, "BitmapLoad %d \"%s\":len err!", i, filename);
         mrp_error(L);
         return 0;
@@ -1965,10 +1939,10 @@ static int MRF_BitmapNew(mrp_State* L) {
     }
     if (mr_bitmap[i].buflen != w * h * 2) {
         if (mr_bitmap[i].p) {
-            MR_FREE(mr_bitmap[i].p, mr_bitmap[i].buflen);
+            mr_free(mr_bitmap[i].p, mr_bitmap[i].buflen);
             mr_bitmap[i].p = NULL;
         }
-        mr_bitmap[i].p = MR_MALLOC(w * h * 2);
+        mr_bitmap[i].p = mr_malloc(w * h * 2);
         if (!mr_bitmap[i].p) {
             mrp_pushfstring(L, "BitmapNew %d :No memory!", i);
             mrp_error(L);
@@ -2148,7 +2122,7 @@ static int MRF_TileSet(mrp_State* L) {
 
     if (w * h * 2 != mr_tile[i].w * mr_tile[i].h * 2) {
         if (mr_map[i]) {
-            MR_FREE(mr_map[i], mr_tile[i].w * mr_tile[i].h * 2);
+            mr_free(mr_map[i], mr_tile[i].w * mr_tile[i].h * 2);
             mr_map[i] = NULL;
         }
         if (w == 0) {
@@ -2163,7 +2137,7 @@ static int MRF_TileSet(mrp_State* L) {
     mr_tile[i].tileh = tileh;
 
     if (mr_map[i] == NULL)
-        mr_map[i] = MR_MALLOC(w * h * 2);
+        mr_map[i] = mr_malloc(w * h * 2);
     return 0;
 }
 
@@ -2298,7 +2272,7 @@ static int MRF_TileLoad(mrp_State* L) {
     }
 #endif
     if (mr_map[i]) {
-        MR_FREE(mr_map[i], mr_tile[i].w * mr_tile[i].h * 2);
+        mr_free(mr_map[i], mr_tile[i].w * mr_tile[i].h * 2);
         mr_map[i] = NULL;
     }
 
@@ -2313,7 +2287,7 @@ static int MRF_TileLoad(mrp_State* L) {
 #endif
 
     if (mr_tile[i].w * mr_tile[i].h * 2 != filelen) {
-        MR_FREE(mr_map[i], filelen);
+        mr_free(mr_map[i], filelen);
         mrp_pushfstring(L, "TileLoad: Map file \"%s\" len err %d %d !", filename, filelen, mr_tile[i].w * mr_tile[i].h * 2);
         mr_map[i] = NULL;
         mrp_error(L);
@@ -2467,7 +2441,7 @@ static void SoundSet(mrp_State* L, uint16 i, char* filename, int32 type) {
     }
 
     if (mr_sound[i].p) {
-        MR_FREE(mr_sound[i].p, mr_sound[i].buflen);
+        mr_free(mr_sound[i].p, mr_sound[i].buflen);
         mr_sound[i].p = NULL;
     }
 
@@ -2857,7 +2831,7 @@ int mr_Gb2312toUnicode(mrp_State* L) {
         return 0;
     }
     mrp_pushlstring(L, (const char*)tempBuf, TextSize);
-    MR_FREE((void*)tempBuf, TextSize);
+    mr_free((void*)tempBuf, TextSize);
     return 1;
 }
 
@@ -3051,9 +3025,9 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
 
         case 408:
             if (mr_bitmap[BITMAPMAX].type == MR_SCREEN_FIRST_BUF) {
-                mr_bitmap[BITMAPMAX].p = (uint16*)MR_MALLOC(input1);
+                mr_bitmap[BITMAPMAX].p = (uint16*)mr_malloc(input1);
                 if (mr_bitmap[BITMAPMAX].p) {
-                    MR_FREE(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
+                    mr_free(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
                     mr_screenBuf = mr_bitmap[BITMAPMAX].p;
                     mr_bitmap[BITMAPMAX].buflen = input1;
                     ret = MR_SUCCESS;
@@ -3078,11 +3052,11 @@ int _mr_TestCom(mrp_State* L, int input0, int input1) {
 #ifdef MR_SM_SURPORT
         {
             int len = ((int)to_mr_tonumber(L, 3, 0));
-            const char* buf = MR_MALLOC(len);
+            const char* buf = mr_malloc(len);
             if (buf) {
                 _mr_smsGetBytes(input1, (char*)buf, len);
                 mrp_pushlstring(L, (const char*)buf, len);
-                MR_FREE((void*)buf, len);
+                mr_free((void*)buf, len);
             }
             return 1;
         }
@@ -3241,9 +3215,9 @@ int32 _mr_getHost(mrp_State* L, char* host) {
 
 int32 _mr_c_function_new(MR_C_FUNCTION f, int32 len) {
     if (mr_c_function_P) {
-        MR_FREE(mr_c_function_P, mr_c_function_P_len);
+        mr_free(mr_c_function_P, mr_c_function_P_len);
     }
-    mr_c_function_P = MR_MALLOC(len);
+    mr_c_function_P = mr_malloc(len);
     if (!mr_c_function_P) {
         mrp_pushfstring(vm_state, "c_function:No memory!");
         mrp_error(vm_state);
@@ -3268,7 +3242,7 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
     switch (input0) {
         case 2:
             if (mr_ram_file) {
-                MR_FREE(mr_ram_file, mr_ram_file_len);
+                mr_free(mr_ram_file, mr_ram_file_len);
                 mr_ram_file = NULL;
             }
             mr_ram_file = input1;
@@ -3329,36 +3303,36 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
 #ifdef MR_PKZIP_MAGIC
             if (mr_zipType == PACKED) {
                 unzip_len = LG(mr_gzInBuf + LOCLEN);
-                mr_gzOutBuf = MR_MALLOC(unzip_len);
+                mr_gzOutBuf = mr_malloc(unzip_len);
             } else {
                 // unzip_len  = *(uint32*)(input1 + len - 4);
                 MEMCPY(&unzip_len, (input1 + len - 4), 4);
                 // MRDBGPRINTF("unzip_len1 = %d", unzip_len);
 
-                mr_gzOutBuf = MR_MALLOC(unzip_len);
+                mr_gzOutBuf = mr_malloc(unzip_len);
             }
 #else
             // unzip_len  = *(uint32*)(input1 + len - 4);
             MEMCPY(&unzip_len, (input1 + len - 4), 4);
             // MRDBGPRINTF("unzip_len1 = %d", unzip_len);
 
-            mr_gzOutBuf = MR_MALLOC(unzip_len);
+            mr_gzOutBuf = mr_malloc(unzip_len);
 #endif
 
             if (mr_gzOutBuf == NULL) {
-                // MR_FREE(mr_gzInBuf, oldlen);
-                // MR_FREE(mr_gzOutBuf, ret);
+                // mr_free(mr_gzInBuf, oldlen);
+                // mr_free(mr_gzOutBuf, ret);
                 MRDBGPRINTF("unzip  Not memory unzip!");
                 return 0;
             }
             if (mr_unzip() != 0) {
-                MR_FREE(mr_gzOutBuf, unzip_len);
+                mr_free(mr_gzOutBuf, unzip_len);
                 MRDBGPRINTF("unzip:  Unzip err1!");
                 return 0;
             }
 
             mrp_pushlstring(L, (const char*)mr_gzOutBuf, unzip_len);
-            MR_FREE(mr_gzOutBuf, unzip_len);
+            mr_free(mr_gzOutBuf, unzip_len);
             return 1;
 
             break;
@@ -3375,31 +3349,31 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
         } break;
         case 501: {
             int32 outlen = len * 4 / 3 + 8;
-            uint8* buf = MR_MALLOC(outlen);
+            uint8* buf = mr_malloc(outlen);
             if (!buf) {
                 return 0;
             }
             ret = _mr_encode((uint8*)input1, (uint32)len, (uint8*)buf);
             if (ret == MR_FAILED) {
-                MR_FREE(buf, outlen);
+                mr_free(buf, outlen);
                 return 0;
             }
             mrp_pushlstring(L, (const char*)buf, ret);
-            MR_FREE(buf, outlen);
+            mr_free(buf, outlen);
             return 1;
         } break;
         case 502: {
-            uint8* buf = MR_MALLOC(len);
+            uint8* buf = mr_malloc(len);
             if (!buf) {
                 return 0;
             }
             ret = _mr_decode((uint8*)input1, (uint32)len, (uint8*)buf);
             if (ret == MR_FAILED) {
-                MR_FREE(buf, len);
+                mr_free(buf, len);
                 return 0;
             }
             mrp_pushlstring(L, (const char*)buf, ret);
-            MR_FREE(buf, len);
+            mr_free(buf, len);
             return 1;
         } break;
         case 600: {
@@ -3432,7 +3406,7 @@ int _mr_TestCom1(mrp_State* L, int input0, char* input1, int32 len) {
             char* filebuf = _mr_readFile((const char*)input1, &ret, 0);
             if (filebuf) {
                 mrp_pushlstring(L, filebuf, ret);
-                MR_FREE(filebuf, ret);
+                mr_free(filebuf, ret);
             } else {
                 mrp_pushnil(L);
             }
@@ -3573,7 +3547,7 @@ static int32 _mr_intra_start(char* appExName, const char* entry) {
             }
         }
         if (mr_screenBuf == NULL) {
-            mr_screenBuf = (uint16*)MR_MALLOC(MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP);
+            mr_screenBuf = (uint16*)mr_malloc(MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP);
             mr_bitmap[BITMAPMAX].type = MR_SCREEN_FIRST_BUF;
             mr_bitmap[BITMAPMAX].buflen = MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP;
         }
@@ -3583,7 +3557,7 @@ static int32 _mr_intra_start(char* appExName, const char* entry) {
 #ifdef USE_GET_SCREEN_BUFFER
     mr_screenBuf = mr_getScreenBuffer();
 #else
-    mr_screenBuf = (uint16*)MR_MALLOC(MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP);
+    mr_screenBuf = (uint16*)mr_malloc(MR_SCREEN_MAX_W * MR_SCREEN_H * MR_SCREEN_DEEP);
 #endif
 
     mr_bitmap[BITMAPMAX].type = MR_SCREEN_FIRST_BUF;
@@ -3856,7 +3830,7 @@ int32 mr_stop_ex(int16 freemem) {
 
     if (freemem) {
         if (mr_bitmap[BITMAPMAX].type == MR_SCREEN_FIRST_BUF) {
-            // MR_FREE(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
+            // mr_free(mr_screenBuf, mr_bitmap[BITMAPMAX].buflen);
         } else if (mr_bitmap[BITMAPMAX].type == MR_SCREEN_SECOND_BUF) {
             mr_platEx(1002, (uint8*)mr_screenBuf, mr_bitmap[BITMAPMAX].buflen, (uint8**)NULL, NULL, NULL);
         }
