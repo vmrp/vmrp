@@ -605,7 +605,6 @@ void _DrawBitmap(uint16* p, int16 x, int16 y, uint16 w, uint16 h, uint16 rop, ui
 }
 
 void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
-    //   mr_drawRect(x,y,w,h,MAKERGB(r, g, b));
     uint16 *dstp, *srcp;
     int MaxY = MIN(MR_SCREEN_H, y + h);
     int MaxX = MIN(MR_SCREEN_W, x + w);
@@ -617,50 +616,6 @@ void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
     nativecolor = MAKERGB(r, g, b);
 
     if ((MaxY > MinY) && (MaxX > MinX)) {
-#if 0
-      // for align speed test
-      srcp = mr_malloc((MaxX - MinX)<<1+8);
-      dstp = srcp;
-      for (dx = MinX; dx < MaxX; dx++)
-       {
-          *dstp= nativecolor;
-          dstp++;
-       }
-      for (dy=MinY; dy < MaxY; dy++)
-      {
-         dstp = mr_screenBuf + dy * MR_SCREEN_MAX_W + MinX;
-         memcpy(dstp, srcp+1, (MaxX - MinX)<<1);
-         /*
-         for (dx = MinX; dx < MaxX; dx++)
-         {
-            *dstp = nativecolor;
-            dstp++;
-         }
-         */
-        }
-        mr_free(srcp, (MaxX - MinX)<<1+8);
-#endif
-#if 0
-      // for align test, shut down
-      dstp = mr_screenBuf + MinY * MR_SCREEN_MAX_W + MinX;
-      srcp = dstp;
-      for (dx = MinX; dx < MaxX; dx++)
-       {
-          *dstp = nativecolor;
-          dstp++;
-       }
-      for (dy=MinY+1; dy < MaxY; dy++)
-      {
-         dstp = mr_screenBuf + dy * MR_SCREEN_MAX_W + MinX;
-         //memcpy(dstp, srcp, (MaxX - MinX)<<1);
-         for (dx = MinX; dx < MaxX; dx++)
-         {
-            *dstp = nativecolor;
-            dstp++;
-         }
-      }
-
-#else
         dstp = MR_SCREEN_CACHE_POINT(MinX, MinY);
         srcp = dstp;
         for (dx = MinX; dx < MaxX; dx++) {
@@ -677,28 +632,13 @@ void DrawRect(int16 x, int16 y, int16 w, int16 h, uint8 r, uint8 g, uint8 b) {
                 // dstp = ((dstp+1) & 0xfffffffc);
                 dstp++;
                 MEMCPY(dstp, srcp, (MaxX - MinX - 1) << 1);
-                /*
-                for (dx = MinX; dx < MaxX; dx++)
-                {
-                *dstp = nativecolor;
-                dstp++;
-                }
-                */
             }
         } else {
             for (dy = MinY + 1; dy < MaxY; dy++) {
                 dstp = MR_SCREEN_CACHE_POINT(MinX, dy);
                 MEMCPY(dstp, srcp, (MaxX - MinX) << 1);
-                /*
-                for (dx = MinX; dx < MaxX; dx++)
-                {
-                *dstp = nativecolor;
-                dstp++;
-                }
-                */
             }
         }
-#endif
     }
     return;
 }
@@ -1120,7 +1060,6 @@ static int MRF_BmGetScr(mrp_State* L) {
     mr_bitmap[i].buflen = MR_SCREEN_W * MR_SCREEN_H * MR_SCREEN_DEEP;
     dstp = mr_bitmap[i].p;
     for (dy = 0; dy < MR_SCREEN_H; dy++) {
-        // srcp = mr_screenBuf + dy * MR_SCREEN_MAX_W;
         srcp = MR_SCREEN_CACHE_POINT(0, dy);
         for (dx = 0; dx < MR_SCREEN_W; dx++) {
             *dstp = *srcp;
@@ -1310,6 +1249,14 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
         filebuf = &mr_m0_file[pos];
         is_rom_file = TRUE;
     } else { /*read file from efs , EFS 中的文件*/
+#if 1
+        if (lookfor == 0) {  // 先尝试直接从文件加载
+            void* buf = readFile(filename, (uint32*)filelen);
+            if (buf != NULL) {
+                return buf;
+            }
+        }
+#endif
         f = mr_open(pack_filename, MR_FILE_RDONLY);
         if (f == 0) {
             _mr_readFileShowInfo(filename, 2002);
@@ -1531,7 +1478,13 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
         return filebuf;
     }
 
-    reallen = *(uint32*)((uint8*)filebuf + *filelen - sizeof(uint32));
+    // reallen会因为内存对齐的原因导致得到错误的数据
+    // reallen = *(uint32*)((uint8*)filebuf + *filelen - sizeof(uint32));
+    {
+        uint8* ptr = (uint8*)filebuf + *filelen - sizeof(uint32);
+        reallen = (ptr[3] << 24) | (ptr[2] << 16) | (ptr[1] << 8) | ptr[0];
+    }
+    MRDBGPRINTF("_mr_readFile %d", reallen);
 
     // MRDBGPRINTF("Debug:_mr_readFile:filelen = %d",reallen);
     // MRDBGPRINTF("Debug:_mr_readFile:mem left = %d",LG_mem_left);

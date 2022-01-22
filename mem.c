@@ -2,19 +2,17 @@
 #include "./include/mem.h"
 #include "./include/mythroad.h"
 
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
-
 
 uint32 LG_mem_min;  // 从未分配过的长度？
 uint32 LG_mem_top;  // 动态申请到达的最高内存值
 LG_mem_free_t LG_mem_free;
 char *LG_mem_base;
 uint32 LG_mem_len;
-char *Origin_LG_mem_base; // 管理的内存的基地址
-uint32 Origin_LG_mem_len; // 管理的内存的总长度
+char *Origin_LG_mem_base;  // 管理的内存的基地址
+uint32 Origin_LG_mem_len;  // 管理的内存的总长度
 char *LG_mem_end;
 uint32 LG_mem_left;  // 剩余内存
 
@@ -174,9 +172,10 @@ void *mr_mallocExt(uint32 len) {
     p = mr_malloc(len + sizeof(uint32));
     if (p) {
         *p = len;
-        return (void *)(p + 1);
+        p++;
+        return (void *)p;
     }
-    return p;
+    return NULL;
 }
 
 void *mr_mallocExt0(uint32 len) {
@@ -193,8 +192,9 @@ EMSCRIPTEN_KEEPALIVE
 #endif
 void mr_freeExt(void *p) {
     if (p) {
-        uint32 *t = (uint32 *)p - 1;
-        mr_free(t, *t + sizeof(uint32));
+        uint32 *t = (uint32 *)p;
+        t--;
+        mr_free(t, (*t) + sizeof(uint32));
     }
 }
 
@@ -205,7 +205,7 @@ void *mr_reallocExt(void *p, uint32 newLen) {
         mr_freeExt(p);
         return NULL;
     } else {
-        uint32 oldlen = *((uint32 *)p - 1) + sizeof(uint32);
+        uint32 oldlen = *((uint32 *)p - 1);
         uint32 minsize = (oldlen < newLen) ? oldlen : newLen;
         void *newblock = mr_mallocExt(newLen);
         if (newblock == NULL) {
