@@ -33,7 +33,7 @@ long atol2(const char* s) {
 // 读取整个文件的内容
 // 如果传递了filelen参数，则文件的长度通过filelen输出，并且内存需要用mr_free()释放
 // 如果filelen为NULL，则返回的内存需要用mr_freeExt()释放
-void* readFile(const char* filename, uint32* filelen) {
+void* readAll(const char* filename, uint32* filelen) {
     int32 fl, fh, oldlen, rl;
     char* filebuf;
 

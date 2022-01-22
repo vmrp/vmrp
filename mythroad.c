@@ -1251,7 +1251,7 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
     } else { /*read file from efs , EFS 中的文件*/
 #if 1
         if (lookfor == 0) {  // 先尝试直接从文件加载
-            void* buf = readFile(filename, (uint32*)filelen);
+            void* buf = readAll(filename, (uint32*)filelen);
             if (buf != NULL) {
                 return buf;
             }
