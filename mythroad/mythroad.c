@@ -1146,7 +1146,8 @@ void* _mr_readFile(const char* filename, int* filelen, int lookfor) {
     int is_rom_file = FALSE;
 
     // 原本先尝试直接从文件加载是放在这个位置，但是此时有内存申请释放的操作会导致一些游戏启动失败（红眼鬼剑.mrp）
-    // 可能是pack_filename[0] == '$'时用了什么骚操作，如果有内存操作会导致内存管理器的内存分布情况发生改变
+    // 原因是pack_filename[0] == '$'时的骚操作在mrp中直接操作了LG_mem_free头节点，计算好了解压需要的内存，
+    // 使得第一次malloc得到预期的内存，实现降低内存碎片的作用，因此在解压之前有内存操作会导致内存管理器的内存分布情况发生改变
     // if (lookfor == 0) {  
     //     uint32 len = 64;
     //     uint32* p = mr_malloc(len);
