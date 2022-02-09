@@ -134,7 +134,9 @@ https://blog.csdn.net/gooogleman/article/details/3538033
 
 20200208 成功运行了带图像显示和触屏事件的helloworld
 
-20201013 成功运行了推箱子游戏
+20201013 成功运行了推箱子游戏，实现了mr层的支持
+
+20201224 wasm版本成功
 
 # License
 
